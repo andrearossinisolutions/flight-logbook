@@ -45,6 +45,13 @@ export default async function DashboardPage() {
       0
     );
 
+  const totalTopups = movements
+    .filter((item: MovementItem) => item.type === "TOPUP")
+    .reduce(
+      (acc: number, item: MovementItem) => acc + (Number(item.amount) > 0 ? Number(item.amount) : 0),
+      0
+    );
+
   async function deleteMovement(formData: FormData) {
     "use server";
 
@@ -111,6 +118,8 @@ export default async function DashboardPage() {
         <div className="card">
           <div className="muted">Spesa voli</div>
           <div className="big-number">{eur(totalFlightCost)}</div>
+          <div className="muted">Ricariche</div>
+          <div className="big-number">{eur(totalTopups)}</div>
         </div>
 
         <div className="card">
