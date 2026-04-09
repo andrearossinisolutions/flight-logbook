@@ -1,0 +1,21 @@
+name: Deploy logbook
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: logbook-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, x64]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy locally on server
+        run: /var/www/logbook/scripts/deploy.sh
