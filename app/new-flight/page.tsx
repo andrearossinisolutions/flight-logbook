@@ -68,9 +68,28 @@ export default function NewFlightPage() {
               />
             </div>
 
-            <div className="field">
-              <label htmlFor="aircraft">Aeromobile</label>
-              <input className="input" id="aircraft" name="aircraft" defaultValue="P92" required />
+            <div className="grid grid-2">
+              <div className="field">
+                <label htmlFor="aircraftRegistration">Marche</label>
+                <input
+                  className="input"
+                  id="aircraftRegistration"
+                  name="aircraftRegistration"
+                  defaultValue="I-4150"
+                  required
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="aircraftType">Tipo</label>
+                <input
+                  className="input"
+                  id="aircraftType"
+                  name="aircraftType"
+                  defaultValue="P92"
+                  required
+                />
+              </div>
             </div>
 
             <div className="field">

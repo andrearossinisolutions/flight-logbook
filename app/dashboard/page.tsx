@@ -141,7 +141,6 @@ export default async function DashboardPage() {
 
             {movements.map((item: MovementItem) => {
               const amount = Number(item.amount);
-              const isPositiveTopup = item.type === "TOPUP" && amount >= 0;
               const isNegativeTopup = item.type === "TOPUP" && amount < 0;
 
               return (
@@ -169,13 +168,13 @@ export default async function DashboardPage() {
                     ) : (
                       <div>
                         <div>
-                          {item.flight?.aircraft ?? "P92"} ·{" "}
+                          {item.flight?.aircraftRegistration ?? "I-4150"} ·{" "}
+                          {item.flight?.aircraftType ?? "P92"} ·{" "}
                           {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
                         </div>
 
                         <div className="muted">
-                          Noleggio:{" "}
-                          {eur(Number(item.flight?.rentalRateApplied ?? 0))}/h
+                          Noleggio: {eur(Number(item.flight?.rentalRateApplied ?? 0))}/h
                           {item.flight?.instructorName
                             ? ` · Istruttore: ${item.flight.instructorName} (${eur(
                                 Number(item.flight?.instructorRateApplied ?? 0)

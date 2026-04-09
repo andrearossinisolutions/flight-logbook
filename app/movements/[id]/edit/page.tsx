@@ -111,7 +111,10 @@ export default async function EditMovementPage({
       throw new Error("Tipo movimento non valido.");
     }
 
-    const aircraft = String(formData.get("aircraft") ?? "P92").trim() || "P92";
+    const aircraftRegistration =
+      String(formData.get("aircraftRegistration") ?? "I-4150").trim() || "I-4150";
+    const aircraftType =
+      String(formData.get("aircraftType") ?? "P92").trim() || "P92";
 
     const inputModeRaw = String(formData.get("inputMode") ?? FlightInputMode.MANUAL);
     const inputMode: FlightInputMode =
@@ -185,7 +188,8 @@ export default async function EditMovementPage({
           movementId: dbMovement.id,
         },
         data: {
-          aircraft,
+          aircraftRegistration,
+          aircraftType,
           inputMode,
           durationMinutes,
           hobbsStartMinutes,
@@ -293,22 +297,35 @@ export default async function EditMovementPage({
                     Positivo = ricarica. Negativo = rettifica/addebito.
                   </div>
                 </div>
-              ) : (
-                <div className="field">
-                  <label htmlFor="aircraft">Aeromobile</label>
-                  <input
-                    id="aircraft"
-                    name="aircraft"
-                    className="input"
-                    defaultValue={flight?.aircraft ?? "P92"}
-                    required
-                  />
-                </div>
-              )}
+              ) : null}
             </div>
 
             {!isTopup ? (
               <>
+                <div className="grid grid-2">
+                  <div className="field">
+                    <label htmlFor="aircraftRegistration">Marche</label>
+                    <input
+                      id="aircraftRegistration"
+                      name="aircraftRegistration"
+                      className="input"
+                      defaultValue={flight?.aircraftRegistration ?? "I-4150"}
+                      required
+                    />
+                  </div>
+
+                  <div className="field">
+                    <label htmlFor="aircraftType">Tipo</label>
+                    <input
+                      id="aircraftType"
+                      name="aircraftType"
+                      className="input"
+                      defaultValue={flight?.aircraftType ?? "P92"}
+                      required
+                    />
+                  </div>
+                </div>
+
                 <div className="grid grid-2">
                   <div className="field">
                     <label htmlFor="inputMode">Modalità durata</label>
@@ -478,6 +495,13 @@ export default async function EditMovementPage({
           ) : (
             <>
               <h3 style={{ marginTop: 0 }}>Valori salvati</h3>
+
+              <div style={{ marginTop: 16 }}>
+                <div className="muted">Aeromobile</div>
+                <div className="big-number" style={{ fontSize: "1.5rem" }}>
+                  {flight?.aircraftRegistration ?? "I-4150"} · {flight?.aircraftType ?? "P92"}
+                </div>
+              </div>
 
               <div style={{ marginTop: 16 }}>
                 <div className="muted">Durata registrata</div>

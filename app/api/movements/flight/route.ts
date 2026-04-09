@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import { redirect } from "next/navigation";
 import { FlightInputMode } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
@@ -23,7 +24,10 @@ export async function POST(request: Request) {
   const formData = await request.formData();
 
   const dateRaw = String(formData.get("date") ?? "");
-  const aircraft = String(formData.get("aircraft") ?? "P92").trim() || "P92";
+  const aircraftRegistration =
+    String(formData.get("aircraftRegistration") ?? "I-4150").trim() || "I-4150";
+  const aircraftType =
+    String(formData.get("aircraftType") ?? "P92").trim() || "P92";
   const inputModeRaw = String(formData.get("inputMode") ?? FlightInputMode.HOBBS);
   const instructorNameRaw = String(formData.get("instructorName") ?? "").trim();
   const notesRaw = String(formData.get("notes") ?? "").trim();
@@ -133,7 +137,8 @@ export async function POST(request: Request) {
     await tx.flight.create({
       data: {
         movementId: movement.id,
-        aircraft,
+        aircraftRegistration,
+        aircraftType,
         inputMode,
         durationMinutes,
         hobbsStartMinutes,

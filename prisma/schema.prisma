@@ -21,34 +21,34 @@ model User {
   email        String     @unique
   passwordHash String
   fullName     String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
   settings     Settings?
   movements    Movement[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 model Settings {
   id                    String   @id @default(cuid())
   userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   rentalRatePerHour     Decimal  @default(150)
   instructorRatePerHour Decimal  @default(80)
   currency              String   @default("EUR")
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
-  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Movement {
   id        String       @id @default(cuid())
   userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   type      MovementType
   date      DateTime
   amount    Decimal
   notes     String?
+  flight    Flight?
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  flight    Flight?
 
   @@index([userId, date])
 }
@@ -56,18 +56,24 @@ model Movement {
 model Flight {
   id                    String          @id @default(cuid())
   movementId            String          @unique
-  aircraft              String          @default("P92")
+  movement              Movement        @relation(fields: [movementId], references: [id], onDelete: Cascade)
+
+  aircraft              String          @default("P92") // legacy field, non più usato dal codice
+  aircraftRegistration  String          @default("I-4150")
+  aircraftType          String          @default("P92")
+
   inputMode             FlightInputMode
   hobbsStartMinutes     Int?
   hobbsEndMinutes       Int?
   durationMinutes       Int
   instructorName        String?
+
   rentalRateApplied     Decimal
   instructorRateApplied Decimal
   rentalCost            Decimal
   instructorCost        Decimal
   totalCost             Decimal
+
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
-  movement              Movement        @relation(fields: [movementId], references: [id], onDelete: Cascade)
 }
