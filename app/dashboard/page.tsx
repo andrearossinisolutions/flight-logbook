@@ -13,11 +13,21 @@ export default async function DashboardPage() {
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
   });
 
-  const saldo = movements.reduce((acc, item) => acc + Number(item.amount), 0);
-  const totalFlightMinutes = movements.reduce((acc, item) => acc + (item.flight?.durationMinutes ?? 0), 0);
+  type MovementItem = (typeof movements)[number];
+
+  const saldo = movements.reduce(
+    (acc: number, item: MovementItem) => acc + Number(item.amount),
+    0
+  );
+
+  const totalFlightMinutes = movements.reduce(
+    (acc: number, item: MovementItem) => acc + (item.flight?.durationMinutes ?? 0),
+    0
+  );
+
   const totalFlightCost = movements
-    .filter((item) => item.type === "FLIGHT")
-    .reduce((acc, item) => acc + Math.abs(Number(item.amount)), 0);
+    .filter((item: MovementItem) => item.type === "FLIGHT")
+    .reduce((acc: number, item: MovementItem) => acc + Math.abs(Number(item.amount)), 0);
 
   return (
     <AppShell
