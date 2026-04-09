@@ -1,13 +1,16 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { AppShell } from "@/components/app-shell";
 import { requireUser } from "@/lib/require-user";
 import { eur, formatDateDisplay, minutesToHoursMinutes } from "@/lib/utils";
+import { prisma } from "@/lib/prisma";
 
 export default async function DashboardPage() {
   const user = await requireUser();
   const settings = user.settings;
 
-  const movements = await (await import("@/lib/prisma")).prisma.movement.findMany({
+  const movements = await prisma.movement.findMany({
     where: { userId: user.id },
     include: { flight: true },
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
@@ -32,6 +35,46 @@ export default async function DashboardPage() {
       0
     );
 
+  async function deleteMovement(formData: FormData) {
+    "use server";
+
+    const user = await requireUser();
+    const movementId = String(formData.get("movementId") ?? "");
+
+    if (!movementId) {
+      throw new Error("ID movimento mancante.");
+    }
+
+    const movement = await prisma.movement.findFirst({
+      where: {
+        id: movementId,
+        userId: user.id,
+      },
+      include: {
+        flight: true,
+      },
+    });
+
+    if (!movement) {
+      throw new Error("Movimento non trovato.");
+    }
+
+    await prisma.$transaction(async (tx) => {
+      if (movement.flight) {
+        await tx.flight.delete({
+          where: { movementId: movement.id },
+        });
+      }
+
+      await tx.movement.delete({
+        where: { id: movement.id },
+      });
+    });
+
+    revalidatePath("/dashboard");
+    redirect("/dashboard");
+  }
+
   return (
     <AppShell
       title={`Ciao${user.fullName ? `, ${user.fullName}` : ""}`}
@@ -42,14 +85,17 @@ export default async function DashboardPage() {
           <div className="muted">Saldo attuale</div>
           <div className="big-number">{eur(saldo)}</div>
         </div>
+
         <div className="card">
           <div className="muted">Ore volate registrate</div>
           <div className="big-number">{minutesToHoursMinutes(totalFlightMinutes)}</div>
         </div>
+
         <div className="card">
           <div className="muted">Spesa voli</div>
           <div className="big-number">{eur(totalFlightCost)}</div>
         </div>
+
         <div className="card">
           <div className="muted">Tariffe correnti</div>
           <div style={{ fontWeight: 700, marginTop: 8 }}>
@@ -68,7 +114,7 @@ export default async function DashboardPage() {
             Nuovo volo
           </Link>
           <Link className="btn secondary" href="/new-topup">
-            Nuova ricarica
+            Nuovo movimento saldo
           </Link>
         </div>
       </div>
@@ -81,44 +127,94 @@ export default async function DashboardPage() {
               <th>Tipo</th>
               <th>Dettagli</th>
               <th>Importo</th>
+              <th>Azioni</th>
             </tr>
           </thead>
           <tbody>
             {movements.length === 0 ? (
               <tr>
-                <td colSpan={4} className="muted">
+                <td colSpan={5} className="muted">
                   Nessun movimento inserito.
                 </td>
               </tr>
             ) : null}
-            {movements.map((item: MovementItem) => (
-              <tr key={item.id}>
-                <td>{formatDateDisplay(item.date)}</td>
-                <td>{item.type === "TOPUP" ? "Ricarica" : "Volo"}</td>
-                <td>
-                  {item.type === "TOPUP" ? (
-                    <div>
-                      <div>Credito aggiunto</div>
-                      {item.notes ? <div className="muted">{item.notes}</div> : null}
-                    </div>
-                  ) : (
-                    <div>
+
+            {movements.map((item: MovementItem) => {
+              const amount = Number(item.amount);
+              const isPositiveTopup = item.type === "TOPUP" && amount >= 0;
+              const isNegativeTopup = item.type === "TOPUP" && amount < 0;
+
+              return (
+                <tr key={item.id}>
+                  <td>{formatDateDisplay(item.date)}</td>
+
+                  <td>
+                    {item.type === "FLIGHT"
+                      ? "Volo"
+                      : isNegativeTopup
+                      ? "Rettifica saldo"
+                      : "Ricarica"}
+                  </td>
+
+                  <td>
+                    {item.type === "TOPUP" ? (
                       <div>
-                        {item.flight?.aircraft ?? "P92"} ·{" "}
-                        {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
+                        <div>
+                          {isNegativeTopup
+                            ? "Correzione saldo / addebito manuale"
+                            : "Credito aggiunto"}
+                        </div>
+                        {item.notes ? <div className="muted">{item.notes}</div> : null}
                       </div>
-                      <div className="muted">
-                        {item.flight?.instructorName
-                          ? `Istruttore: ${item.flight.instructorName}`
-                          : "Senza istruttore"}
+                    ) : (
+                      <div>
+                        <div>
+                          {item.flight?.aircraft ?? "P92"} ·{" "}
+                          {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
+                        </div>
+
+                        <div className="muted">
+                          Noleggio:{" "}
+                          {eur(Number(item.flight?.rentalRateApplied ?? 0))}/h
+                          {item.flight?.instructorName
+                            ? ` · Istruttore: ${item.flight.instructorName} (${eur(
+                                Number(item.flight?.instructorRateApplied ?? 0)
+                              )}/h)`
+                            : " · Senza istruttore"}
+                        </div>
+
+                        <div className="muted">
+                          Totale volo: {eur(Number(item.flight?.totalCost ?? 0))}
+                        </div>
+
+                        {item.notes ? <div className="muted">{item.notes}</div> : null}
                       </div>
-                      {item.notes ? <div className="muted">{item.notes}</div> : null}
+                    )}
+                  </td>
+
+                  <td style={{ fontWeight: 700 }}>{eur(amount)}</td>
+
+                  <td>
+                    <div className="row" style={{ gap: 8 }}>
+                      <Link className="btn secondary" href={`/movements/${item.id}/edit`}>
+                        Modifica
+                      </Link>
+
+                      <form action={deleteMovement}>
+                        <input type="hidden" name="movementId" value={item.id} />
+                        <button
+                          type="submit"
+                          className="btn"
+                          style={{ background: "#b91c1c" }}
+                        >
+                          Elimina
+                        </button>
+                      </form>
                     </div>
-                  )}
-                </td>
-                <td style={{ fontWeight: 700 }}>{eur(Number(item.amount))}</td>
-              </tr>
-            ))}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

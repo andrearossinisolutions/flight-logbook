@@ -9,9 +9,9 @@ export default function NewFlightPage() {
   const [rentalRate, setRentalRate] = useState(150);
   const [instructorRate, setInstructorRate] = useState(80);
   const [instructorName, setInstructorName] = useState("");
-  const [hobbsStartHours, setHobbsStartHours] = useState("");
+  const [hobbsStartHours, setHobbsStartHours] = useState("0");
   const [hobbsStartMinutes, setHobbsStartMinutes] = useState("0");
-  const [hobbsEndHours, setHobbsEndHours] = useState("");
+  const [hobbsEndHours, setHobbsEndHours] = useState("0");
   const [hobbsEndMinutes, setHobbsEndMinutes] = useState("0");
   const [manualHours, setManualHours] = useState("0");
   const [manualMinutes, setManualMinutes] = useState("0");
