@@ -22,6 +22,14 @@ function toFloat(value: FormDataEntryValue | null, fallback = 0) {
   return parsed;
 }
 
+function splitMinutes(totalMinutes: number | null | undefined) {
+  const safe = Math.max(0, totalMinutes ?? 0);
+  return {
+    hours: Math.floor(safe / 60),
+    minutes: safe % 60,
+  };
+}
+
 export default async function EditMovementPage({
   params,
 }: {
@@ -43,6 +51,13 @@ export default async function EditMovementPage({
   if (!movement) {
     notFound();
   }
+
+  const isTopup = movement.type === "TOPUP";
+  const flight = movement.flight;
+
+  const manualPrefill = splitMinutes(flight?.durationMinutes);
+  const hobbsStartPrefill = splitMinutes(flight?.hobbsStartMinutes);
+  const hobbsEndPrefill = splitMinutes(flight?.hobbsEndMinutes);
 
   async function updateMovement(formData: FormData) {
     "use server";
@@ -97,11 +112,12 @@ export default async function EditMovementPage({
     }
 
     const aircraft = String(formData.get("aircraft") ?? "P92").trim() || "P92";
-    
-    const inputModeRaw = String(formData.get("inputMode") ?? "MANUAL");
 
+    const inputModeRaw = String(formData.get("inputMode") ?? FlightInputMode.MANUAL);
     const inputMode: FlightInputMode =
-    inputModeRaw === "HOBBS" ? FlightInputMode.HOBBS : FlightInputMode.MANUAL;
+      inputModeRaw === FlightInputMode.HOBBS
+        ? FlightInputMode.HOBBS
+        : FlightInputMode.MANUAL;
 
     const instructorNameRaw = String(formData.get("instructorName") ?? "").trim();
 
@@ -112,33 +128,35 @@ export default async function EditMovementPage({
       throw new Error("Le tariffe non possono essere negative.");
     }
 
-    let durationMinutes = 0;
-
-    const hobbsStartHours = toInt(formData.get("hobbsStartHours"));
-    const hobbsStartMinutes = toInt(formData.get("hobbsStartMinutes"));
-    const hobbsEndHours = toInt(formData.get("hobbsEndHours"));
-    const hobbsEndMinutes = toInt(formData.get("hobbsEndMinutes"));
-
     const manualHours = toInt(formData.get("manualHours"));
     const manualMinutes = toInt(formData.get("manualMinutes"));
 
-    if (inputMode === FlightInputMode.HOBBS) {
-      const startTotal = hobbsStartHours * 60 + hobbsStartMinutes;
-      const endTotal = hobbsEndHours * 60 + hobbsEndMinutes;
+    const hobbsStartHours = toInt(formData.get("hobbsStartHours"));
+    const hobbsStartMinutesOnly = toInt(formData.get("hobbsStartMinutes"));
+    const hobbsEndHours = toInt(formData.get("hobbsEndHours"));
+    const hobbsEndMinutesOnly = toInt(formData.get("hobbsEndMinutes"));
 
-      if (hobbsStartMinutes < 0 || hobbsStartMinutes > 59) {
+    let durationMinutes = 0;
+    let hobbsStartMinutes: number | null = null;
+    let hobbsEndMinutes: number | null = null;
+
+    if (inputMode === FlightInputMode.HOBBS) {
+      if (hobbsStartMinutesOnly < 0 || hobbsStartMinutesOnly > 59) {
         throw new Error("I minuti dell'orametro di partenza devono essere tra 0 e 59.");
       }
 
-      if (hobbsEndMinutes < 0 || hobbsEndMinutes > 59) {
+      if (hobbsEndMinutesOnly < 0 || hobbsEndMinutesOnly > 59) {
         throw new Error("I minuti dell'orametro di arrivo devono essere tra 0 e 59.");
       }
 
-      if (endTotal < startTotal) {
+      hobbsStartMinutes = hobbsStartHours * 60 + hobbsStartMinutesOnly;
+      hobbsEndMinutes = hobbsEndHours * 60 + hobbsEndMinutesOnly;
+
+      if (hobbsEndMinutes < hobbsStartMinutes) {
         throw new Error("L'orametro di arrivo deve essere maggiore o uguale a quello di partenza.");
       }
 
-      durationMinutes = endTotal - startTotal;
+      durationMinutes = hobbsEndMinutes - hobbsStartMinutes;
     } else {
       if (manualMinutes < 0 || manualMinutes > 59) {
         throw new Error("I minuti manuali devono essere tra 0 e 59.");
@@ -168,12 +186,11 @@ export default async function EditMovementPage({
           aircraft,
           inputMode,
           durationMinutes,
-
+          hobbsStartMinutes,
+          hobbsEndMinutes,
           instructorName: hasInstructor ? instructorNameRaw : null,
-
           rentalRateApplied,
           instructorRateApplied,
-
           rentalCost,
           instructorCost,
           totalCost,
@@ -230,40 +247,37 @@ export default async function EditMovementPage({
     redirect("/dashboard");
   }
 
-  const isTopup = movement.type === "TOPUP";
-  const flight = movement.flight;
-
   return (
     <AppShell
       title={isTopup ? "Modifica movimento saldo" : "Modifica volo"}
       subtitle={
         isTopup
           ? "Puoi usare importi positivi o negativi."
-          : "Qui puoi correggere anche le tariffe applicate al volo."
+          : "Puoi correggere durata, istruttore e tariffe applicate."
       }
     >
-      <div className="card" style={{ maxWidth: 820 }}>
+      <div className="card" style={{ maxWidth: 920 }}>
         <form action={updateMovement} className="stack">
           <input type="hidden" name="movementId" value={movement.id} />
           <input type="hidden" name="movementType" value={movement.type} />
 
-          <div>
-            <label className="label" htmlFor="date">
-              Data
-            </label>
-            <input
-              id="date"
-              name="date"
-              type="date"
-              className="input"
-              defaultValue={formatDateInput(movement.date)}
-              required
-            />
-          </div>
+          <div className="grid grid-2">
+            <div className="field">
+              <label className="label" htmlFor="date">
+                Data
+              </label>
+              <input
+                id="date"
+                name="date"
+                type="date"
+                className="input"
+                defaultValue={formatDateInput(movement.date)}
+                required
+              />
+            </div>
 
-          {isTopup ? (
-            <>
-              <div>
+            {isTopup ? (
+              <div className="field">
                 <label className="label" htmlFor="amount">
                   Importo
                 </label>
@@ -280,10 +294,8 @@ export default async function EditMovementPage({
                   Positivo = ricarica. Negativo = rettifica/addebito.
                 </div>
               </div>
-            </>
-          ) : (
-            <>
-              <div>
+            ) : (
+              <div className="field">
                 <label className="label" htmlFor="aircraft">
                   Aeromobile
                 </label>
@@ -296,27 +308,60 @@ export default async function EditMovementPage({
                   required
                 />
               </div>
+            )}
+          </div>
 
-              <div>
-                <label className="label" htmlFor="inputMode">
-                  Modalità inserimento durata
-                </label>
-                <select
-                  id="inputMode"
-                  name="inputMode"
-                  className="input"
-                  defaultValue={flight?.inputMode ?? FlightInputMode.MANUAL}
-                >
-                  <option value={FlightInputMode.MANUAL}>Durata manuale</option>
-                  <option value={FlightInputMode.HOBBS}>Da orametro</option>
-                </select>
+          {!isTopup && (
+            <>
+              <div className="grid grid-2">
+                <div className="field">
+                  <label className="label" htmlFor="inputMode">
+                    Modalità inserimento durata
+                  </label>
+                  <select
+                    id="inputMode"
+                    name="inputMode"
+                    className="input"
+                    defaultValue={flight?.inputMode ?? FlightInputMode.MANUAL}
+                  >
+                    <option value={FlightInputMode.MANUAL}>Durata manuale</option>
+                    <option value={FlightInputMode.HOBBS}>Da orametro</option>
+                  </select>
+                </div>
+
+                <div className="field">
+                  <label className="label" htmlFor="instructorName">
+                    Istruttore
+                  </label>
+                  <input
+                    id="instructorName"
+                    name="instructorName"
+                    type="text"
+                    className="input"
+                    placeholder="Lascia vuoto se non presente"
+                    defaultValue={flight?.instructorName ?? ""}
+                  />
+                </div>
               </div>
 
-              <div className="summary-grid">
-                <div className="card">
-                  <div style={{ fontWeight: 700, marginBottom: 8 }}>Durata manuale</div>
+              <div className="card">
+                <div style={{ fontWeight: 700, marginBottom: 8 }}>Valori attualmente salvati</div>
+                <div className="grid grid-2">
+                  <div className="field">
+                    <div className="muted">Durata registrata</div>
+                    <div>{flight?.durationMinutes ?? 0} minuti</div>
+                  </div>
+                  <div className="field">
+                    <div className="muted">Costo totale registrato</div>
+                    <div>{Number(flight?.totalCost ?? 0).toFixed(2)} €</div>
+                  </div>
+                </div>
+              </div>
 
-                  <div style={{ marginBottom: 12 }}>
+              <div className="card">
+                <div style={{ fontWeight: 700, marginBottom: 12 }}>Durata manuale</div>
+                <div className="grid grid-2">
+                  <div className="field">
                     <label className="label" htmlFor="manualHours">
                       Ore
                     </label>
@@ -326,11 +371,11 @@ export default async function EditMovementPage({
                       type="number"
                       min="0"
                       className="input"
-                      defaultValue={0}
+                      defaultValue={manualPrefill.hours}
                     />
                   </div>
 
-                  <div>
+                  <div className="field">
                     <label className="label" htmlFor="manualMinutes">
                       Minuti
                     </label>
@@ -341,15 +386,16 @@ export default async function EditMovementPage({
                       min="0"
                       max="59"
                       className="input"
-                      defaultValue={0}
+                      defaultValue={manualPrefill.minutes}
                     />
                   </div>
                 </div>
+              </div>
 
-                <div className="card">
-                  <div style={{ fontWeight: 700, marginBottom: 8 }}>Orametro</div>
-
-                  <div style={{ marginBottom: 12 }}>
+              <div className="card">
+                <div style={{ fontWeight: 700, marginBottom: 12 }}>Orametro</div>
+                <div className="grid grid-2">
+                  <div className="field">
                     <label className="label" htmlFor="hobbsStartHours">
                       Partenza ore
                     </label>
@@ -359,11 +405,11 @@ export default async function EditMovementPage({
                       type="number"
                       min="0"
                       className="input"
-                      defaultValue={0}
+                      defaultValue={hobbsStartPrefill.hours}
                     />
                   </div>
 
-                  <div style={{ marginBottom: 12 }}>
+                  <div className="field">
                     <label className="label" htmlFor="hobbsStartMinutes">
                       Partenza minuti
                     </label>
@@ -374,11 +420,11 @@ export default async function EditMovementPage({
                       min="0"
                       max="59"
                       className="input"
-                      defaultValue={0}
+                      defaultValue={hobbsStartPrefill.minutes}
                     />
                   </div>
 
-                  <div style={{ marginBottom: 12 }}>
+                  <div className="field">
                     <label className="label" htmlFor="hobbsEndHours">
                       Arrivo ore
                     </label>
@@ -388,11 +434,11 @@ export default async function EditMovementPage({
                       type="number"
                       min="0"
                       className="input"
-                      defaultValue={0}
+                      defaultValue={hobbsEndPrefill.hours}
                     />
                   </div>
 
-                  <div>
+                  <div className="field">
                     <label className="label" htmlFor="hobbsEndMinutes">
                       Arrivo minuti
                     </label>
@@ -403,67 +449,56 @@ export default async function EditMovementPage({
                       min="0"
                       max="59"
                       className="input"
-                      defaultValue={0}
+                      defaultValue={hobbsEndPrefill.minutes}
                     />
                   </div>
                 </div>
               </div>
 
-              <div>
-                <label className="label" htmlFor="instructorName">
-                  Istruttore
-                </label>
-                <input
-                  id="instructorName"
-                  name="instructorName"
-                  type="text"
-                  className="input"
-                  placeholder="Lascia vuoto se non presente"
-                  defaultValue={flight?.instructorName ?? ""}
-                />
-              </div>
+              <div className="card">
+                <div style={{ fontWeight: 700, marginBottom: 12 }}>Tariffe applicate</div>
+                <div className="grid grid-2">
+                  <div className="field">
+                    <label className="label" htmlFor="rentalRateApplied">
+                      Tariffa noleggio applicata (€/h)
+                    </label>
+                    <input
+                      id="rentalRateApplied"
+                      name="rentalRateApplied"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="input"
+                      defaultValue={Number(flight?.rentalRateApplied ?? 150)}
+                      required
+                    />
+                  </div>
 
-              <div className="summary-grid">
-                <div>
-                  <label className="label" htmlFor="rentalRateApplied">
-                    Tariffa noleggio applicata (€/h)
-                  </label>
-                  <input
-                    id="rentalRateApplied"
-                    name="rentalRateApplied"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className="input"
-                    defaultValue={Number(flight?.rentalRateApplied ?? 150)}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="label" htmlFor="instructorRateApplied">
-                    Tariffa istruttore applicata (€/h)
-                  </label>
-                  <input
-                    id="instructorRateApplied"
-                    name="instructorRateApplied"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    className="input"
-                    defaultValue={Number(flight?.instructorRateApplied ?? 80)}
-                    required
-                  />
+                  <div className="field">
+                    <label className="label" htmlFor="instructorRateApplied">
+                      Tariffa istruttore applicata (€/h)
+                    </label>
+                    <input
+                      id="instructorRateApplied"
+                      name="instructorRateApplied"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      className="input"
+                      defaultValue={Number(flight?.instructorRateApplied ?? 80)}
+                      required
+                    />
+                  </div>
                 </div>
               </div>
 
               <div className="muted">
-                Il costo totale viene ricalcolato usando la durata e le tariffe applicate qui sopra.
+                Il costo totale viene ricalcolato in base alla durata inserita e alle tariffe applicate.
               </div>
             </>
           )}
 
-          <div>
+          <div className="field">
             <label className="label" htmlFor="notes">
               Note
             </label>
