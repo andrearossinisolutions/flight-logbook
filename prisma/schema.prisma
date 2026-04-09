@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum MovementType {
+  TOPUP
+  FLIGHT
+}
+
+enum FlightInputMode {
+  HOBBS
+  MANUAL
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  fullName     String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  settings     Settings?
+  movements    Movement[]
+}
+
+model Settings {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  rentalRatePerHour     Decimal  @default(150)
+  instructorRatePerHour Decimal  @default(80)
+  currency              String   @default("EUR")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Movement {
+  id        String       @id @default(cuid())
+  userId    String
+  type      MovementType
+  date      DateTime
+  amount    Decimal
+  notes     String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flight    Flight?
+
+  @@index([userId, date])
+}
+
+model Flight {
+  id                    String          @id @default(cuid())
+  movementId            String          @unique
+  aircraft              String          @default("P92")
+  inputMode             FlightInputMode
+  hobbsStartMinutes     Int?
+  hobbsEndMinutes       Int?
+  durationMinutes       Int
+  instructorName        String?
+  rentalRateApplied     Decimal
+  instructorRateApplied Decimal
+  rentalCost            Decimal
+  instructorCost        Decimal
+  totalCost             Decimal
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  movement              Movement        @relation(fields: [movementId], references: [id], onDelete: Cascade)
+}
