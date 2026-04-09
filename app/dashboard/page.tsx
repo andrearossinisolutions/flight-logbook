@@ -28,6 +28,16 @@ export default async function DashboardPage() {
     0
   );
 
+  const totalPICMinutes = movements.reduce(
+    (acc: number, item: MovementItem) => acc + (!item.flight?.instructorName ? (item.flight?.durationMinutes ?? 0) : 0),
+    0
+  );
+
+  const totalInstructorMinutes = movements.reduce(
+    (acc: number, item: MovementItem) => acc + (item.flight?.instructorName ? (item.flight?.durationMinutes ?? 0) : 0),
+    0
+  );
+
   const totalFlightCost = movements
     .filter((item: MovementItem) => item.type === "FLIGHT")
     .reduce(
@@ -89,6 +99,13 @@ export default async function DashboardPage() {
         <div className="card">
           <div className="muted">Ore volate registrate</div>
           <div className="big-number">{minutesToHoursMinutes(totalFlightMinutes)}</div>
+          <div className="muted">Di cui</div>
+          <div style={{ fontWeight: 700, marginTop: 8 }}>
+            PIC: {minutesToHoursMinutes(totalPICMinutes)}
+          </div>
+          <div style={{ fontWeight: 700, marginTop: 4 }}>
+            Istruttore: {minutesToHoursMinutes(totalInstructorMinutes)}
+          </div>
         </div>
 
         <div className="card">
