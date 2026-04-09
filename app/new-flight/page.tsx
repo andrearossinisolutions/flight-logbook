@@ -6,8 +6,8 @@ import { useMemo, useState } from "react";
 
 export default function NewFlightPage() {
   const [inputMode, setInputMode] = useState<"HOBBS" | "MANUAL">("HOBBS");
-  const [rentalRate, setRentalRate] = useState(150);
-  const [instructorRate, setInstructorRate] = useState(80);
+  const [rentalRate, setRentalRate] = useState("150");
+  const [instructorRate, setInstructorRate] = useState("80");
   const [instructorName, setInstructorName] = useState("");
   const [hobbsStartHours, setHobbsStartHours] = useState("0");
   const [hobbsStartMinutes, setHobbsStartMinutes] = useState("0");
@@ -26,22 +26,46 @@ export default function NewFlightPage() {
     }
 
     return Number(manualHours || 0) * 60 + Number(manualMinutes || 0);
-  }, [hobbsEndHours, hobbsEndMinutes, hobbsStartHours, hobbsStartMinutes, inputMode, manualHours, manualMinutes]);
+  }, [
+    hobbsEndHours,
+    hobbsEndMinutes,
+    hobbsStartHours,
+    hobbsStartMinutes,
+    inputMode,
+    manualHours,
+    manualMinutes,
+  ]);
+
+  const rentalRateNumber = Number(rentalRate || 0);
+  const instructorRateNumber = Number(instructorRate || 0);
 
   const totalCost = useMemo(() => {
-    const base = (durationMinutes / 60) * rentalRate;
-    const instructor = instructorName.trim() ? (durationMinutes / 60) * instructorRate : 0;
+    const base = (durationMinutes / 60) * (Number.isFinite(rentalRateNumber) ? rentalRateNumber : 0);
+    const instructor = instructorName.trim()
+      ? (durationMinutes / 60) * (Number.isFinite(instructorRateNumber) ? instructorRateNumber : 0)
+      : 0;
+
     return base + instructor;
-  }, [durationMinutes, instructorName, instructorRate, rentalRate]);
+  }, [durationMinutes, instructorName, instructorRateNumber, rentalRateNumber]);
 
   return (
-    <AppShell title="Nuovo volo" subtitle="Durata da orametro o inserimento manuale; costo calcolato automaticamente.">
+    <AppShell
+      title="Nuovo volo"
+      subtitle="Durata da orametro o inserimento manuale; costo calcolato automaticamente."
+    >
       <div className="grid grid-2">
         <div className="card">
           <form action="/api/movements/flight" method="post" className="grid">
             <div className="field">
               <label htmlFor="date">Data</label>
-              <input className="input" id="date" name="date" type="date" defaultValue={formatDateInput(new Date())} required />
+              <input
+                className="input"
+                id="date"
+                name="date"
+                type="date"
+                defaultValue={formatDateInput(new Date())}
+                required
+              />
             </div>
 
             <div className="field">
@@ -68,21 +92,56 @@ export default function NewFlightPage() {
                 <div className="grid grid-2">
                   <div className="field">
                     <label>Orametro partenza — ore</label>
-                    <input className="input" name="hobbsStartHours" type="number" min="0" value={hobbsStartHours} onChange={(e) => setHobbsStartHours(e.target.value)} required />
+                    <input
+                      className="input"
+                      name="hobbsStartHours"
+                      type="number"
+                      min="0"
+                      value={hobbsStartHours}
+                      onChange={(e) => setHobbsStartHours(e.target.value)}
+                      required
+                    />
                   </div>
                   <div className="field">
                     <label>Orametro partenza — minuti</label>
-                    <input className="input" name="hobbsStartMinutes" type="number" min="0" max="59" value={hobbsStartMinutes} onChange={(e) => setHobbsStartMinutes(e.target.value)} required />
+                    <input
+                      className="input"
+                      name="hobbsStartMinutes"
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={hobbsStartMinutes}
+                      onChange={(e) => setHobbsStartMinutes(e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
+
                 <div className="grid grid-2">
                   <div className="field">
                     <label>Orametro arrivo — ore</label>
-                    <input className="input" name="hobbsEndHours" type="number" min="0" value={hobbsEndHours} onChange={(e) => setHobbsEndHours(e.target.value)} required />
+                    <input
+                      className="input"
+                      name="hobbsEndHours"
+                      type="number"
+                      min="0"
+                      value={hobbsEndHours}
+                      onChange={(e) => setHobbsEndHours(e.target.value)}
+                      required
+                    />
                   </div>
                   <div className="field">
                     <label>Orametro arrivo — minuti</label>
-                    <input className="input" name="hobbsEndMinutes" type="number" min="0" max="59" value={hobbsEndMinutes} onChange={(e) => setHobbsEndMinutes(e.target.value)} required />
+                    <input
+                      className="input"
+                      name="hobbsEndMinutes"
+                      type="number"
+                      min="0"
+                      max="59"
+                      value={hobbsEndMinutes}
+                      onChange={(e) => setHobbsEndMinutes(e.target.value)}
+                      required
+                    />
                   </div>
                 </div>
               </>
@@ -90,18 +149,73 @@ export default function NewFlightPage() {
               <div className="grid grid-2">
                 <div className="field">
                   <label>Ore volo</label>
-                  <input className="input" name="manualHours" type="number" min="0" value={manualHours} onChange={(e) => setManualHours(e.target.value)} required />
+                  <input
+                    className="input"
+                    name="manualHours"
+                    type="number"
+                    min="0"
+                    value={manualHours}
+                    onChange={(e) => setManualHours(e.target.value)}
+                    required
+                  />
                 </div>
                 <div className="field">
                   <label>Minuti volo</label>
-                  <input className="input" name="manualMinutes" type="number" min="0" max="59" value={manualMinutes} onChange={(e) => setManualMinutes(e.target.value)} required />
+                  <input
+                    className="input"
+                    name="manualMinutes"
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={manualMinutes}
+                    onChange={(e) => setManualMinutes(e.target.value)}
+                    required
+                  />
                 </div>
               </div>
             )}
 
+            <div className="grid grid-2">
+              <div className="field">
+                <label htmlFor="rentalRateApplied">Tariffa noleggio applicata (€/h)</label>
+                <input
+                  className="input"
+                  id="rentalRateApplied"
+                  name="rentalRateApplied"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={rentalRate}
+                  onChange={(e) => setRentalRate(e.target.value)}
+                  required
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="instructorRateApplied">Tariffa istruttore applicata (€/h)</label>
+                <input
+                  className="input"
+                  id="instructorRateApplied"
+                  name="instructorRateApplied"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={instructorRate}
+                  onChange={(e) => setInstructorRate(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+
             <div className="field">
               <label htmlFor="instructorName">Istruttore (opzionale)</label>
-              <input className="input" id="instructorName" name="instructorName" value={instructorName} onChange={(e) => setInstructorName(e.target.value)} />
+              <input
+                className="input"
+                id="instructorName"
+                name="instructorName"
+                value={instructorName}
+                onChange={(e) => setInstructorName(e.target.value)}
+              />
             </div>
 
             <div className="field">
@@ -109,32 +223,45 @@ export default function NewFlightPage() {
               <textarea className="textarea" id="notes" name="notes" />
             </div>
 
-            <button className="btn" type="submit">Salva volo</button>
+            <button className="btn" type="submit">
+              Salva volo
+            </button>
           </form>
         </div>
 
         <div className="card">
           <h3 style={{ marginTop: 0 }}>Anteprima costo</h3>
+
           <div className="grid">
             <div className="field">
-              <label>Tariffa noleggio usata nell’anteprima</label>
-              <input className="input" type="number" value={rentalRate} min="0" step="0.01" onChange={(e) => setRentalRate(Number(e.target.value))} />
+              <label>Tariffa noleggio applicata</label>
+              <div className="input" style={{ display: "flex", alignItems: "center" }}>
+                € {Number.isFinite(rentalRateNumber) ? rentalRateNumber.toFixed(2) : "0.00"}/h
+              </div>
             </div>
+
             <div className="field">
-              <label>Tariffa istruttore usata nell’anteprima</label>
-              <input className="input" type="number" value={instructorRate} min="0" step="0.01" onChange={(e) => setInstructorRate(Number(e.target.value))} />
+              <label>Tariffa istruttore applicata</label>
+              <div className="input" style={{ display: "flex", alignItems: "center" }}>
+                € {Number.isFinite(instructorRateNumber) ? instructorRateNumber.toFixed(2) : "0.00"}/h
+              </div>
             </div>
           </div>
+
           <div style={{ marginTop: 16 }}>
             <div className="muted">Durata calcolata</div>
-            <div className="big-number">{Math.floor(durationMinutes / 60)}h {durationMinutes % 60}m</div>
+            <div className="big-number">
+              {Math.floor(durationMinutes / 60)}h {durationMinutes % 60}m
+            </div>
           </div>
+
           <div style={{ marginTop: 16 }}>
             <div className="muted">Costo stimato</div>
             <div className="big-number">€ {totalCost.toFixed(2)}</div>
           </div>
+
           <p className="muted" style={{ marginTop: 16 }}>
-            Al salvataggio vengono usate le tariffe salvate nei settings dell’utente, e quelle tariffe vengono storicizzate sul volo.
+            Qui puoi impostare anche tariffe a 0 € per voli inclusi in quota o registrazioni storiche.
           </p>
         </div>
       </div>
