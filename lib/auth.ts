@@ -1,7 +1,9 @@
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 
-const SESSION_COOKIE = "flightlog_session";
+export const SESSION_COOKIE = "flightlog_session";
+export const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 giorni
+const SESSION_EXPIRATION = "7d";
 
 function getSecret() {
   const secret = process.env.AUTH_SECRET;
@@ -20,8 +22,23 @@ export async function createSession(payload: SessionPayload) {
   return new SignJWT(payload)
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
-    .setExpirationTime("7d")
+    .setExpirationTime(SESSION_EXPIRATION)
     .sign(getSecret());
+}
+
+export async function verifySessionToken(token: string): Promise<SessionPayload | null> {
+  try {
+    const verified = await jwtVerify(token, getSecret());
+    const payload = verified.payload as SessionPayload;
+
+    if (!payload.userId || !payload.email) {
+      return null;
+    }
+
+    return payload;
+  } catch {
+    return null;
+  }
 }
 
 export async function setSessionCookie(token: string) {
@@ -31,7 +48,7 @@ export async function setSessionCookie(token: string) {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7,
+    maxAge: SESSION_MAX_AGE,
   });
 }
 
@@ -51,12 +68,5 @@ export async function getSessionFromCookie(): Promise<SessionPayload | null> {
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
 
-  try {
-    const verified = await jwtVerify(token, getSecret());
-    const payload = verified.payload as SessionPayload;
-    if (!payload.userId || !payload.email) return null;
-    return payload;
-  } catch {
-    return null;
-  }
+  return verifySessionToken(token);
 }
