@@ -66,8 +66,8 @@ export default function NewFlightForm({
 
   return (
     <div className="grid grid-2">
-      <div className="card">
-        <form action="/api/movements/flight" method="post" className="grid">
+      <form action="/api/movements/flight" method="post" className="grid">
+        <div className="card">
           <div className="field">
             <label htmlFor="date">Data</label>
             <input
@@ -81,7 +81,7 @@ export default function NewFlightForm({
           </div>
 
           <div className="grid grid-2">
-            <div className="field">
+            <div className="field" style={{ marginTop: "16px" }}>
               <label htmlFor="aircraftRegistration">Marche</label>
               <input
                 className="input"
@@ -102,7 +102,22 @@ export default function NewFlightForm({
                 required
               />
             </div>
+
+            <div className="field">
+              <label htmlFor="instructorName">Istruttore (opzionale)</label>
+              <input
+                className="input"
+                id="instructorName"
+                name="instructorName"
+                value={instructorName}
+                onChange={(e) => setInstructorName(e.target.value)}
+              />
+            </div>
           </div>
+        </div>
+
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>Tempi</h3>
 
           <div className="field">
             <label htmlFor="inputMode">Modalità durata</label>
@@ -123,7 +138,7 @@ export default function NewFlightForm({
           {inputMode === "HOBBS" ? (
             <>
               <div className="grid grid-2">
-                <div className="field">
+                <div className="field" style={{ marginTop: "16px" }}>
                   <label>Orametro partenza — ore</label>
                   <input
                     className="input"
@@ -151,7 +166,7 @@ export default function NewFlightForm({
               </div>
 
               <div className="grid grid-2">
-                <div className="field">
+                <div className="field" style={{ marginTop: "16px" }}>
                   <label>Orametro arrivo — ore</label>
                   <input
                     className="input"
@@ -207,6 +222,10 @@ export default function NewFlightForm({
               </div>
             </div>
           )}
+        </div>
+
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>Costi</h3>
 
           <div className="grid grid-2">
             <div className="field">
@@ -243,28 +262,21 @@ export default function NewFlightForm({
               />
             </div>
           </div>
+        </div>
 
-          <div className="field">
-            <label htmlFor="instructorName">Istruttore (opzionale)</label>
-            <input
-              className="input"
-              id="instructorName"
-              name="instructorName"
-              value={instructorName}
-              onChange={(e) => setInstructorName(e.target.value)}
-            />
-          </div>
+        <div className="card">
+          <h3 style={{ marginTop: 0 }}>Dettagli</h3>
 
           <div className="field">
             <label htmlFor="notes">Note</label>
             <textarea className="textarea" id="notes" name="notes" />
           </div>
 
-          <button className="btn" type="submit">
+          <button className="btn" type="submit" style={{ marginTop: "16px" }}>
             Salva volo
           </button>
-        </form>
-      </div>
+        </div>
+      </form>
 
       <div className="card">
         <h3 style={{ marginTop: 0 }}>Anteprima costo</h3>
