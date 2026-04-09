@@ -101,12 +101,19 @@ export default async function DashboardPage() {
         <div className="card">
           <div className="muted">Saldo attuale</div>
           <div className="big-number">{eur(saldo)}</div>
+          <div className="muted" style={{ marginTop: 16 }}>Ore di volo disponibili</div>
+          <div style={{ fontWeight: 700, marginTop: 8 }}>
+            PIC: {saldo > 0 ? minutesToHoursMinutes(saldo / (settings?.rentalRatePerHour ? Number(settings.rentalRatePerHour) : 150) * 60) : "0h 0m"}
+          </div>
+          <div style={{ fontWeight: 700, marginTop: 4 }}>
+            Istruttore: {saldo > 0 ? minutesToHoursMinutes(saldo / ((settings?.rentalRatePerHour ? Number(settings.rentalRatePerHour) : 150) + (settings?.instructorRatePerHour ? Number(settings.instructorRatePerHour) : 80)) * 60) : "0h 0m"}
+          </div>
         </div>
 
         <div className="card">
           <div className="muted">Ore volate registrate</div>
           <div className="big-number">{minutesToHoursMinutes(totalFlightMinutes)}</div>
-          <div className="muted">Di cui</div>
+          <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
           <div style={{ fontWeight: 700, marginTop: 8 }}>
             PIC: {minutesToHoursMinutes(totalPICMinutes)}
           </div>
@@ -118,14 +125,14 @@ export default async function DashboardPage() {
         <div className="card">
           <div className="muted">Spesa voli</div>
           <div className="big-number">{eur(totalFlightCost)}</div>
-          <div className="muted">Ricariche</div>
+          <div className="muted" style={{ marginTop: 16 }}>Ricariche</div>
           <div className="big-number">{eur(totalTopups)}</div>
         </div>
 
         <div className="card">
           <div className="muted">Tariffe correnti</div>
           <div style={{ fontWeight: 700, marginTop: 8 }}>
-            P92: {eur(Number(settings?.rentalRatePerHour ?? 150))}/h
+            Noleggio: {eur(Number(settings?.rentalRatePerHour ?? 150))}/h
           </div>
           <div style={{ fontWeight: 700, marginTop: 4 }}>
             Istruttore: {eur(Number(settings?.instructorRatePerHour ?? 80))}/h
