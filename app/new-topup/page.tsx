@@ -1,12 +1,25 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import Link from "next/link";
 import { AppShell } from "@/components/app-shell";
 import { requireUser } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
+import NewTopupForm from "./new-topup-form";
 
 export default async function NewTopupPage() {
-  await requireUser();
+  const user = await requireUser();
+
+  const movements = await prisma.movement.findMany({
+    where: { userId: user.id },
+    select: { amount: true },
+  });
+
+  const currentBalance = movements.reduce(
+    (acc, item) => acc + Number(item.amount),
+    0
+  );
+
+  const rentalRatePerHour = Number(user.settings?.rentalRatePerHour ?? 150);
+  const instructorRatePerHour = Number(user.settings?.instructorRatePerHour ?? 80);
 
   async function createTopup(formData: FormData) {
     "use server";
@@ -46,63 +59,12 @@ export default async function NewTopupPage() {
       title="Nuovo movimento saldo"
       subtitle="Usa un importo positivo per una ricarica, negativo per una rettifica/addebito."
     >
-      <div className="card" style={{ maxWidth: 720 }}>
-        <form action={createTopup} className="stack">
-          <div>
-            <label className="label" htmlFor="date">
-              Data
-            </label>
-            <input
-              id="date"
-              name="date"
-              type="date"
-              className="input"
-              defaultValue={new Date().toISOString().slice(0, 10)}
-              required
-            />
-          </div>
-
-          <div>
-            <label className="label" htmlFor="amount">
-              Importo
-            </label>
-            <input
-              id="amount"
-              name="amount"
-              type="number"
-              step="0.01"
-              className="input"
-              placeholder="Es. 200 oppure -35"
-              required
-            />
-            <div className="muted" style={{ marginTop: 6 }}>
-              Positivo = ricarica / credito. Negativo = rettifica o addebito manuale.
-            </div>
-          </div>
-
-          <div>
-            <label className="label" htmlFor="notes">
-              Note
-            </label>
-            <textarea
-              id="notes"
-              name="notes"
-              className="input"
-              rows={4}
-              placeholder="Esempio: Allineamento saldo con aeroclub"
-            />
-          </div>
-
-          <div className="row" style={{ gap: 12 }}>
-            <button type="submit" className="btn">
-              Salva
-            </button>
-            <Link href="/dashboard" className="btn secondary">
-              Annulla
-            </Link>
-          </div>
-        </form>
-      </div>
+      <NewTopupForm
+        action={createTopup}
+        currentBalance={currentBalance}
+        rentalRatePerHour={rentalRatePerHour}
+        instructorRatePerHour={instructorRatePerHour}
+      />
     </AppShell>
   );
 }

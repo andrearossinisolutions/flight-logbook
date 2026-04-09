@@ -118,7 +118,7 @@ export default async function DashboardPage() {
                       : 150)) *
                     60
                 )
-              : "0h 0m"}
+              : "0:00"}
           </div>
           <div style={{ fontWeight: 700, marginTop: 4 }}>
             Istruttore:{" "}
@@ -133,7 +133,7 @@ export default async function DashboardPage() {
                         : 80))) *
                     60
                 )
-              : "0h 0m"}
+              : "0:00"}
           </div>
         </div>
 
