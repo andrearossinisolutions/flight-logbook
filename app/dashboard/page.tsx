@@ -27,7 +27,10 @@ export default async function DashboardPage() {
 
   const totalFlightCost = movements
     .filter((item: MovementItem) => item.type === "FLIGHT")
-    .reduce((acc: number, item: MovementItem) => acc + Math.abs(Number(item.amount)), 0);
+    .reduce(
+      (acc: number, item: MovementItem) => acc + Math.abs(Number(item.amount)),
+      0
+    );
 
   return (
     <AppShell
@@ -61,8 +64,12 @@ export default async function DashboardPage() {
       <div className="between" style={{ marginBottom: 16 }}>
         <h2 style={{ margin: 0 }}>Registro movimenti</h2>
         <div className="row">
-          <Link className="btn" href="/new-flight">Nuovo volo</Link>
-          <Link className="btn secondary" href="/new-topup">Nuova ricarica</Link>
+          <Link className="btn" href="/new-flight">
+            Nuovo volo
+          </Link>
+          <Link className="btn secondary" href="/new-topup">
+            Nuova ricarica
+          </Link>
         </div>
       </div>
 
@@ -79,10 +86,12 @@ export default async function DashboardPage() {
           <tbody>
             {movements.length === 0 ? (
               <tr>
-                <td colSpan={4} className="muted">Nessun movimento inserito.</td>
+                <td colSpan={4} className="muted">
+                  Nessun movimento inserito.
+                </td>
               </tr>
             ) : null}
-            {movements.map((item) => (
+            {movements.map((item: MovementItem) => (
               <tr key={item.id}>
                 <td>{formatDateDisplay(item.date)}</td>
                 <td>{item.type === "TOPUP" ? "Ricarica" : "Volo"}</td>
@@ -95,7 +104,8 @@ export default async function DashboardPage() {
                   ) : (
                     <div>
                       <div>
-                        {item.flight?.aircraft ?? "P92"} · {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
+                        {item.flight?.aircraft ?? "P92"} ·{" "}
+                        {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
                       </div>
                       <div className="muted">
                         {item.flight?.instructorName
