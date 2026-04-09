@@ -20,7 +20,7 @@ export function formatDateDisplay(date: Date | string) {
 export function minutesToHoursMinutes(totalMinutes: number) {
   const hours = Math.floor(totalMinutes / 60);
   const minutes = Math.round(totalMinutes % 60);
-  return `${hours}h ${minutes}m`;
+  return `${hours}:${minutes < 10 ? "0" : ""}${minutes}`;
 }
 
 export function toNumber(value: unknown) {
