@@ -1,0 +1,319 @@
+"use client";
+
+import { formatDateInput } from "@/lib/utils";
+import { useMemo, useState } from "react";
+
+type NewFlightFormProps = {
+  currentBalance: number;
+};
+
+export default function NewFlightForm({
+  currentBalance,
+}: NewFlightFormProps) {
+  const [inputMode, setInputMode] = useState<"HOBBS" | "MANUAL">("HOBBS");
+  const [rentalRate, setRentalRate] = useState("150");
+  const [instructorRate, setInstructorRate] = useState("80");
+  const [instructorName, setInstructorName] = useState("");
+  const [hobbsStartHours, setHobbsStartHours] = useState("0");
+  const [hobbsStartMinutes, setHobbsStartMinutes] = useState("0");
+  const [hobbsEndHours, setHobbsEndHours] = useState("0");
+  const [hobbsEndMinutes, setHobbsEndMinutes] = useState("0");
+  const [manualHours, setManualHours] = useState("0");
+  const [manualMinutes, setManualMinutes] = useState("0");
+
+  const durationMinutes = useMemo(() => {
+    if (inputMode === "HOBBS") {
+      const sh = Number(hobbsStartHours || 0);
+      const sm = Number(hobbsStartMinutes || 0);
+      const eh = Number(hobbsEndHours || 0);
+      const em = Number(hobbsEndMinutes || 0);
+      return Math.max(0, eh * 60 + em - (sh * 60 + sm));
+    }
+
+    return Number(manualHours || 0) * 60 + Number(manualMinutes || 0);
+  }, [
+    hobbsEndHours,
+    hobbsEndMinutes,
+    hobbsStartHours,
+    hobbsStartMinutes,
+    inputMode,
+    manualHours,
+    manualMinutes,
+  ]);
+
+  const rentalRateNumber = Number(rentalRate || 0);
+  const instructorRateNumber = Number(instructorRate || 0);
+
+  const totalCost = useMemo(() => {
+    const base =
+      (durationMinutes / 60) *
+      (Number.isFinite(rentalRateNumber) ? rentalRateNumber : 0);
+
+    const instructor = instructorName.trim()
+      ? (durationMinutes / 60) *
+        (Number.isFinite(instructorRateNumber) ? instructorRateNumber : 0)
+      : 0;
+
+    return base + instructor;
+  }, [
+    durationMinutes,
+    instructorName,
+    instructorRateNumber,
+    rentalRateNumber,
+  ]);
+
+  const estimatedBalance = currentBalance - totalCost;
+
+  return (
+    <div className="grid grid-2">
+      <div className="card">
+        <form action="/api/movements/flight" method="post" className="grid">
+          <div className="field">
+            <label htmlFor="date">Data</label>
+            <input
+              className="input"
+              id="date"
+              name="date"
+              type="date"
+              defaultValue={formatDateInput(new Date())}
+              required
+            />
+          </div>
+
+          <div className="grid grid-2">
+            <div className="field">
+              <label htmlFor="aircraftRegistration">Marche</label>
+              <input
+                className="input"
+                id="aircraftRegistration"
+                name="aircraftRegistration"
+                defaultValue="I-4150"
+                required
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="aircraftType">Tipo</label>
+              <input
+                className="input"
+                id="aircraftType"
+                name="aircraftType"
+                defaultValue="P92"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="field">
+            <label htmlFor="inputMode">Modalità durata</label>
+            <select
+              className="select"
+              id="inputMode"
+              name="inputMode"
+              value={inputMode}
+              onChange={(e) =>
+                setInputMode(e.target.value as "HOBBS" | "MANUAL")
+              }
+            >
+              <option value="HOBBS">Da orametro</option>
+              <option value="MANUAL">Manuale</option>
+            </select>
+          </div>
+
+          {inputMode === "HOBBS" ? (
+            <>
+              <div className="grid grid-2">
+                <div className="field">
+                  <label>Orametro partenza — ore</label>
+                  <input
+                    className="input"
+                    name="hobbsStartHours"
+                    type="number"
+                    min="0"
+                    value={hobbsStartHours}
+                    onChange={(e) => setHobbsStartHours(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="field">
+                  <label>Orametro partenza — minuti</label>
+                  <input
+                    className="input"
+                    name="hobbsStartMinutes"
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={hobbsStartMinutes}
+                    onChange={(e) => setHobbsStartMinutes(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-2">
+                <div className="field">
+                  <label>Orametro arrivo — ore</label>
+                  <input
+                    className="input"
+                    name="hobbsEndHours"
+                    type="number"
+                    min="0"
+                    value={hobbsEndHours}
+                    onChange={(e) => setHobbsEndHours(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="field">
+                  <label>Orametro arrivo — minuti</label>
+                  <input
+                    className="input"
+                    name="hobbsEndMinutes"
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={hobbsEndMinutes}
+                    onChange={(e) => setHobbsEndMinutes(e.target.value)}
+                    required
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="grid grid-2">
+              <div className="field">
+                <label>Ore volo</label>
+                <input
+                  className="input"
+                  name="manualHours"
+                  type="number"
+                  min="0"
+                  value={manualHours}
+                  onChange={(e) => setManualHours(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="field">
+                <label>Minuti volo</label>
+                <input
+                  className="input"
+                  name="manualMinutes"
+                  type="number"
+                  min="0"
+                  max="59"
+                  value={manualMinutes}
+                  onChange={(e) => setManualMinutes(e.target.value)}
+                  required
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-2">
+            <div className="field">
+              <label htmlFor="rentalRateApplied">
+                Tariffa noleggio applicata (€/h)
+              </label>
+              <input
+                className="input"
+                id="rentalRateApplied"
+                name="rentalRateApplied"
+                type="number"
+                min="0"
+                step="0.01"
+                value={rentalRate}
+                onChange={(e) => setRentalRate(e.target.value)}
+                required
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="instructorRateApplied">
+                Tariffa istruttore applicata (€/h)
+              </label>
+              <input
+                className="input"
+                id="instructorRateApplied"
+                name="instructorRateApplied"
+                type="number"
+                min="0"
+                step="0.01"
+                value={instructorRate}
+                onChange={(e) => setInstructorRate(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="field">
+            <label htmlFor="instructorName">Istruttore (opzionale)</label>
+            <input
+              className="input"
+              id="instructorName"
+              name="instructorName"
+              value={instructorName}
+              onChange={(e) => setInstructorName(e.target.value)}
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="notes">Note</label>
+            <textarea className="textarea" id="notes" name="notes" />
+          </div>
+
+          <button className="btn" type="submit">
+            Salva volo
+          </button>
+        </form>
+      </div>
+
+      <div className="card">
+        <h3 style={{ marginTop: 0 }}>Anteprima costo</h3>
+
+        <div className="grid">
+          <div className="field">
+            <label>Tariffa noleggio applicata</label>
+            <div className="input" style={{ display: "flex", alignItems: "center" }}>
+              €{" "}
+              {Number.isFinite(rentalRateNumber)
+                ? rentalRateNumber.toFixed(2)
+                : "0.00"}
+              /h
+            </div>
+          </div>
+
+          <div className="field">
+            <label>Tariffa istruttore applicata</label>
+            <div className="input" style={{ display: "flex", alignItems: "center" }}>
+              €{" "}
+              {Number.isFinite(instructorRateNumber)
+                ? instructorRateNumber.toFixed(2)
+                : "0.00"}
+              /h
+            </div>
+          </div>
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <div className="muted">Durata calcolata</div>
+          <div className="big-number">
+            {Math.floor(durationMinutes / 60)}h {durationMinutes % 60}m
+          </div>
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <div className="muted">Costo stimato</div>
+          <div className="big-number">€ {totalCost.toFixed(2)}</div>
+        </div>
+
+        <div style={{ marginTop: 16 }}>
+          <div className="muted">Saldo stimato</div>
+          <div className="big-number">€ {estimatedBalance.toFixed(2)}</div>
+        </div>
+
+        <p className="muted" style={{ marginTop: 16 }}>
+          Saldo attuale: € {currentBalance.toFixed(2)}.
+        </p>
+      </div>
+    </div>
+  );
+}
