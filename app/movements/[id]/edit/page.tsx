@@ -163,6 +163,8 @@ export default async function EditMovementPage({
       }
 
       durationMinutes = manualHours * 60 + manualMinutes;
+      hobbsStartMinutes = null;
+      hobbsEndMinutes = null;
     }
 
     if (durationMinutes <= 0) {
@@ -256,212 +258,163 @@ export default async function EditMovementPage({
           : "Puoi correggere durata, istruttore e tariffe applicate."
       }
     >
-      <div className="card" style={{ maxWidth: 920 }}>
-        <form action={updateMovement} className="stack">
-          <input type="hidden" name="movementId" value={movement.id} />
-          <input type="hidden" name="movementType" value={movement.type} />
+      <div className="grid grid-2">
+        <div className="card">
+          <form action={updateMovement} className="grid">
+            <input type="hidden" name="movementId" value={movement.id} />
+            <input type="hidden" name="movementType" value={movement.type} />
 
-          <div className="grid grid-2">
-            <div className="field">
-              <label className="label" htmlFor="date">
-                Data
-              </label>
-              <input
-                id="date"
-                name="date"
-                type="date"
-                className="input"
-                defaultValue={formatDateInput(movement.date)}
-                required
-              />
-            </div>
-
-            {isTopup ? (
+            <div className="grid grid-2">
               <div className="field">
-                <label className="label" htmlFor="amount">
-                  Importo
-                </label>
+                <label htmlFor="date">Data</label>
                 <input
-                  id="amount"
-                  name="amount"
-                  type="number"
-                  step="0.01"
+                  id="date"
+                  name="date"
+                  type="date"
                   className="input"
-                  defaultValue={Number(movement.amount)}
-                  required
-                />
-                <div className="muted" style={{ marginTop: 6 }}>
-                  Positivo = ricarica. Negativo = rettifica/addebito.
-                </div>
-              </div>
-            ) : (
-              <div className="field">
-                <label className="label" htmlFor="aircraft">
-                  Aeromobile
-                </label>
-                <input
-                  id="aircraft"
-                  name="aircraft"
-                  type="text"
-                  className="input"
-                  defaultValue={flight?.aircraft ?? "P92"}
+                  defaultValue={formatDateInput(movement.date)}
                   required
                 />
               </div>
-            )}
-          </div>
 
-          {!isTopup && (
-            <>
-              <div className="grid grid-2">
+              {isTopup ? (
                 <div className="field">
-                  <label className="label" htmlFor="inputMode">
-                    Modalità inserimento durata
-                  </label>
-                  <select
-                    id="inputMode"
-                    name="inputMode"
-                    className="input"
-                    defaultValue={flight?.inputMode ?? FlightInputMode.MANUAL}
-                  >
-                    <option value={FlightInputMode.MANUAL}>Durata manuale</option>
-                    <option value={FlightInputMode.HOBBS}>Da orametro</option>
-                  </select>
-                </div>
-
-                <div className="field">
-                  <label className="label" htmlFor="instructorName">
-                    Istruttore
-                  </label>
+                  <label htmlFor="amount">Importo</label>
                   <input
-                    id="instructorName"
-                    name="instructorName"
-                    type="text"
+                    id="amount"
+                    name="amount"
+                    type="number"
+                    step="0.01"
                     className="input"
-                    placeholder="Lascia vuoto se non presente"
-                    defaultValue={flight?.instructorName ?? ""}
+                    defaultValue={Number(movement.amount)}
+                    required
+                  />
+                  <div className="muted" style={{ marginTop: 6 }}>
+                    Positivo = ricarica. Negativo = rettifica/addebito.
+                  </div>
+                </div>
+              ) : (
+                <div className="field">
+                  <label htmlFor="aircraft">Aeromobile</label>
+                  <input
+                    id="aircraft"
+                    name="aircraft"
+                    className="input"
+                    defaultValue={flight?.aircraft ?? "P92"}
+                    required
                   />
                 </div>
-              </div>
+              )}
+            </div>
 
-              <div className="card">
-                <div style={{ fontWeight: 700, marginBottom: 8 }}>Valori attualmente salvati</div>
+            {!isTopup ? (
+              <>
                 <div className="grid grid-2">
                   <div className="field">
-                    <div className="muted">Durata registrata</div>
-                    <div>{flight?.durationMinutes ?? 0} minuti</div>
+                    <label htmlFor="inputMode">Modalità durata</label>
+                    <select
+                      id="inputMode"
+                      name="inputMode"
+                      className="select"
+                      defaultValue={flight?.inputMode ?? FlightInputMode.MANUAL}
+                    >
+                      <option value={FlightInputMode.HOBBS}>Da orametro</option>
+                      <option value={FlightInputMode.MANUAL}>Manuale</option>
+                    </select>
                   </div>
+
                   <div className="field">
-                    <div className="muted">Costo totale registrato</div>
-                    <div>{Number(flight?.totalCost ?? 0).toFixed(2)} €</div>
+                    <label htmlFor="instructorName">Istruttore (opzionale)</label>
+                    <input
+                      id="instructorName"
+                      name="instructorName"
+                      className="input"
+                      defaultValue={flight?.instructorName ?? ""}
+                    />
                   </div>
                 </div>
-              </div>
 
-              <div className="card">
-                <div style={{ fontWeight: 700, marginBottom: 12 }}>Durata manuale</div>
                 <div className="grid grid-2">
                   <div className="field">
-                    <label className="label" htmlFor="manualHours">
-                      Ore
-                    </label>
+                    <label>Ore volo</label>
                     <input
-                      id="manualHours"
+                      className="input"
                       name="manualHours"
                       type="number"
                       min="0"
-                      className="input"
                       defaultValue={manualPrefill.hours}
+                      required
                     />
                   </div>
-
                   <div className="field">
-                    <label className="label" htmlFor="manualMinutes">
-                      Minuti
-                    </label>
+                    <label>Minuti volo</label>
                     <input
-                      id="manualMinutes"
+                      className="input"
                       name="manualMinutes"
                       type="number"
                       min="0"
                       max="59"
-                      className="input"
                       defaultValue={manualPrefill.minutes}
+                      required
                     />
                   </div>
                 </div>
-              </div>
 
-              <div className="card">
-                <div style={{ fontWeight: 700, marginBottom: 12 }}>Orametro</div>
                 <div className="grid grid-2">
                   <div className="field">
-                    <label className="label" htmlFor="hobbsStartHours">
-                      Partenza ore
-                    </label>
+                    <label>Orametro partenza — ore</label>
                     <input
-                      id="hobbsStartHours"
+                      className="input"
                       name="hobbsStartHours"
                       type="number"
                       min="0"
-                      className="input"
                       defaultValue={hobbsStartPrefill.hours}
+                      required
                     />
                   </div>
-
                   <div className="field">
-                    <label className="label" htmlFor="hobbsStartMinutes">
-                      Partenza minuti
-                    </label>
+                    <label>Orametro partenza — minuti</label>
                     <input
-                      id="hobbsStartMinutes"
+                      className="input"
                       name="hobbsStartMinutes"
                       type="number"
                       min="0"
                       max="59"
-                      className="input"
                       defaultValue={hobbsStartPrefill.minutes}
+                      required
                     />
                   </div>
+                </div>
 
+                <div className="grid grid-2">
                   <div className="field">
-                    <label className="label" htmlFor="hobbsEndHours">
-                      Arrivo ore
-                    </label>
+                    <label>Orametro arrivo — ore</label>
                     <input
-                      id="hobbsEndHours"
+                      className="input"
                       name="hobbsEndHours"
                       type="number"
                       min="0"
-                      className="input"
                       defaultValue={hobbsEndPrefill.hours}
+                      required
                     />
                   </div>
-
                   <div className="field">
-                    <label className="label" htmlFor="hobbsEndMinutes">
-                      Arrivo minuti
-                    </label>
+                    <label>Orametro arrivo — minuti</label>
                     <input
-                      id="hobbsEndMinutes"
+                      className="input"
                       name="hobbsEndMinutes"
                       type="number"
                       min="0"
                       max="59"
-                      className="input"
                       defaultValue={hobbsEndPrefill.minutes}
+                      required
                     />
                   </div>
                 </div>
-              </div>
 
-              <div className="card">
-                <div style={{ fontWeight: 700, marginBottom: 12 }}>Tariffe applicate</div>
                 <div className="grid grid-2">
                   <div className="field">
-                    <label className="label" htmlFor="rentalRateApplied">
-                      Tariffa noleggio applicata (€/h)
-                    </label>
+                    <label htmlFor="rentalRateApplied">Tariffa noleggio applicata (€/h)</label>
                     <input
                       id="rentalRateApplied"
                       name="rentalRateApplied"
@@ -475,9 +428,7 @@ export default async function EditMovementPage({
                   </div>
 
                   <div className="field">
-                    <label className="label" htmlFor="instructorRateApplied">
-                      Tariffa istruttore applicata (€/h)
-                    </label>
+                    <label htmlFor="instructorRateApplied">Tariffa istruttore applicata (€/h)</label>
                     <input
                       id="instructorRateApplied"
                       name="instructorRateApplied"
@@ -490,46 +441,91 @@ export default async function EditMovementPage({
                     />
                   </div>
                 </div>
+              </>
+            ) : null}
+
+            <div className="field">
+              <label htmlFor="notes">Note</label>
+              <textarea
+                id="notes"
+                name="notes"
+                className="textarea"
+                defaultValue={movement.notes ?? ""}
+              />
+            </div>
+
+            <div className="row" style={{ gap: 12 }}>
+              <button className="btn" type="submit">
+                Salva modifiche
+              </button>
+              <Link href="/dashboard" className="btn secondary">
+                Annulla
+              </Link>
+            </div>
+          </form>
+        </div>
+
+        <div className="card">
+          {isTopup ? (
+            <>
+              <h3 style={{ marginTop: 0 }}>Riepilogo movimento</h3>
+              <div className="muted">Importo attuale</div>
+              <div className="big-number">€ {Number(movement.amount).toFixed(2)}</div>
+              <p className="muted" style={{ marginTop: 16 }}>
+                Puoi usare importi positivi per ricariche e importi negativi per allineamenti saldo o addebiti manuali.
+              </p>
+            </>
+          ) : (
+            <>
+              <h3 style={{ marginTop: 0 }}>Valori salvati</h3>
+
+              <div style={{ marginTop: 16 }}>
+                <div className="muted">Durata registrata</div>
+                <div className="big-number">
+                  {Math.floor((flight?.durationMinutes ?? 0) / 60)}h {(flight?.durationMinutes ?? 0) % 60}m
+                </div>
               </div>
 
-              <div className="muted">
-                Il costo totale viene ricalcolato in base alla durata inserita e alle tariffe applicate.
+              <div style={{ marginTop: 16 }}>
+                <div className="muted">Tariffa noleggio</div>
+                <div>€ {Number(flight?.rentalRateApplied ?? 0).toFixed(2)}/h</div>
               </div>
+
+              <div style={{ marginTop: 16 }}>
+                <div className="muted">Tariffa istruttore</div>
+                <div>€ {Number(flight?.instructorRateApplied ?? 0).toFixed(2)}/h</div>
+              </div>
+
+              <div style={{ marginTop: 16 }}>
+                <div className="muted">Costo noleggio</div>
+                <div>€ {Number(flight?.rentalCost ?? 0).toFixed(2)}</div>
+              </div>
+
+              <div style={{ marginTop: 16 }}>
+                <div className="muted">Costo istruttore</div>
+                <div>€ {Number(flight?.instructorCost ?? 0).toFixed(2)}</div>
+              </div>
+
+              <div style={{ marginTop: 16 }}>
+                <div className="muted">Costo totale</div>
+                <div className="big-number">€ {Number(flight?.totalCost ?? 0).toFixed(2)}</div>
+              </div>
+
+              <p className="muted" style={{ marginTop: 16 }}>
+                Il costo viene ricalcolato usando i valori che inserisci nel form a sinistra.
+              </p>
             </>
           )}
 
-          <div className="field">
-            <label className="label" htmlFor="notes">
-              Note
-            </label>
-            <textarea
-              id="notes"
-              name="notes"
-              className="input"
-              rows={4}
-              defaultValue={movement.notes ?? ""}
-            />
-          </div>
+          <hr style={{ margin: "24px 0" }} />
 
-          <div className="row" style={{ gap: 12 }}>
-            <button type="submit" className="btn">
-              Salva modifiche
+          <form action={deleteMovement}>
+            <input type="hidden" name="movementId" value={movement.id} />
+            <button type="submit" className="btn" style={{ background: "#b91c1c" }}>
+              Elimina movimento
             </button>
-
-            <Link href="/dashboard" className="btn secondary">
-              Annulla
-            </Link>
-          </div>
-        </form>
-
-        <hr style={{ margin: "24px 0" }} />
-
-        <form action={deleteMovement}>
-          <input type="hidden" name="movementId" value={movement.id} />
-          <button type="submit" className="btn" style={{ background: "#b91c1c" }}>
-            Elimina movimento
-          </button>
-        </form>
+          </form>
+        </div>
       </div>
     </AppShell>
   );
