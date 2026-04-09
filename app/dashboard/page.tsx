@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { AppShell } from "@/components/app-shell";
+import { DeleteMovementButton } from "@/components/delete-movement-button";
 import { requireUser } from "@/lib/require-user";
 import { eur, formatDateDisplay, minutesToHoursMinutes } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
@@ -29,12 +30,14 @@ export default async function DashboardPage() {
   );
 
   const totalPICMinutes = movements.reduce(
-    (acc: number, item: MovementItem) => acc + (!item.flight?.instructorName ? (item.flight?.durationMinutes ?? 0) : 0),
+    (acc: number, item: MovementItem) =>
+      acc + (!item.flight?.instructorName ? (item.flight?.durationMinutes ?? 0) : 0),
     0
   );
 
   const totalInstructorMinutes = movements.reduce(
-    (acc: number, item: MovementItem) => acc + (item.flight?.instructorName ? (item.flight?.durationMinutes ?? 0) : 0),
+    (acc: number, item: MovementItem) =>
+      acc + (item.flight?.instructorName ? (item.flight?.durationMinutes ?? 0) : 0),
     0
   );
 
@@ -48,7 +51,8 @@ export default async function DashboardPage() {
   const totalTopups = movements
     .filter((item: MovementItem) => item.type === "TOPUP")
     .reduce(
-      (acc: number, item: MovementItem) => acc + (Number(item.amount) > 0 ? Number(item.amount) : 0),
+      (acc: number, item: MovementItem) =>
+        acc + (Number(item.amount) > 0 ? Number(item.amount) : 0),
       0
     );
 
@@ -101,12 +105,35 @@ export default async function DashboardPage() {
         <div className="card">
           <div className="muted">Saldo attuale</div>
           <div className="big-number">{eur(saldo)}</div>
-          <div className="muted" style={{ marginTop: 16 }}>Ore di volo disponibili</div>
+          <div className="muted" style={{ marginTop: 16 }}>
+            Ore di volo disponibili
+          </div>
           <div style={{ fontWeight: 700, marginTop: 8 }}>
-            PIC: {saldo > 0 ? minutesToHoursMinutes(saldo / (settings?.rentalRatePerHour ? Number(settings.rentalRatePerHour) : 150) * 60) : "0h 0m"}
+            PIC:{" "}
+            {saldo > 0
+              ? minutesToHoursMinutes(
+                  (saldo /
+                    (settings?.rentalRatePerHour
+                      ? Number(settings.rentalRatePerHour)
+                      : 150)) *
+                    60
+                )
+              : "0h 0m"}
           </div>
           <div style={{ fontWeight: 700, marginTop: 4 }}>
-            Istruttore: {saldo > 0 ? minutesToHoursMinutes(saldo / ((settings?.rentalRatePerHour ? Number(settings.rentalRatePerHour) : 150) + (settings?.instructorRatePerHour ? Number(settings.instructorRatePerHour) : 80)) * 60) : "0h 0m"}
+            Istruttore:{" "}
+            {saldo > 0
+              ? minutesToHoursMinutes(
+                  (saldo /
+                    ((settings?.rentalRatePerHour
+                      ? Number(settings.rentalRatePerHour)
+                      : 150) +
+                      (settings?.instructorRatePerHour
+                        ? Number(settings.instructorRatePerHour)
+                        : 80))) *
+                    60
+                )
+              : "0h 0m"}
           </div>
         </div>
 
@@ -234,13 +261,7 @@ export default async function DashboardPage() {
 
                       <form action={deleteMovement}>
                         <input type="hidden" name="movementId" value={item.id} />
-                        <button
-                          type="submit"
-                          className="btn"
-                          style={{ background: "#b91c1c" }}
-                        >
-                          Elimina
-                        </button>
+                        <DeleteMovementButton />
                       </form>
                     </div>
                   </td>
