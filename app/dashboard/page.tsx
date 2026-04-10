@@ -167,7 +167,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        <div className="card">
+        { settings?.dateMonoExam != null && <div className="card">
           <div className="muted">Ore post esame</div>
           <div className="big-number">{minutesToHoursMinutes(totalPostExamMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
@@ -177,7 +177,7 @@ export default async function DashboardPage() {
           <div style={{ fontWeight: 700, marginTop: 4 }}>
             Istruttore: {minutesToHoursMinutes(totalPostExamInstructorMinutes)}
           </div>
-        </div>
+        </div> }
 
         <div className="card">
           <div className="muted">Spesa voli</div>
