@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/app-shell";
 import { requireUser } from "@/lib/require-user";
+import { formatDateInput } from "@/lib/utils";
 
 export default async function SettingsPage() {
   const user = await requireUser();
@@ -40,6 +41,19 @@ export default async function SettingsPage() {
           <div className="field">
             <label htmlFor="currency">Valuta</label>
             <input className="input" id="currency" name="currency" defaultValue={settings?.currency ?? "EUR"} maxLength={3} required />
+          </div>
+
+          <div className="field">
+            <label htmlFor="dateMonoExam">Data esame monoposto</label>
+
+            <input
+              className="input"
+              id="dateMonoExam"
+              name="dateMonoExam"
+              type="date"
+              defaultValue={settings?.dateMonoExam ? formatDateInput(new Date(settings.dateMonoExam)) : undefined}
+              max={formatDateInput(new Date())}
+            />
           </div>
 
           <button className="btn" type="submit">Salva impostazioni</button>

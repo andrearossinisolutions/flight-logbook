@@ -18,6 +18,18 @@ export const settingsSchema = z.object({
   rentalRatePerHour: z.preprocess(toNumber, z.number().positive()),
   instructorRatePerHour: z.preprocess(toNumber, z.number().min(0)),
   currency: z.string().trim().min(3).max(3).default("EUR"),
+  dateMonoExam: z.preprocess((value) => {
+    if (value === "" || value === null || value === undefined) {
+      return null;
+    }
+
+    if (typeof value === "string") {
+      const date = new Date(`${value}T00:00:00.000Z`);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    return value;
+  }, z.date().nullable()),
 });
 
 export const topupSchema = z.object({

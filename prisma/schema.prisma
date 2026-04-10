@@ -34,6 +34,7 @@ model Settings {
   rentalRatePerHour     Decimal  @default(150)
   instructorRatePerHour Decimal  @default(80)
   currency              String   @default("EUR")
+  dateMonoExam          DateTime?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 }
