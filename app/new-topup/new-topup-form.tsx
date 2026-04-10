@@ -62,14 +62,10 @@ export default function NewTopupForm({
               type="number"
               step="0.01"
               className="input"
-              placeholder="Es. 200 oppure -35"
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               required
             />
-            <div className="muted" style={{ marginTop: 6 }}>
-              Positivo = ricarica / credito. Negativo = rettifica o addebito manuale.
-            </div>
           </div>
 
           <div className="field">
@@ -79,7 +75,7 @@ export default function NewTopupForm({
               name="notes"
               className="textarea"
               rows={4}
-              placeholder="Esempio: Allineamento saldo con aeroclub"
+              placeholder="'Ricarica credito' / 'Rettifica saldo precedente' / 'Ricarica per volo del...'"
             />
           </div>
 
@@ -108,7 +104,7 @@ export default function NewTopupForm({
         </div>
 
         <div style={{ marginTop: 24 }}>
-          <div className="muted">Ore di volo stimate dopo il movimento</div>
+          <div className="muted">Nuove ore disponibili stimate</div>
           <div style={{ fontWeight: 700, marginTop: 8 }}>
             PIC: {estimatedBalance > 0 ? minutesToHoursMinutes(estimatedPicMinutes) : "0:00"}
           </div>
