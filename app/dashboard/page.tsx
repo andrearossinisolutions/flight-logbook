@@ -265,19 +265,10 @@ export default async function DashboardPage() {
                         </div>
 
                         <div className="muted">
-                          Noleggio: {eur(Number(item.flight?.rentalRateApplied ?? 0))}/h
-                          {item.flight?.instructorName
-                            ? ` · Istruttore: ${item.flight.instructorName} (${eur(
-                                Number(item.flight?.instructorRateApplied ?? 0)
-                              )}/h)`
-                            : " · Senza istruttore"}
+                          {item.flight?.instructorName ? "Lezione" : "Noleggio"}
                         </div>
 
-                        <div className="muted">
-                          Totale volo: {eur(Number(item.flight?.totalCost ?? 0))}
-                        </div>
-
-                        {item.notes ? <div className="muted">{item.notes}</div> : null}
+                        {item.notes ? <div className="muted">Note: {item.notes}</div> : null}
                       </div>
                     )}
                   </td>
