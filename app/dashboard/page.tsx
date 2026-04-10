@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { AppShell } from "@/components/app-shell";
 import { DeleteMovementButton } from "@/components/delete-movement-button";
 import { requireUser } from "@/lib/require-user";
-import { eur, formatDateDisplay, minutesToHoursMinutes } from "@/lib/utils";
+import { eur, formatDateDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 
 export default async function DashboardPage() {
@@ -179,22 +179,23 @@ export default async function DashboardPage() {
           </div>
         </div> }
 
+        { settings?.dateMedicalExam != null && <div className="card">
+          <div className="muted">Scadenza visita medica</div>
+          <div className="big-number">{formatDateDisplay(medicalExamExpirationDate(settings.dateMedicalExam))}</div>
+          <div style={{ fontWeight: 700, marginTop: 8 }}>
+            Data visita: {formatDateDisplay(settings.dateMedicalExam)}
+          </div>
+          <div style={{ fontWeight: 700, marginTop: 8 }}>
+            Rimanenti: {medicalExamRemaining(settings.dateMedicalExam)}
+          </div>
+        </div> }
+
         <div className="card">
           <div className="muted">Spesa voli</div>
           <div className="big-number">{eur(totalFlightCost)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Ricariche</div>
           <div className="big-number">{eur(totalTopups)}</div>
         </div>
-
-        {/* <div className="card">
-          <div className="muted">Tariffe correnti</div>
-          <div style={{ fontWeight: 700, marginTop: 8 }}>
-            Noleggio: {eur(Number(settings?.rentalRatePerHour ?? 150))}/h
-          </div>
-          <div style={{ fontWeight: 700, marginTop: 4 }}>
-            Istruttore: {eur(Number(settings?.instructorRatePerHour ?? 80))}/h
-          </div>
-        </div> */}
       </div>
 
       <div className="between" style={{ marginBottom: 16 }}>
