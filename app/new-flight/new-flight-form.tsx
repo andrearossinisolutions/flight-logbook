@@ -2,13 +2,16 @@
 
 import { formatDateInput } from "@/lib/utils";
 import { useMemo, useState } from "react";
+import { minutesToHoursMinutes } from "@/lib/utils";
 
 type NewFlightFormProps = {
   currentBalance: number;
+  totalFlightMinutes: number;
 };
 
 export default function NewFlightForm({
   currentBalance,
+  totalFlightMinutes,
 }: NewFlightFormProps) {
   const [insertMode, setInsertMode] = useState<"PAST" | "FUTURE">("PAST");
   const [inputMode, setInputMode] = useState<"HOBBS" | "MANUAL">("HOBBS");
@@ -223,34 +226,34 @@ export default function NewFlightForm({
           ) : (
             <div className="grid grid-2">
               { insertMode === "FUTURE" && <>
-              <div className="field">
-                <label htmlFor="routeMode">Tipologia tratta</label>
-                <select
-                  className="select"
-                  id="routeMode"
-                  name="routeMode"
-                  value={routeMode}
-                  onChange={(e) => 
-                    setRouteMode(e.target.value as "SINGLE" | "DOUBLE")
-                  }
-                >
-                  <option value="SINGLE">Tratta singola</option>
-                  <option value="DOUBLE">Tratta doppia (A / R)</option>
-                </select>
+                <div className="field">
+                  <label htmlFor="routeMode">Tipologia tratta</label>
+                  <select
+                    className="select"
+                    id="routeMode"
+                    name="routeMode"
+                    value={routeMode}
+                    onChange={(e) => 
+                      setRouteMode(e.target.value as "SINGLE" | "DOUBLE")
+                    }
+                  >
+                    <option value="SINGLE">Tratta singola</option>
+                    <option value="DOUBLE">Tratta doppia (A / R)</option>
+                  </select>
                 </div>
 
-              <div className="field">
-                <label>Riscaldamento motore</label>
-                <input
-                  className="input"
-                  name="warmupMinutes"
-                  type="number"
-                  min="0"
-                  value={warmupMinutes}
-                  onChange={(e) => setWarmupMinutes(e.target.value)}
-                  required
-                />
-              </div>
+                <div className="field">
+                  <label>Riscaldamento motore</label>
+                  <input
+                    className="input"
+                    name="warmupMinutes"
+                    type="number"
+                    min="0"
+                    value={warmupMinutes}
+                    onChange={(e) => setWarmupMinutes(e.target.value)}
+                    required
+                  />
+                </div>
               </> }
 
               <div className="field">
@@ -373,18 +376,25 @@ export default function NewFlightForm({
         </div>
 
         <div style={{ marginTop: 16 }}>
-          <div className="muted">Costo stimato</div>
+          <div className="muted">Costo {insertMode === "PAST" ? "del volo" : "stimato"}</div>
           <div className="big-number">€ {totalCost.toFixed(2)}</div>
         </div>
 
         <div style={{ marginTop: 16 }}>
-          <div className="muted">Saldo stimato</div>
+          <div className="muted">Nuovo saldo{insertMode === "PAST" ? "" : " stimato"}</div>
           <div className="big-number">€ {estimatedBalance.toFixed(2)}</div>
+          <div style={{ fontWeight: 700, marginTop: 8 }}>
+              Saldo attuale: € {currentBalance.toFixed(2)}.
+          </div>
         </div>
 
-        <p className="muted" style={{ marginTop: 16 }}>
-          Saldo attuale: € {currentBalance.toFixed(2)}.
-        </p>
+        <div style={{ marginTop: 16 }}>
+          <div className="muted">Nuove ore {insertMode === "PAST" ? "totali" : "stimate"}</div>
+          <div className="big-number">{minutesToHoursMinutes(totalFlightMinutes + durationMinutes)}</div>
+          <div style={{ fontWeight: 700, marginTop: 8 }}>
+            Ore totali attuali: {minutesToHoursMinutes(totalFlightMinutes)}.
+          </div>
+        </div>
       </div>
     </div>
   );

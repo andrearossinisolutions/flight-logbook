@@ -8,11 +8,18 @@ export default async function NewFlightPage() {
 
   const movements = await prisma.movement.findMany({
     where: { userId: user.id },
-    select: { amount: true },
+    select: { amount: true, flight: true },
   });
 
   const currentBalance = movements.reduce(
     (acc, item) => acc + Number(item.amount),
+    0
+  );
+
+  type MovementItem = (typeof movements)[number];
+
+  const totalFlightMinutes = movements.reduce(
+    (acc: number, item: MovementItem) => acc + (item.flight?.durationMinutes ?? 0),
     0
   );
 
@@ -21,7 +28,7 @@ export default async function NewFlightPage() {
       title="Nuovo volo"
       subtitle="Durata da orametro o inserimento manuale; costo calcolato automaticamente."
     >
-      <NewFlightForm currentBalance={currentBalance} />
+      <NewFlightForm currentBalance={currentBalance} totalFlightMinutes={totalFlightMinutes} />
     </AppShell>
   );
 }
