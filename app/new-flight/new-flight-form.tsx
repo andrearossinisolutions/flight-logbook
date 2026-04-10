@@ -10,7 +10,9 @@ type NewFlightFormProps = {
 export default function NewFlightForm({
   currentBalance,
 }: NewFlightFormProps) {
+  const [insertMode, setInsertMode] = useState<"PAST" | "FUTURE">("PAST");
   const [inputMode, setInputMode] = useState<"HOBBS" | "MANUAL">("HOBBS");
+  const [routeMode, setRouteMode] = useState<"SINGLE" | "DOUBLE">("SINGLE");
   const [rentalRate, setRentalRate] = useState("150");
   const [instructorRate, setInstructorRate] = useState("80");
   const [instructorName, setInstructorName] = useState("");
@@ -20,6 +22,7 @@ export default function NewFlightForm({
   const [hobbsEndMinutes, setHobbsEndMinutes] = useState("0");
   const [manualHours, setManualHours] = useState("0");
   const [manualMinutes, setManualMinutes] = useState("0");
+  const [warmupMinutes, setWarmupMinutes] = useState("15");
 
   const durationMinutes = useMemo(() => {
     if (inputMode === "HOBBS") {
@@ -27,10 +30,13 @@ export default function NewFlightForm({
       const sm = Number(hobbsStartMinutes || 0);
       const eh = Number(hobbsEndHours || 0);
       const em = Number(hobbsEndMinutes || 0);
-      return Math.max(0, eh * 60 + em - (sh * 60 + sm));
+      var d = Math.max(0, eh * 60 + em - (sh * 60 + sm)) + Number(warmupMinutes || 0);
+
+      return routeMode === "DOUBLE" ? d * 2 : d;
     }
 
-    return Number(manualHours || 0) * 60 + Number(manualMinutes || 0);
+    var d = Number(manualHours || 0) * 60 + Number(manualMinutes || 0) + Number(warmupMinutes || 0);
+    return routeMode === "DOUBLE" ? d * 2 : d;
   }, [
     hobbsEndHours,
     hobbsEndMinutes,
@@ -39,6 +45,8 @@ export default function NewFlightForm({
     inputMode,
     manualHours,
     manualMinutes,
+    routeMode,
+    warmupMinutes,
   ]);
 
   const rentalRateNumber = Number(rentalRate || 0);
@@ -69,6 +77,23 @@ export default function NewFlightForm({
       <form action="/api/movements/flight" method="post" className="grid">
         <div className="card">
           <div className="field">
+            <div className="field">
+              <label htmlFor="insertMode">Tipologia inserimento</label>
+              <select
+                className="select"
+                id="insertMode"
+                name="insertMode"
+                value={insertMode}
+                onChange={(e) => {
+                  setInsertMode(e.target.value as "PAST" | "FUTURE");
+                  setInputMode(e.target.value === "FUTURE" ? "MANUAL" : "HOBBS")
+                }}
+              >
+                <option value="PAST">Volo passato</option>
+                <option value="FUTURE">Pianificazione</option>
+              </select>
+            </div>
+
             <label htmlFor="date">Data</label>
             <input
               className="input"
@@ -76,6 +101,8 @@ export default function NewFlightForm({
               name="date"
               type="date"
               defaultValue={formatDateInput(new Date())}
+              max={insertMode === "PAST" ? formatDateInput(new Date()) : undefined}
+              min={insertMode === "FUTURE" ? formatDateInput(new Date()) : undefined}
               required
             />
           </div>
@@ -119,7 +146,7 @@ export default function NewFlightForm({
         <div className="card">
           <h3 style={{ marginTop: 0 }}>Tempi</h3>
 
-          <div className="field">
+          { insertMode === "PAST" && <div className="field">
             <label htmlFor="inputMode">Modalità durata</label>
             <select
               className="select"
@@ -133,9 +160,9 @@ export default function NewFlightForm({
               <option value="HOBBS">Da orametro</option>
               <option value="MANUAL">Manuale</option>
             </select>
-          </div>
+          </div> }
 
-          {inputMode === "HOBBS" ? (
+          { insertMode === "PAST" && inputMode === "HOBBS" ? (
             <>
               <div className="grid grid-2">
                 <div className="field" style={{ marginTop: "16px" }}>
@@ -195,6 +222,34 @@ export default function NewFlightForm({
             </>
           ) : (
             <div className="grid grid-2">
+              <div className="field">
+                <label htmlFor="routeMode">Tipologia tratta</label>
+                <select
+                  className="select"
+                  id="routeMode"
+                  name="routeMode"
+                  value={routeMode}
+                  onChange={(e) => 
+                    setRouteMode(e.target.value as "SINGLE" | "DOUBLE")
+                  }
+                >
+                  <option value="SINGLE">Tratta singola</option>
+                  <option value="DOUBLE">Tratta doppia (A / R)</option>
+                </select>
+              </div>
+
+              <div className="field">
+                <label>Riscaldamento motore</label>
+                <input
+                  className="input"
+                  name="warmupMinutes"
+                  type="number"
+                  min="0"
+                  value={warmupMinutes}
+                  onChange={(e) => setWarmupMinutes(e.target.value)}
+                  required
+                />
+              </div>
               <div className="field">
                 <label>Ore volo</label>
                 <input
@@ -267,14 +322,16 @@ export default function NewFlightForm({
         <div className="card">
           <h3 style={{ marginTop: 0 }}>Dettagli</h3>
 
-          <div className="field">
-            <label htmlFor="notes">Note</label>
-            <textarea className="textarea" id="notes" name="notes" />
-          </div>
+          { insertMode === "PAST" ? <>
+            <div className="field">
+              <label htmlFor="notes">Note</label>
+              <textarea className="textarea" id="notes" name="notes" />
+            </div>
 
-          <button className="btn" type="submit" style={{ marginTop: "16px" }}>
-            Salva volo
-          </button>
+            <button className="btn" type="submit" style={{ marginTop: "16px" }}>
+              Salva volo
+            </button>
+          </> : <p style={{ marginBottom: 0 }}>La pianificazione non può essere salvata, ma consente di avere un'anteprima immediata del costo stimato al variare dei parametri.</p> }
         </div>
       </form>
 
