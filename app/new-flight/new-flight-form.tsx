@@ -30,12 +30,12 @@ export default function NewFlightForm({
       const sm = Number(hobbsStartMinutes || 0);
       const eh = Number(hobbsEndHours || 0);
       const em = Number(hobbsEndMinutes || 0);
-      var d = Math.max(0, eh * 60 + em - (sh * 60 + sm)) + Number(warmupMinutes || 0);
+      var d = Math.max(0, eh * 60 + em - (sh * 60 + sm)) + (insertMode === "FUTURE" ? Number(warmupMinutes || 0) : 0);
 
       return routeMode === "DOUBLE" ? d * 2 : d;
     }
 
-    var d = Number(manualHours || 0) * 60 + Number(manualMinutes || 0) + Number(warmupMinutes || 0);
+    var d = Number(manualHours || 0) * 60 + Number(manualMinutes || 0) + (insertMode === "FUTURE" ? Number(warmupMinutes || 0) : 0);
     return routeMode === "DOUBLE" ? d * 2 : d;
   }, [
     hobbsEndHours,
@@ -146,7 +146,7 @@ export default function NewFlightForm({
         <div className="card">
           <h3 style={{ marginTop: 0 }}>Tempi</h3>
 
-          { insertMode === "PAST" && <div className="field">
+          { insertMode === "PAST" && <div className="field" style={{ marginBottom: "16px" }}>
             <label htmlFor="inputMode">Modalità durata</label>
             <select
               className="select"
@@ -165,7 +165,7 @@ export default function NewFlightForm({
           { insertMode === "PAST" && inputMode === "HOBBS" ? (
             <>
               <div className="grid grid-2">
-                <div className="field" style={{ marginTop: "16px" }}>
+                <div className="field">
                   <label>Orametro partenza — ore</label>
                   <input
                     className="input"
@@ -222,6 +222,7 @@ export default function NewFlightForm({
             </>
           ) : (
             <div className="grid grid-2">
+              { insertMode === "FUTURE" && <>
               <div className="field">
                 <label htmlFor="routeMode">Tipologia tratta</label>
                 <select
@@ -236,7 +237,7 @@ export default function NewFlightForm({
                   <option value="SINGLE">Tratta singola</option>
                   <option value="DOUBLE">Tratta doppia (A / R)</option>
                 </select>
-              </div>
+                </div>
 
               <div className="field">
                 <label>Riscaldamento motore</label>
@@ -250,6 +251,8 @@ export default function NewFlightForm({
                   required
                 />
               </div>
+              </> }
+
               <div className="field">
                 <label>Ore volo</label>
                 <input
