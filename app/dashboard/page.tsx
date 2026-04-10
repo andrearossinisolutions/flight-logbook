@@ -41,6 +41,24 @@ export default async function DashboardPage() {
     0
   );
 
+  const totalPostExamMinutes = movements.reduce(
+    (acc: number, item: MovementItem) =>
+      acc + (settings?.dateMonoExam != null && item.date > settings.dateMonoExam ? (item.flight?.durationMinutes ?? 0) : 0),
+    0
+  );
+
+  const totalPostExamPICMinutes = movements.reduce(
+    (acc: number, item: MovementItem) =>
+      acc + (!item.flight?.instructorName && settings?.dateMonoExam != null && item.date > settings.dateMonoExam ? (item.flight?.durationMinutes ?? 0) : 0),
+    0
+  );
+
+  const totalPostExamInstructorMinutes = movements.reduce(
+    (acc: number, item: MovementItem) =>
+      acc + (item.flight?.instructorName && settings?.dateMonoExam != null && item.date > settings.dateMonoExam ? (item.flight?.durationMinutes ?? 0) : 0),
+    0
+  );
+
   const totalFlightCost = movements
     .filter((item: MovementItem) => item.type === "FLIGHT")
     .reduce(
@@ -138,7 +156,7 @@ export default async function DashboardPage() {
         </div>
 
         <div className="card">
-          <div className="muted">Ore volate registrate</div>
+          <div className="muted">Ore totali registrate</div>
           <div className="big-number">{minutesToHoursMinutes(totalFlightMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
           <div style={{ fontWeight: 700, marginTop: 8 }}>
@@ -150,13 +168,25 @@ export default async function DashboardPage() {
         </div>
 
         <div className="card">
+          <div className="muted">Ore post esame</div>
+          <div className="big-number">{minutesToHoursMinutes(totalPostExamMinutes)}</div>
+          <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
+          <div style={{ fontWeight: 700, marginTop: 8 }}>
+            PIC: {minutesToHoursMinutes(totalPostExamPICMinutes)}
+          </div>
+          <div style={{ fontWeight: 700, marginTop: 4 }}>
+            Istruttore: {minutesToHoursMinutes(totalPostExamInstructorMinutes)}
+          </div>
+        </div>
+
+        <div className="card">
           <div className="muted">Spesa voli</div>
           <div className="big-number">{eur(totalFlightCost)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Ricariche</div>
           <div className="big-number">{eur(totalTopups)}</div>
         </div>
 
-        <div className="card">
+        {/* <div className="card">
           <div className="muted">Tariffe correnti</div>
           <div style={{ fontWeight: 700, marginTop: 8 }}>
             Noleggio: {eur(Number(settings?.rentalRatePerHour ?? 150))}/h
@@ -164,7 +194,7 @@ export default async function DashboardPage() {
           <div style={{ fontWeight: 700, marginTop: 4 }}>
             Istruttore: {eur(Number(settings?.instructorRatePerHour ?? 80))}/h
           </div>
-        </div>
+        </div> */}
       </div>
 
       <div className="between" style={{ marginBottom: 16 }}>
