@@ -35,6 +35,10 @@ model Settings {
   instructorRatePerHour Decimal  @default(80)
   currency              String   @default("EUR")
   dateMonoExam          DateTime?
+  dateMedicalExam       DateTime?
+  dateBipoExam          DateTime?
+  dateFoniaExam         DateTime?
+  dateAdvanced          DateTime?
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 }

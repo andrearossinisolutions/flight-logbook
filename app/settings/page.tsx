@@ -44,6 +44,20 @@ export default async function SettingsPage() {
           </div>
 
           <div className="field">
+            <label htmlFor="dateMonoExam">Data visita medica</label>
+
+            <input
+              className="input"
+              id="dateMedicalExam"
+              name="dateMedicalExam"
+              type="date"
+              defaultValue={formatDateInput(settings?.dateMedicalExam ? new Date(settings.dateMedicalExam) : new Date())}
+              max={formatDateInput(new Date())}
+              required
+            />
+          </div>
+
+          <div className="field">
             <label htmlFor="dateMonoExam">Data esame monoposto</label>
 
             <input
@@ -52,6 +66,45 @@ export default async function SettingsPage() {
               name="dateMonoExam"
               type="date"
               defaultValue={settings?.dateMonoExam ? formatDateInput(new Date(settings.dateMonoExam)) : undefined}
+              max={formatDateInput(new Date())}
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="dateMonoExam">Data esame biposto</label>
+
+            <input
+              className="input"
+              id="dateBipoExam"
+              name="dateBipoExam"
+              type="date"
+              defaultValue={settings?.dateBipoExam ? formatDateInput(new Date(settings.dateBipoExam)) : undefined}
+              max={formatDateInput(new Date())}
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="dateFoniaExam">Data esame fonia</label>
+
+            <input
+              className="input"
+              id="dateFoniaExam"
+              name="dateFoniaExam"
+              type="date"
+              defaultValue={settings?.dateFoniaExam ? formatDateInput(new Date(settings.dateFoniaExam)) : undefined}
+              max={formatDateInput(new Date())}
+            />
+          </div>
+
+          <div className="field">
+            <label htmlFor="dateAdvanced">Data esame avanzato</label>
+
+            <input
+              className="input"
+              id="dateAdvanced"
+              name="dateAdvanced"
+              type="date"
+              defaultValue={settings?.dateAdvanced ? formatDateInput(new Date(settings.dateAdvanced)) : undefined}
               max={formatDateInput(new Date())}
             />
           </div>

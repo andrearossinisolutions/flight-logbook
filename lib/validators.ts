@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { date, z } from "zod";
 import { toNumber } from "@/lib/utils";
 
 const nonNegativeInt = z.coerce.number().int().min(0);
@@ -18,7 +18,51 @@ export const settingsSchema = z.object({
   rentalRatePerHour: z.preprocess(toNumber, z.number().positive()),
   instructorRatePerHour: z.preprocess(toNumber, z.number().min(0)),
   currency: z.string().trim().min(3).max(3).default("EUR"),
+  dateMedicalExam: z.preprocess((value) => {
+  if (typeof value === "string" && value.trim() !== "") {
+    const date = new Date(`${value}T00:00:00.000Z`);
+    return Number.isNaN(date.getTime()) ? value : date;
+  }
+
+  return value;
+}, z.date()),
   dateMonoExam: z.preprocess((value) => {
+    if (value === "" || value === null || value === undefined) {
+      return null;
+    }
+
+    if (typeof value === "string") {
+      const date = new Date(`${value}T00:00:00.000Z`);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    return value;
+  }, z.date().nullable()),
+  dateBipoExam: z.preprocess((value) => {
+    if (value === "" || value === null || value === undefined) {
+      return null;
+    }
+
+    if (typeof value === "string") {
+      const date = new Date(`${value}T00:00:00.000Z`);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    return value;
+  }, z.date().nullable()),
+  dateFoniaExam: z.preprocess((value) => {
+    if (value === "" || value === null || value === undefined) {
+      return null;
+    }
+
+    if (typeof value === "string") {
+      const date = new Date(`${value}T00:00:00.000Z`);
+      return Number.isNaN(date.getTime()) ? null : date;
+    }
+
+    return value;
+  }, z.date().nullable()),
+  dateAdvanced: z.preprocess((value) => {
     if (value === "" || value === null || value === undefined) {
       return null;
     }
