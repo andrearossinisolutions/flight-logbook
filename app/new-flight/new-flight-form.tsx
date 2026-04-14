@@ -342,7 +342,7 @@ export default function NewFlightForm({
       </form>
 
       <div className="card">
-        <h3 style={{ marginTop: 0 }}>Anteprima costo</h3>
+        <h3 style={{ marginTop: 0 }}>Anteprima costi</h3>
 
         <div className="grid">
           <div className="field">
@@ -371,11 +371,11 @@ export default function NewFlightForm({
         <div style={{ marginTop: 16 }}>
           <div className="muted">Durata calcolata</div>
           <div className="big-number">
-            {Math.floor(durationMinutes / 60)}h {durationMinutes % 60}m
+            {Math.floor(durationMinutes / 60)}:{durationMinutes % 60 < 10 ? `0${durationMinutes % 60}` : durationMinutes % 60}
           </div>
         </div>
 
-        <div style={{ marginTop: 16 }}>
+        { totalCost > 0 && <div style={{ marginTop: 16 }}>
           <div className="muted">Costo {insertMode === "PAST" ? "del volo" : "stimato"}</div>
           <div className="big-number">€ {totalCost.toFixed(2)}</div>
           { dateBipoExam != null ?
@@ -387,9 +387,9 @@ export default function NewFlightForm({
               € {(totalCost/2).toFixed(2)}/persona
             </div>
           }
-        </div>
+        </div> }
 
-        <div style={{ marginTop: 16 }}>
+        { totalCost > 0 && <div style={{ marginTop: 16 }}>
           <div className="muted">Nuovo saldo{insertMode === "PAST" ? "" : " stimato"}</div>
           <div className="big-number">€ {(currentBalance - totalCost).toFixed(2)}</div>
           { dateBipoExam != null && <div style={{ marginTop: 8 }}>
@@ -398,7 +398,7 @@ export default function NewFlightForm({
           <div style={{ marginTop: 8 }}>
             Saldo attuale: € {currentBalance.toFixed(2)}.
           </div>
-        </div>
+        </div> }
 
         { currentBalance - totalCost < 0 && <div style={{ marginTop: 16 }}>
           <div className="muted">Ricarica necessaria{insertMode === "PAST" ? "" : " stimata"}</div>
@@ -408,13 +408,13 @@ export default function NewFlightForm({
           </div> }
         </div> }
 
-        <div style={{ marginTop: 16 }}>
+        { durationMinutes > 0 && <div style={{ marginTop: 16 }}>
           <div className="muted">Nuove ore {insertMode === "PAST" ? "totali" : "stimate"}</div>
           <div className="big-number">{minutesToHoursMinutes(totalFlightMinutes + durationMinutes)}</div>
           <div style={{ marginTop: 8 }}>
             Ore totali attuali: {minutesToHoursMinutes(totalFlightMinutes)}.
           </div>
-        </div>
+        </div> }
       </div>
     </div>
   );
