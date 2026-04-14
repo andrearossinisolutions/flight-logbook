@@ -380,7 +380,7 @@ export default function NewFlightForm({
           <div className="big-number">€ {totalCost.toFixed(2)}</div>
           { dateBipoExam != null ?
             <div style={{ fontWeight: 700, marginTop: 8 }}>
-              € {(totalCost/2).toFixed(2)}/persona
+              € {(totalCost/2).toFixed(2)}/persona, se dividi i costi con il passeggero
             </div>
             : <div style={{ marginTop: 8 }}>
               <b>Ottieni l'abilitazione al passeggero per dividere i costi:</b><br />
@@ -399,6 +399,14 @@ export default function NewFlightForm({
             Saldo attuale: € {currentBalance.toFixed(2)}.
           </div>
         </div>
+
+        { currentBalance - totalCost < 0 && <div style={{ marginTop: 16 }}>
+          <div className="muted">Ricarica necessaria{insertMode === "PAST" ? "" : " stimata"}</div>
+          <div className="big-number">€ {(totalCost - currentBalance).toFixed(2)}</div>
+          { dateBipoExam != null && <div style={{ marginTop: 8 }}>
+            € {(totalCost/2 - currentBalance).toFixed(2)} se dividi i costi con il passeggero
+          </div> }
+        </div> }
 
         <div style={{ marginTop: 16 }}>
           <div className="muted">Nuove ore {insertMode === "PAST" ? "totali" : "stimate"}</div>
