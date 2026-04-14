@@ -168,7 +168,7 @@ export default async function DashboardPage() {
         </div>
 
         { settings?.dateMonoExam != null && <div className="card">
-          <div className="muted">Ore post esame</div>
+          <div className="muted">Ore con attestato</div>
           <div className="big-number">{minutesToHoursMinutes(totalPostExamMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
           <div style={{ fontWeight: 700, marginTop: 8 }}>
