@@ -207,7 +207,7 @@ export default async function DashboardPage() {
             Nuovo volo
           </Link>
           <Link className="btn secondary" href="/new-topup">
-            Nuovo movimento saldo
+            Nuovo pagamento
           </Link>
         </div>
       </div>
