@@ -7,11 +7,13 @@ import { minutesToHoursMinutes } from "@/lib/utils";
 type NewFlightFormProps = {
   currentBalance: number;
   totalFlightMinutes: number;
+  dateBipoExam: Date | null;
 };
 
 export default function NewFlightForm({
   currentBalance,
   totalFlightMinutes,
+  dateBipoExam,
 }: NewFlightFormProps) {
   const [insertMode, setInsertMode] = useState<"PAST" | "FUTURE">("PAST");
   const [inputMode, setInputMode] = useState<"HOBBS" | "MANUAL">("HOBBS");
@@ -72,8 +74,6 @@ export default function NewFlightForm({
     instructorRateNumber,
     rentalRateNumber,
   ]);
-
-  const estimatedBalance = currentBalance - totalCost;
 
   return (
     <div className="grid grid-2">
@@ -378,13 +378,25 @@ export default function NewFlightForm({
         <div style={{ marginTop: 16 }}>
           <div className="muted">Costo {insertMode === "PAST" ? "del volo" : "stimato"}</div>
           <div className="big-number">€ {totalCost.toFixed(2)}</div>
+          { dateBipoExam != null ?
+            <div style={{ fontWeight: 700, marginTop: 8 }}>
+              € {(totalCost/2).toFixed(2)}/persona
+            </div>
+            : <div style={{ marginTop: 8 }}>
+              <b>Ottieni l'abilitazione al passeggero per dividere i costi:</b><br />
+              € {(totalCost/2).toFixed(2)}/persona
+            </div>
+          }
         </div>
 
         <div style={{ marginTop: 16 }}>
           <div className="muted">Nuovo saldo{insertMode === "PAST" ? "" : " stimato"}</div>
-          <div className="big-number">€ {estimatedBalance.toFixed(2)}</div>
+          <div className="big-number">€ {(currentBalance - totalCost).toFixed(2)}</div>
+          { dateBipoExam != null && <div style={{ marginTop: 8 }}>
+            € {(currentBalance - totalCost/2).toFixed(2)} se dividi i costi con il passeggero
+          </div> }
           <div style={{ fontWeight: 700, marginTop: 8 }}>
-              Saldo attuale: € {currentBalance.toFixed(2)}.
+            Saldo attuale: € {currentBalance.toFixed(2)}.
           </div>
         </div>
 

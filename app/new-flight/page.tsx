@@ -5,6 +5,7 @@ import NewFlightForm from "./new-flight-form";
 
 export default async function NewFlightPage() {
   const user = await requireUser();
+  const settings = user.settings;
 
   const movements = await prisma.movement.findMany({
     where: { userId: user.id },
@@ -28,7 +29,7 @@ export default async function NewFlightPage() {
       title="Nuovo volo"
       subtitle="Durata da orametro o inserimento manuale; costo calcolato automaticamente."
     >
-      <NewFlightForm currentBalance={currentBalance} totalFlightMinutes={totalFlightMinutes} />
+      <NewFlightForm currentBalance={currentBalance} totalFlightMinutes={totalFlightMinutes} dateBipoExam={settings?.dateBipoExam ?? null} />
     </AppShell>
   );
 }
