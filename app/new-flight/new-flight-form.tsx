@@ -347,7 +347,7 @@ export default function NewFlightForm({
         <div className="grid">
           <div className="field">
             <label>Tariffa noleggio applicata</label>
-            <div className="input" style={{ display: "flex", alignItems: "center" }}>
+            <div>
               €{" "}
               {Number.isFinite(rentalRateNumber)
                 ? rentalRateNumber.toFixed(2)
@@ -356,16 +356,16 @@ export default function NewFlightForm({
             </div>
           </div>
 
-          <div className="field">
+          { instructorName && <div className="field">
             <label>Tariffa istruttore applicata</label>
-            <div className="input" style={{ display: "flex", alignItems: "center" }}>
+            <div>
               €{" "}
               {Number.isFinite(instructorRateNumber)
                 ? instructorRateNumber.toFixed(2)
                 : "0.00"}
               /h
             </div>
-          </div>
+          </div> }
         </div>
 
         <div style={{ marginTop: 16 }}>
