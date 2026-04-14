@@ -61,8 +61,8 @@ export default async function DashboardPage() {
     0
   );
 
-  const totalFlightCost = movements
-    .filter((item: MovementItem) => item.type === "FLIGHT")
+  const totalCosts = movements
+    .filter((item: MovementItem) => item.type !== "FLIGHT")
     .reduce(
       (acc: number, item: MovementItem) => acc + Math.abs(Number(item.amount)),
       0
@@ -70,6 +70,14 @@ export default async function DashboardPage() {
 
   const totalTopups = movements
     .filter((item: MovementItem) => item.type === "TOPUP")
+    .reduce(
+      (acc: number, item: MovementItem) =>
+        acc + (Number(item.amount) > 0 ? Number(item.amount) : 0),
+      0
+    );
+
+  const totalServices = movements
+    .filter((item: MovementItem) => item.type === "SERVICE")
     .reduce(
       (acc: number, item: MovementItem) =>
         acc + (Number(item.amount) > 0 ? Number(item.amount) : 0),
@@ -193,10 +201,11 @@ export default async function DashboardPage() {
         </div> }
 
         <div className="card">
-          <div className="muted">Spesa voli</div>
-          <div className="big-number">{eur(totalFlightCost)}</div>
-          <div className="muted" style={{ marginTop: 16 }}>Ricariche</div>
-          <div className="big-number">{eur(totalTopups)}</div>
+          <div className="muted">Spese registrate</div>
+          <div className="big-number">{eur(totalCosts)}</div>
+          <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
+          <div style={{ marginTop: 8 }}>Ricariche: {eur(totalTopups)}</div>
+          <div style={{ marginTop: 8 }}>Servizi: {eur(totalServices)}</div>
         </div>
       </div>
 
