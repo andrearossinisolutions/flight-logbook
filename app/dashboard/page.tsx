@@ -19,10 +19,12 @@ export default async function DashboardPage() {
 
   type MovementItem = (typeof movements)[number];
 
-  const saldo = movements.reduce(
-    (acc: number, item: MovementItem) => acc + Number(item.amount),
-    0
-  );
+  const saldo = movements
+    .filter((item: MovementItem) => item.type !== "SERVICE")
+    .reduce(
+      (acc: number, item: MovementItem) => acc + Number(item.amount),
+      0
+    );
 
   const totalFlightMinutes = movements.reduce(
     (acc: number, item: MovementItem) => acc + (item.flight?.durationMinutes ?? 0),
@@ -231,9 +233,6 @@ export default async function DashboardPage() {
             ) : null}
 
             {movements.map((item: MovementItem) => {
-              const amount = Number(item.amount);
-              const isNegativeTopup = item.type === "TOPUP" && amount < 0;
-
               return (
                 <tr key={item.id}>
                   <td>{formatDateDisplay(item.date)}</td>
@@ -241,39 +240,16 @@ export default async function DashboardPage() {
                   <td>
                     {item.type === "FLIGHT"
                       ? "Volo"
-                      : isNegativeTopup
+                      : item.type === "TOPUP" && Number(item.amount) < 0
                       ? "Rettifica saldo"
                       : "Ricarica"}
                   </td>
 
                   <td>
-                    {item.type === "TOPUP" ? (
-                      <div>
-                        <div>
-                          {isNegativeTopup
-                            ? "Correzione saldo / addebito manuale"
-                            : "Credito aggiunto"}
-                        </div>
-                        {item.notes ? <div className="muted">{item.notes}</div> : null}
-                      </div>
-                    ) : (
-                      <div>
-                        <div>
-                          {item.flight?.aircraftRegistration ?? "I-4150"} ·{" "}
-                          {item.flight?.aircraftType ?? "P92"} ·{" "}
-                          {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
-                        </div>
-
-                        <div className="muted">
-                          {item.flight?.instructorName ? "Lezione" : "Noleggio"}
-                        </div>
-
-                        {item.notes ? <div className="muted">Note: {item.notes}</div> : null}
-                      </div>
-                    )}
+                    { dashboardItem(item) }
                   </td>
 
-                  <td style={{ fontWeight: 700 }}>{eur(amount)}</td>
+                  <td style={{ fontWeight: 700 }}>{eur(Number(item.amount))}</td>
 
                   <td>
                     <div className="row" style={{ gap: 8 }}>
@@ -295,4 +271,45 @@ export default async function DashboardPage() {
       </div>
     </AppShell>
   );
+}
+
+function dashboardItem(item: any) {
+  switch (item.type) {
+    case "TOPUP":
+      return (
+        <div>
+          <div>
+            { item.type === "TOPUP" && Number(item.amount) < 0
+              ? "Correzione saldo / addebito manuale"
+              : "Credito aggiunto"}
+          </div>
+          {item.notes ? <div className="muted">{item.notes}</div> : null}
+        </div>
+      )
+    case "SERVICE":
+      return (
+        <div>
+          <div>
+            Pagamento servizio
+          </div>
+          {item.notes ? <div className="muted">{item.notes}</div> : null}
+        </div>
+      )
+    case "FLIGHT":
+      return (
+        <div>
+          <div>
+            {item.flight?.aircraftRegistration ?? "I-4150"} ·{" "}
+            {item.flight?.aircraftType ?? "P92"} ·{" "}
+            {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
+          </div>
+
+          <div className="muted">
+            {item.flight?.instructorName ? "Lezione" : "Noleggio"}
+          </div>
+
+          {item.notes ? <div className="muted">Note: {item.notes}</div> : null}
+        </div>
+      )
+  }
 }

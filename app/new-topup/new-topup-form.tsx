@@ -19,6 +19,8 @@ export default function NewTopupForm({
 }: NewTopupFormProps) {
   const [amount, setAmount] = useState("");
 
+  const [movementType, setMovementType] = useState<"TOPUP" | "SERVICE">("TOPUP");
+
   const amountNumber = Number(amount || 0);
   const normalizedAmount = Number.isFinite(amountNumber) ? amountNumber : 0;
 
@@ -42,6 +44,22 @@ export default function NewTopupForm({
     <div className="grid grid-2">
       <div className="card">
         <form action={action} className="grid">
+          <div className="field">
+            <label htmlFor="movementType">Tipologia pagamento</label>
+            <select
+              className="select"
+              id="movementType"
+              name="movementType"
+              value={movementType}
+              onChange={(e) => {
+                setMovementType(e.target.value as "TOPUP" | "SERVICE");
+              }}
+            >
+              <option value="TOPUP">Ricarica credito</option>
+              <option value="SERVICE">Pagamento servizio</option>
+            </select>
+          </div>
+
           <div className="field">
             <label htmlFor="date">Data</label>
             <input

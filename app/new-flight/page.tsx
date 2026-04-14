@@ -9,13 +9,15 @@ export default async function NewFlightPage() {
 
   const movements = await prisma.movement.findMany({
     where: { userId: user.id },
-    select: { amount: true, flight: true },
+    select: { amount: true, flight: true, type: true },
   });
 
-  const currentBalance = movements.reduce(
-    (acc, item) => acc + Number(item.amount),
-    0
-  );
+  const currentBalance = movements
+    .filter((m) => m.type !== "SERVICE")
+    .reduce(
+      (acc, item) => acc + Number(item.amount),
+      0
+    );
 
   type MovementItem = (typeof movements)[number];
 

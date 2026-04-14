@@ -4,19 +4,22 @@ import { AppShell } from "@/components/app-shell";
 import { requireUser } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import NewTopupForm from "./new-topup-form";
+import { MovementType } from "@prisma/client";
 
 export default async function NewTopupPage() {
   const user = await requireUser();
 
   const movements = await prisma.movement.findMany({
     where: { userId: user.id },
-    select: { amount: true },
+    select: { amount: true, type: true },
   });
 
-  const currentBalance = movements.reduce(
-    (acc, item) => acc + Number(item.amount),
-    0
-  );
+  const currentBalance = movements
+    .filter((m) => m.type !== "SERVICE")
+    .reduce(
+      (acc, item) => acc + Number(item.amount),
+      0
+    );
 
   const rentalRatePerHour = Number(user.settings?.rentalRatePerHour ?? 150);
   const instructorRatePerHour = Number(user.settings?.instructorRatePerHour ?? 80);
@@ -29,6 +32,12 @@ export default async function NewTopupPage() {
     const dateRaw = String(formData.get("date") ?? "");
     const amountRaw = String(formData.get("amount") ?? "");
     const notesRaw = String(formData.get("notes") ?? "");
+    
+    const movementTypeRaw = String(formData.get("movementType") ?? "TOPUP");
+    if (!Object.values(MovementType).includes(movementTypeRaw as MovementType)) {
+      throw new Error("Tipologia movimento non valida.");
+    }
+    const movementType = movementTypeRaw as MovementType;
 
     const amount = Number(amountRaw);
 
@@ -43,7 +52,7 @@ export default async function NewTopupPage() {
     await prisma.movement.create({
       data: {
         userId: user.id,
-        type: "TOPUP",
+        type: movementType,
         date: new Date(dateRaw),
         amount,
         notes: notesRaw.trim() || null,
@@ -56,8 +65,8 @@ export default async function NewTopupPage() {
 
   return (
     <AppShell
-      title="Nuovo movimento saldo"
-      subtitle="Usa un importo positivo per una ricarica, negativo per una rettifica/addebito."
+      title="Nuovo pagamento"
+      subtitle="Usa un importo positivo per un pagamento/ricarica, ed uno negativo per una rettifica/addebito."
     >
       <NewTopupForm
         action={createTopup}

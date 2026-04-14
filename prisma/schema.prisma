@@ -9,6 +9,7 @@ datasource db {
 enum MovementType {
   TOPUP
   FLIGHT
+  SERVICE
 }
 
 enum FlightInputMode {
