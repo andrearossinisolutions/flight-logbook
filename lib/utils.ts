@@ -30,11 +30,11 @@ export function toNumber(value: unknown) {
 }
 
 export function medicalExamExpirationDate(medicalExamDate: Date) {
-  return new Date(medicalExamDate.getTime() + 2 * 365 * 24 * 60 * 60 * 1000);
+  return new Date(medicalExamDate.getTime() + (2 * 365 - 1) * 24 * 60 * 60 * 1000);
 }
 
 export function medicalExamRemaining(medicalExamDate: Date) {
-  const totDays = Math.ceil((medicalExamDate.getTime() + 2 * 365 * 24 * 60 * 60 * 1000 - Date.now()) / (1000 * 60 * 60 * 24));
+  const totDays = Math.ceil((medicalExamDate.getTime() + (2 * 365 - 1) * 24 * 60 * 60 * 1000 - Date.now()) / (1000 * 60 * 60 * 24));
 
   var years = Math.floor(totDays / 365);
   var months = Math.floor((totDays % 365) / 30);
