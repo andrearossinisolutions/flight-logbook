@@ -21,12 +21,12 @@ export default function NewFlightForm({
   const [rentalRate, setRentalRate] = useState("150");
   const [instructorRate, setInstructorRate] = useState("80");
   const [instructorName, setInstructorName] = useState("");
-  const [hobbsStartHours, setHobbsStartHours] = useState("0");
-  const [hobbsStartMinutes, setHobbsStartMinutes] = useState("0");
-  const [hobbsEndHours, setHobbsEndHours] = useState("0");
-  const [hobbsEndMinutes, setHobbsEndMinutes] = useState("0");
-  const [manualHours, setManualHours] = useState("0");
-  const [manualMinutes, setManualMinutes] = useState("0");
+  const [hobbsStartHours, setHobbsStartHours] = useState("");
+  const [hobbsStartMinutes, setHobbsStartMinutes] = useState("");
+  const [hobbsEndHours, setHobbsEndHours] = useState("");
+  const [hobbsEndMinutes, setHobbsEndMinutes] = useState("");
+  const [manualHours, setManualHours] = useState("");
+  const [manualMinutes, setManualMinutes] = useState("");
   const [warmupMinutes, setWarmupMinutes] = useState("15");
 
   const durationMinutes = useMemo(() => {
