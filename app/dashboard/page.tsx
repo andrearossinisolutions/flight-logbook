@@ -126,7 +126,7 @@ export default async function DashboardPage() {
           <div className="muted" style={{ marginTop: 16 }}>
             Ore di volo disponibili
           </div>
-          <div style={{ fontWeight: 700, marginTop: 8 }}>
+          <div style={{ marginTop: 8 }}>
             PIC:{" "}
             {saldo > 0
               ? minutesToHoursMinutes(
@@ -138,7 +138,7 @@ export default async function DashboardPage() {
                 )
               : "0:00"}
           </div>
-          <div style={{ fontWeight: 700, marginTop: 4 }}>
+          <div style={{ marginTop: 4 }}>
             Istruttore:{" "}
             {saldo > 0
               ? minutesToHoursMinutes(
@@ -159,10 +159,10 @@ export default async function DashboardPage() {
           <div className="muted">Ore totali registrate</div>
           <div className="big-number">{minutesToHoursMinutes(totalFlightMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
-          <div style={{ fontWeight: 700, marginTop: 8 }}>
+          <div style={{ marginTop: 8 }}>
             PIC: {minutesToHoursMinutes(totalPICMinutes)}
           </div>
-          <div style={{ fontWeight: 700, marginTop: 4 }}>
+          <div style={{ marginTop: 4 }}>
             Istruttore: {minutesToHoursMinutes(totalInstructorMinutes)}
           </div>
         </div>
@@ -171,10 +171,10 @@ export default async function DashboardPage() {
           <div className="muted">Ore con attestato</div>
           <div className="big-number">{minutesToHoursMinutes(totalPostExamMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
-          <div style={{ fontWeight: 700, marginTop: 8 }}>
+          <div style={{ marginTop: 8 }}>
             PIC: {minutesToHoursMinutes(totalPostExamPICMinutes)}
           </div>
-          <div style={{ fontWeight: 700, marginTop: 4 }}>
+          <div style={{ marginTop: 4 }}>
             Istruttore: {minutesToHoursMinutes(totalPostExamInstructorMinutes)}
           </div>
         </div> }
@@ -182,10 +182,10 @@ export default async function DashboardPage() {
         { settings?.dateMedicalExam != null && <div className="card">
           <div className="muted">Scadenza visita medica</div>
           <div className="big-number">{formatDateDisplay(medicalExamExpirationDate(settings.dateMedicalExam))}</div>
-          <div style={{ fontWeight: 700, marginTop: 8 }}>
+          <div style={{ marginTop: 8 }}>
             Data visita: {formatDateDisplay(settings.dateMedicalExam)}
           </div>
-          <div style={{ fontWeight: 700, marginTop: 8 }}>
+          <div style={{ marginTop: 8 }}>
             Rimanenti: {medicalExamRemaining(settings.dateMedicalExam)}
           </div>
         </div> }

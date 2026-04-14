@@ -105,10 +105,10 @@ export default function NewTopupForm({
 
         <div style={{ marginTop: 24 }}>
           <div className="muted">Nuove ore disponibili stimate</div>
-          <div style={{ fontWeight: 700, marginTop: 8 }}>
+          <div style={{ marginTop: 8 }}>
             PIC: {estimatedBalance > 0 ? minutesToHoursMinutes(estimatedPicMinutes) : "0:00"}
           </div>
-          <div style={{ fontWeight: 700, marginTop: 4 }}>
+          <div style={{ marginTop: 4 }}>
             Istruttore:{" "}
             {estimatedBalance > 0
               ? minutesToHoursMinutes(estimatedInstructorMinutes)
