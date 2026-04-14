@@ -378,21 +378,23 @@ export default function NewFlightForm({
         { totalCost > 0 && <div style={{ marginTop: 16 }}>
           <div className="muted">Costo {insertMode === "PAST" ? "del volo" : "stimato"}</div>
           <div className="big-number">€ {totalCost.toFixed(2)}</div>
-          { dateBipoExam != null ?
-            <div style={{ marginTop: 8 }}>
-              € {(totalCost/2).toFixed(2)} se dividi i costi con il passeggero
-            </div>
-            : <div style={{ marginTop: 8 }}>
-              Ottieni l'abilitazione al passeggero per dividere i costi:<br />
-              € {(totalCost/2).toFixed(2)}/persona
-            </div>
-          }
+          { !instructorName && <>
+            { dateBipoExam != null ?
+              <div style={{ marginTop: 8 }}>
+                € {(totalCost/2).toFixed(2)} se dividi i costi con il passeggero
+              </div>
+              : <div style={{ marginTop: 8 }}>
+                Ottieni l'abilitazione al passeggero per dividere i costi:<br />
+                € {(totalCost/2).toFixed(2)}/persona
+              </div>
+            }
+          </> }
         </div> }
 
         { totalCost > 0 && <div style={{ marginTop: 16 }}>
           <div className="muted">Nuovo saldo{insertMode === "PAST" ? "" : " stimato"}</div>
           <div className="big-number">€ {(currentBalance - totalCost).toFixed(2)}</div>
-          { dateBipoExam != null && <div style={{ marginTop: 8 }}>
+          { !instructorName && dateBipoExam != null && <div style={{ marginTop: 8 }}>
             € {(currentBalance - totalCost/2).toFixed(2)} se dividi i costi con il passeggero
           </div> }
           <div style={{ marginTop: 8 }}>
@@ -403,7 +405,7 @@ export default function NewFlightForm({
         { currentBalance - totalCost < 0 && <div style={{ marginTop: 16 }}>
           <div className="muted">Ricarica necessaria{insertMode === "PAST" ? "" : " stimata"}</div>
           <div className="big-number">€ {(totalCost - currentBalance).toFixed(2)}</div>
-          { dateBipoExam != null && <div style={{ marginTop: 8 }}>
+          { !instructorName && dateBipoExam != null && <div style={{ marginTop: 8 }}>
             € {(totalCost/2 - currentBalance).toFixed(2)} se dividi i costi con il passeggero
           </div> }
         </div> }
