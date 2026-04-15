@@ -234,6 +234,7 @@ export default function FlightForm({
                     type="number"
                     min="0"
                     value={hobbsStartHours}
+                    placeholder="Ore partenza"
                     onChange={(e) => setHobbsStartHours(e.target.value)}
                     required
                   />
@@ -248,6 +249,7 @@ export default function FlightForm({
                     min="0"
                     max="59"
                     value={hobbsStartMinutes}
+                    placeholder="Minuti partenza"
                     onChange={(e) => setHobbsStartMinutes(e.target.value)}
                     required
                   />
@@ -263,6 +265,7 @@ export default function FlightForm({
                     type="number"
                     min="0"
                     value={hobbsEndHours}
+                    placeholder="Ore arrivo"
                     onChange={(e) => setHobbsEndHours(e.target.value)}
                     required
                   />
@@ -277,6 +280,7 @@ export default function FlightForm({
                     min="0"
                     max="59"
                     value={hobbsEndMinutes}
+                    placeholder="Minuti arrivo"
                     onChange={(e) => setHobbsEndMinutes(e.target.value)}
                     required
                   />
@@ -356,8 +360,13 @@ export default function FlightForm({
               id="instructorName"
               name="instructorName"
               value={instructorName}
-              onChange={(e) => setInstructorName(e.target.value)}
-              placeholder="Se è una lezione"
+              onChange={(e) => {
+                setInstructorName(e.target.value)
+                if (!instructorMinutes && e.target.value) {
+                  setInstructorMinutes(String(durationMinutes))
+                }
+              }}
+              placeholder="Nome istruttore (se presente)"
             />
           </div>
 
@@ -370,8 +379,9 @@ export default function FlightForm({
               min="0"
               max={durationMinutes}
               value={instructorMinutes}
-              placeholder={`Tra 0 e ${durationMinutes} minuti`}
+              placeholder={durationMinutes > 0 ? `Tra 0 e ${durationMinutes} minuti` : "Inserisci prima un tempo di volo valido"}
               onChange={(e) => setInstructorMinutes(e.target.value)}
+              disabled={Number(instructorMinutes || 0) == 0}
             />
           </div>
         </div>
