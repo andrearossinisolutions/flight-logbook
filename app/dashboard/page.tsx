@@ -299,11 +299,10 @@ function dashboardItem(item: any, movements: any[] = []) {
     case "TOPUP":
       return (
         <div className="grid grid-2">
-          <div className="muted">
-            { item.type === "TOPUP" && Number(item.amount) < 0
-              ? "Correzione saldo / addebito manuale"
-              : "Credito aggiunto" }
-          </div>
+          { item.type === "TOPUP" && Number(item.amount) < 0
+              ? <div className="muted" style={{ color: "#b91c1c" }}>Correzione saldo / addebito manuale</div>
+              : <div className="muted" style={{ color: "green" }}>Credito aggiunto</div>
+          }
 
           <div>
             Progressivo saldo: {eur(progressiveSaldo)}
