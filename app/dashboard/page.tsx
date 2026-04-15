@@ -353,9 +353,11 @@ function dashboardItem(item: any, movements: any[] = []) {
 
 function flightType(flight: any) {
   if (flight.instructorMinutes == flight.durationMinutes) {
-    return "Lezione";
+    return "Lezione: " + flight.instructorName;
   } else if (flight.instructorMinutes > 0 && flight.instructorMinutes < flight.durationMinutes) {
-    return "Noleggio + Lezione";
+    return `Noleggio con lezione: ${flight.instructorName}`;
+  } else if (flight.passengerName) {
+    return `Noleggio con passeggero: ${flight.passengerName}`;
   }
   return "Noleggio";
 }
