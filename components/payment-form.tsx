@@ -2,24 +2,49 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { eur, formatDateDisplay, minutesToHoursMinutes } from "@/lib/utils";
+import { eur, minutesToHoursMinutes } from "@/lib/utils";
+import type { PaymentFormValues } from "@/lib/payment-form";
 
-type NewTopupFormProps = {
+type PaymentFormProps = {
+  mode: "create" | "edit";
   action: (formData: FormData) => void | Promise<void>;
   currentBalance: number;
   rentalRatePerHour: number;
   instructorRatePerHour: number;
+  initialValues?: Partial<PaymentFormValues>;
+  movementId?: string;
+  submitLabel?: string;
 };
 
-export default function NewTopupForm({
+function buildInitialValues(
+  initialValues?: Partial<PaymentFormValues>
+): PaymentFormValues {
+  return {
+    movementType: initialValues?.movementType ?? "TOPUP",
+    date: initialValues?.date ?? new Date().toISOString().slice(0, 10),
+    amount: initialValues?.amount ?? "",
+    notes: initialValues?.notes ?? "",
+  };
+}
+
+export default function PaymentForm({
+  mode,
   action,
   currentBalance,
   rentalRatePerHour,
   instructorRatePerHour,
-}: NewTopupFormProps) {
-  const [amount, setAmount] = useState("");
+  initialValues,
+  movementId,
+  submitLabel,
+}: PaymentFormProps) {
+  const initial = buildInitialValues(initialValues);
 
-  const [movementType, setMovementType] = useState<"TOPUP" | "SERVICE">("TOPUP");
+  const [movementType, setMovementType] = useState<"TOPUP" | "SERVICE">(
+    initial.movementType
+  );
+  const [date, setDate] = useState(initial.date);
+  const [amount, setAmount] = useState(initial.amount);
+  const [notes, setNotes] = useState(initial.notes);
 
   const amountNumber = Number(amount || 0);
   const normalizedAmount = Number.isFinite(amountNumber) ? amountNumber : 0;
@@ -40,10 +65,17 @@ export default function NewTopupForm({
     return (estimatedBalance / fullRate) * 60;
   }, [estimatedBalance, rentalRatePerHour, instructorRatePerHour]);
 
+  const effectiveSubmitLabel =
+    submitLabel ?? (mode === "edit" ? "Salva modifiche" : "Salva");
+
   return (
     <div className="grid grid-2">
       <div className="card">
         <form action={action} className="grid">
+          {mode === "edit" && movementId ? (
+            <input type="hidden" name="movementId" value={movementId} />
+          ) : null}
+
           <div className="field">
             <label htmlFor="movementType">Tipologia pagamento</label>
             <select
@@ -51,9 +83,9 @@ export default function NewTopupForm({
               id="movementType"
               name="movementType"
               value={movementType}
-              onChange={(e) => {
-                setMovementType(e.target.value as "TOPUP" | "SERVICE");
-              }}
+              onChange={(e) =>
+                setMovementType(e.target.value as "TOPUP" | "SERVICE")
+              }
             >
               <option value="TOPUP">Ricarica credito</option>
               <option value="SERVICE">Pagamento servizio</option>
@@ -67,7 +99,8 @@ export default function NewTopupForm({
               name="date"
               type="date"
               className="input"
-              defaultValue={new Date().toISOString().slice(0, 10)}
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
               required
             />
           </div>
@@ -93,14 +126,17 @@ export default function NewTopupForm({
               name="notes"
               className="textarea"
               rows={4}
-              placeholder="'Ricarica credito' / 'Rettifica saldo precedente' / 'Ricarica per volo del...'"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="'Ricarica credito' / 'Rettifica saldo precedente' / 'Pagamento servizio'"
             />
           </div>
 
           <div className="row" style={{ gap: 12 }}>
             <button type="submit" className="btn">
-              Salva
+              {effectiveSubmitLabel}
             </button>
+
             <Link href="/dashboard" className="btn secondary">
               Annulla
             </Link>
@@ -124,7 +160,10 @@ export default function NewTopupForm({
         <div style={{ marginTop: 24 }}>
           <div className="muted">Nuove ore disponibili stimate</div>
           <div style={{ marginTop: 8 }}>
-            PIC: {estimatedBalance > 0 ? minutesToHoursMinutes(estimatedPicMinutes) : "0:00"}
+            PIC:{" "}
+            {estimatedBalance > 0
+              ? minutesToHoursMinutes(estimatedPicMinutes)
+              : "0:00"}
           </div>
           <div style={{ marginTop: 4 }}>
             Istruttore:{" "}
@@ -135,11 +174,8 @@ export default function NewTopupForm({
         </div>
 
         <p className="muted" style={{ marginTop: 16 }}>
-          Calcolato usando le tariffe correnti:
-          {" "}
-          noleggio {eur(rentalRatePerHour)}/h,
-          {" "}
-          istruttore {eur(instructorRatePerHour)}/h.
+          Calcolato usando le tariffe correnti: noleggio {eur(rentalRatePerHour)}
+          /h, istruttore {eur(instructorRatePerHour)}/h.
         </p>
       </div>
     </div>

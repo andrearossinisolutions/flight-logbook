@@ -105,8 +105,10 @@ Per pubblicarlo subito senza accessi indesiderati:
 ## Struttura rapida
 
 - `app/dashboard` dashboard principale
-- `app/flight` inserimento volo
-- `app/new-topup` inserimento ricarica
+- `app/new-flight` inserimento volo
+- `app/new-payment` inserimento pagamento
+- `app/edit-flight/[id]` modifica volo
+- `app/edit-payment/[id]` modifica pagamento
 - `app/settings` tariffe
 - `app/api/*` route handlers
 - `prisma/schema.prisma` schema database

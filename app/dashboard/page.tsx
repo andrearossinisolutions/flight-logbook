@@ -215,7 +215,7 @@ export default async function DashboardPage() {
           <Link className="btn" href="/new-flight">
             Nuovo volo
           </Link>
-          <Link className="btn secondary" href="/new-topup">
+          <Link className="btn secondary" href="/new-payment">
             Nuovo pagamento
           </Link>
         </div>
@@ -262,7 +262,10 @@ export default async function DashboardPage() {
 
                   <td>
                     <div className="row" style={{ gap: 8 }}>
-                      <Link className="btn secondary" href={`/movements/${item.id}/edit`}>
+                      <Link
+                        className="btn secondary"
+                        href={item.type === "FLIGHT" ? `/edit-flight/${item.id}` : `/edit-payment/${item.id}`}
+                      >
                         Modifica
                       </Link>
 
