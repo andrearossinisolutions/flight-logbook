@@ -7,6 +7,7 @@ export type FlightFormValues = {
   routeMode: "SINGLE" | "DOUBLE";
   aircraftRegistration: string;
   aircraftType: string;
+  passengerName: string;
   instructorName: string;
   instructorMinutes: string;
   hobbsStartHours: string;
@@ -56,6 +57,7 @@ export function parseFlightFormData(formData: FormData) {
       ? FlightInputMode.HOBBS
       : FlightInputMode.MANUAL;
 
+  const passengerNameRaw = String(formData.get("passengerName") ?? "").trim();
   const instructorNameRaw = String(formData.get("instructorName") ?? "").trim();
   const instructorMinutes = toInt(formData.get("instructorMinutes"));
 
@@ -134,6 +136,7 @@ export function parseFlightFormData(formData: FormData) {
     hobbsStartMinutes,
     hobbsEndMinutes,
     isDraft,
+    passengerName: passengerNameRaw || null,
     instructorName: instructorNameRaw || null,
     instructorMinutes,
     rentalRateApplied,
@@ -153,6 +156,7 @@ export function buildFlightInitialValues(args: {
     inputMode: FlightInputMode;
     aircraftRegistration: string | null;
     aircraftType: string | null;
+    passengerName: string | null;
     instructorName: string | null;
     instructorMinutes: number | null;
     durationMinutes: number;
@@ -175,6 +179,7 @@ export function buildFlightInitialValues(args: {
     routeMode: "SINGLE",
     aircraftRegistration: flight.aircraftRegistration ?? "I-4150",
     aircraftType: flight.aircraftType ?? "P92",
+    passengerName: flight.passengerName ?? "",
     instructorName: flight.instructorName ?? "",
     instructorMinutes: String(flight.instructorMinutes ?? 0),
     hobbsStartHours: String(hobbsStartPrefill.hours),

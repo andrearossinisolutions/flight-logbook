@@ -26,6 +26,7 @@ function buildInitialValues(
     routeMode: initialValues?.routeMode ?? "SINGLE",
     aircraftRegistration: initialValues?.aircraftRegistration ?? "I-4150",
     aircraftType: initialValues?.aircraftType ?? "P92",
+    passengerName: initialValues?.passengerName ?? "",
     instructorName: initialValues?.instructorName ?? "",
     instructorMinutes: initialValues?.instructorMinutes ?? "",
     hobbsStartHours: initialValues?.hobbsStartHours ?? "",
@@ -62,6 +63,9 @@ export default function FlightForm({
 
   const [rentalRate, setRentalRate] = useState(initial.rentalRateApplied);
   const [instructorRate, setInstructorRate] = useState(initial.instructorRateApplied);
+
+  const [passengerName, setPassengerName] = useState(initial.passengerName);
+
   const [instructorName, setInstructorName] = useState(initial.instructorName);
   const [instructorMinutes, setInstructorMinutes] = useState(initial.instructorMinutes);
 
@@ -355,35 +359,61 @@ export default function FlightForm({
         </div>
 
         <div className="card">
-          <div className="field">
-            <label htmlFor="instructorName">Istruttore</label>
-            <input
-              className="input"
-              id="instructorName"
-              name="instructorName"
-              value={instructorName}
-              onChange={(e) => {
-                setInstructorName(e.target.value)
-                if (!instructorMinutes && e.target.value) {
-                  setInstructorMinutes(String(durationMinutes))
-                }
-              }}
-              placeholder="Nome istruttore (se presente)"
-            />
-          </div>
+          <div className="grid grid-2">
+            <div className="field">
+              <label htmlFor="passengerName">Passeggero</label>
+              <input
+                className="input"
+                id="passengerName"
+                name="passengerName"
+                value={passengerName}
+                onChange={(e) => {
+                  setPassengerName(e.target.value)
 
-          <div className="field" style={{ marginTop: "16px" }}>
-            <label>Minuti istruttore</label>
-            <input
-              className="input"
-              name="instructorMinutes"
-              type="number"
-              min="0"
-              max={durationMinutes}
-              value={instructorMinutes}
-              placeholder={durationMinutes > 0 ? `Tra 0 e ${durationMinutes} minuti` : "Inserisci prima un tempo di volo valido"}
-              onChange={(e) => setInstructorMinutes(e.target.value)}
-            />
+                  if (e.target.value) {
+                    setInstructorName("")
+                    setInstructorMinutes("")
+                  }
+                }}
+                placeholder="Nome passeggero (se presente)"
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="instructorName">Istruttore</label>
+              <input
+                className="input"
+                id="instructorName"
+                name="instructorName"
+                value={instructorName}
+                onChange={(e) => {
+                  setInstructorName(e.target.value)
+
+                  if (e.target.value) {
+                    setPassengerName("")
+
+                    if (!instructorMinutes) {
+                      setInstructorMinutes(String(durationMinutes))
+                    }
+                  }
+                }}
+                placeholder="Nome istruttore (se presente)"
+              />
+            </div>
+
+            <div className="field">
+              <label>Minuti istruttore</label>
+              <input
+                className="input"
+                name="instructorMinutes"
+                type="number"
+                min="0"
+                max={durationMinutes}
+                value={instructorMinutes}
+                placeholder={durationMinutes > 0 ? `Tra 0 e ${durationMinutes} minuti` : "Inserisci prima un tempo di volo valido"}
+                onChange={(e) => setInstructorMinutes(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 

@@ -73,6 +73,7 @@ model Flight {
   hobbsStartMinutes     Int?
   hobbsEndMinutes       Int?
   durationMinutes       Int
+  passengerName         String?
   instructorName        String?
   instructorMinutes     Int
 
