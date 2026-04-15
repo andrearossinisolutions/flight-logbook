@@ -33,13 +33,13 @@ export default async function DashboardPage() {
 
   const totalPICMinutes = movements.reduce(
     (acc: number, item: MovementItem) =>
-      acc + (!item.flight?.instructorName ? (item.flight?.durationMinutes ?? 0) : 0),
+      acc + (item.flight?.durationMinutes ?? 0) - (item.flight?.instructorMinutes ?? 0),
     0
   );
 
   const totalInstructorMinutes = movements.reduce(
     (acc: number, item: MovementItem) =>
-      acc + (item.flight?.instructorName ? (item.flight?.durationMinutes ?? 0) : 0),
+      acc + (item.flight?.instructorMinutes ?? 0),
     0
   );
 
@@ -51,13 +51,13 @@ export default async function DashboardPage() {
 
   const totalPostExamPICMinutes = movements.reduce(
     (acc: number, item: MovementItem) =>
-      acc + (!item.flight?.instructorName && settings?.dateMonoExam != null && item.date > settings.dateMonoExam ? (item.flight?.durationMinutes ?? 0) : 0),
+      acc + (settings?.dateMonoExam != null && item.date > settings.dateMonoExam ? ((item.flight?.durationMinutes ?? 0) - (item.flight?.instructorMinutes ?? 0)) : 0),
     0
   );
 
   const totalPostExamInstructorMinutes = movements.reduce(
     (acc: number, item: MovementItem) =>
-      acc + (item.flight?.instructorName && settings?.dateMonoExam != null && item.date > settings.dateMonoExam ? (item.flight?.durationMinutes ?? 0) : 0),
+      acc + (settings?.dateMonoExam != null && item.date > settings.dateMonoExam ? (item.flight?.instructorMinutes ?? 0) : 0),
     0
   );
 
