@@ -360,7 +360,7 @@ export default function FlightForm({
 
         <div className="card">
           <div className="grid grid-2">
-            <div className="field">
+            { dateBipoExam && <div className="field">
               <label htmlFor="passengerName">Passeggero</label>
               <input
                 className="input"
@@ -377,7 +377,7 @@ export default function FlightForm({
                 }}
                 placeholder="Nome passeggero (se presente)"
               />
-            </div>
+            </div> }
 
             <div className="field">
               <label htmlFor="instructorName">Istruttore</label>
