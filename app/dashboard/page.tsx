@@ -242,16 +242,22 @@ export default async function DashboardPage() {
             ) : null}
 
             {movements.map((item: MovementItem) => {
+              const now = new Date()
+              const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
               return (
                 <tr key={item.id}>
                   <td>{formatDateDisplay(item.date)}</td>
 
                   <td>
                     {item.type === "FLIGHT"
-                      ? ( item.isDraft ? "Pianificazione" : "Volo")
+                      ? item.isDraft
+                        ? item.date < today
+                          ? <div style={{ color: "#b91c1c" }}>Pianificazione<br />da confermare</div>
+                          : "Pianificazione"
+                        : "Volo"
                       : item.type === "TOPUP" && Number(item.amount) < 0
-                      ? "Rettifica saldo"
-                      : "Ricarica"}
+                        ? "Rettifica saldo"
+                        : "Ricarica" }
                   </td>
 
                   <td>
