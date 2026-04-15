@@ -58,7 +58,7 @@ export default async function SettingsPage() {
           </div>
 
           <div className="field">
-            <label htmlFor="dateMonoExam">Data esame monoposto</label>
+            <label htmlFor="dateMonoExam">Data attestato</label>
 
             <input
               className="input"
@@ -71,7 +71,7 @@ export default async function SettingsPage() {
           </div>
 
           <div className="field">
-            <label htmlFor="dateMonoExam">Data esame biposto</label>
+            <label htmlFor="dateBipoExam">Data abilitazione passeggero</label>
 
             <input
               className="input"
@@ -84,7 +84,7 @@ export default async function SettingsPage() {
           </div>
 
           <div className="field">
-            <label htmlFor="dateFoniaExam">Data esame fonia</label>
+            <label htmlFor="dateFoniaExam">Data abilitazione fonia</label>
 
             <input
               className="input"
@@ -97,7 +97,7 @@ export default async function SettingsPage() {
           </div>
 
           <div className="field">
-            <label htmlFor="dateAdvanced">Data esame avanzato</label>
+            <label htmlFor="dateAdvanced">Data abilitazione avanzato</label>
 
             <input
               className="input"
