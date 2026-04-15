@@ -329,7 +329,7 @@ function dashboardItem(item: any) {
 function flightType(flight: any) {
   if (flight.instructorMinutes == flight.durationMinutes) {
     return "Lezione";
-  } else if (flight.instructorMinutes < flight.durationMinutes) {
+  } else if (flight.instructorMinutes > 0 && flight.instructorMinutes < flight.durationMinutes) {
     return "Noleggio + Lezione";
   }
   return "Noleggio";
