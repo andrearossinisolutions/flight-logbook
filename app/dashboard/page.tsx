@@ -261,7 +261,7 @@ export default async function DashboardPage() {
                   <td style={{ fontWeight: 700 }}>{eur(Number(item.amount))}</td>
 
                   <td>
-                    <div className="row" style={{ gap: 8 }}>
+                    <div className="row" style={{ gap: 8, flexWrap: "nowrap", whiteSpace: "nowrap" }}>
                       <Link
                         className="btn secondary"
                         href={item.type === "FLIGHT" ? `/edit-flight/${item.id}` : `/edit-payment/${item.id}`}
