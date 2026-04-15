@@ -26,50 +26,62 @@ export default async function DashboardPage() {
       0
     );
 
-  const totalFlightMinutes = movements.reduce(
-    (acc: number, item: MovementItem) => acc + (item.flight?.durationMinutes ?? 0),
-    0
+  const totalFlightMinutes = movements
+    .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft)
+    .reduce(
+      (acc: number, item: MovementItem) => acc + (item.flight?.durationMinutes ?? 0),
+      0
+    );
+
+  const totalPICMinutes = movements
+    .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft)
+    .reduce(
+      (acc: number, item: MovementItem) =>
+        acc + (item.flight?.durationMinutes ?? 0) - (item.flight?.instructorMinutes ?? 0),
+      0
+    );
+
+  const totalInstructorMinutes = movements
+    .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft)
+    .reduce(
+      (acc: number, item: MovementItem) =>
+        acc + (item.flight?.instructorMinutes ?? 0),
+      0
   );
 
-  const totalPICMinutes = movements.reduce(
-    (acc: number, item: MovementItem) =>
-      acc + (item.flight?.durationMinutes ?? 0) - (item.flight?.instructorMinutes ?? 0),
-    0
-  );
+  const totalPostExamMinutes = movements
+    .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft)
+    .reduce(
+      (acc: number, item: MovementItem) =>
+        acc + (settings?.dateMonoExam != null && item.date > settings.dateMonoExam ? (item.flight?.durationMinutes ?? 0) : 0),
+      0
+    );
 
-  const totalInstructorMinutes = movements.reduce(
-    (acc: number, item: MovementItem) =>
-      acc + (item.flight?.instructorMinutes ?? 0),
-    0
-  );
-
-  const totalPostExamMinutes = movements.reduce(
-    (acc: number, item: MovementItem) =>
-      acc + (settings?.dateMonoExam != null && item.date > settings.dateMonoExam ? (item.flight?.durationMinutes ?? 0) : 0),
-    0
-  );
-
-  const totalPostExamPICMinutes = movements.reduce(
-    (acc: number, item: MovementItem) =>
+  const totalPostExamPICMinutes = movements
+    .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft)
+    .reduce(
+      (acc: number, item: MovementItem) =>
       acc + (settings?.dateMonoExam != null && item.date > settings.dateMonoExam ? ((item.flight?.durationMinutes ?? 0) - (item.flight?.instructorMinutes ?? 0)) : 0),
     0
   );
 
-  const totalPostExamInstructorMinutes = movements.reduce(
-    (acc: number, item: MovementItem) =>
-      acc + (settings?.dateMonoExam != null && item.date > settings.dateMonoExam ? (item.flight?.instructorMinutes ?? 0) : 0),
-    0
-  );
+  const totalPostExamInstructorMinutes = movements
+    .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft)
+    .reduce(
+      (acc: number, item: MovementItem) =>
+        acc + (settings?.dateMonoExam != null && item.date > settings.dateMonoExam ? (item.flight?.instructorMinutes ?? 0) : 0),
+      0
+    );
 
   const totalCosts = movements
-    .filter((item: MovementItem) => item.type !== "FLIGHT")
+    .filter((item: MovementItem) => item.type !== "FLIGHT" && !item.isDraft)
     .reduce(
       (acc: number, item: MovementItem) => acc + Math.abs(Number(item.amount)),
       0
     );
 
   const totalTopups = movements
-    .filter((item: MovementItem) => item.type === "TOPUP")
+    .filter((item: MovementItem) => item.type === "TOPUP" && !item.isDraft)
     .reduce(
       (acc: number, item: MovementItem) =>
         acc + (Number(item.amount) > 0 ? Number(item.amount) : 0),
@@ -77,7 +89,7 @@ export default async function DashboardPage() {
     );
 
   const totalServices = movements
-    .filter((item: MovementItem) => item.type === "SERVICE")
+    .filter((item: MovementItem) => item.type === "SERVICE" && !item.isDraft)
     .reduce(
       (acc: number, item: MovementItem) =>
         acc + (Number(item.amount) > 0 ? Number(item.amount) : 0),

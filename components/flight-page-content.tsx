@@ -40,12 +40,14 @@ export default async function FlightPageContent(
   });
 
   const currentBalance = movements
-    .filter((m) => m.type !== "SERVICE")
+    .filter((m) => m.type !== "SERVICE" && !m.isDraft)
     .reduce((acc, item) => acc + Number(item.amount), 0);
 
-  const totalFlightMinutes = movements.reduce(
-    (acc, item) => acc + (item.flight?.durationMinutes ?? 0),
-    0
+  const totalFlightMinutes = movements
+    .filter((m) => m.type === "FLIGHT" && !m.isDraft)
+    .reduce(
+      (acc, item) => acc + (item.flight?.durationMinutes ?? 0),
+      0
   );
 
   const movementToEdit =

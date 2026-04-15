@@ -27,11 +27,12 @@ export default async function PaymentPageContent(
       type: true,
       notes: true,
       date: true,
+      isDraft: true,
     },
   });
 
   const currentBalance = movements
-    .filter((m) => m.type !== "SERVICE")
+    .filter((m) => m.type !== "SERVICE" && !m.isDraft)
     .reduce((acc, item) => acc + Number(item.amount), 0);
 
   const rentalRatePerHour = Number(user.settings?.rentalRatePerHour ?? 150);
