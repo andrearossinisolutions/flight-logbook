@@ -255,7 +255,7 @@ export default async function DashboardPage() {
                   </td>
 
                   <td>
-                    { dashboardItem(item) }
+                    { dashboardItem(item, movements) }
                   </td>
 
                   <td style={{ fontWeight: 700 }}>{eur(Number(item.amount))}</td>
@@ -285,7 +285,9 @@ export default async function DashboardPage() {
   );
 }
 
-function dashboardItem(item: any) {
+function dashboardItem(item: any, movements: any[] = []) {
+  type MovementItem = (typeof movements)[number];
+
   switch (item.type) {
     case "TOPUP":
       return (
@@ -308,6 +310,11 @@ function dashboardItem(item: any) {
         </div>
       )
     case "FLIGHT":
+      const progressiveFlightMinutes = movements.reduce(
+        (acc: number, progrItem: MovementItem) => acc + (progrItem.date <= item.date ? progrItem.flight?.durationMinutes ?? 0 : 0),
+        0
+      );
+      
       return (
         <div>
           <div>
@@ -320,7 +327,11 @@ function dashboardItem(item: any) {
             { flightType(item.flight) }
           </div>
 
-          {item.notes ? <div className="muted">Note: {item.notes}</div> : null}
+          <div className="muted">
+            Progressivo ore: {minutesToHoursMinutes(progressiveFlightMinutes)}
+          </div>
+
+          {item.notes ? <div className="muted">Note: <i>{item.notes}</i></div> : null}
         </div>
       )
   }
