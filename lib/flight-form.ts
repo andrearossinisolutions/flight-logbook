@@ -161,6 +161,7 @@ export function buildFlightInitialValues(args: {
     passengerName: string | null;
     instructorName: string | null;
     instructorMinutes: number | null;
+    warmupMinutes: number | null;
     durationMinutes: number;
     hobbsStartMinutes: number | null;
     hobbsEndMinutes: number | null;
@@ -190,6 +191,7 @@ export function buildFlightInitialValues(args: {
     hobbsEndMinutes: String(hobbsEndPrefill.minutes),
     manualHours: String(manualPrefill.hours),
     manualMinutes: String(manualPrefill.minutes),
+    warmupMinutes: String(flight.warmupMinutes ?? 0),
     rentalRateApplied: String(Number(flight.rentalRateApplied)),
     instructorRateApplied: String(Number(flight.instructorRateApplied)),
     notes: notes ?? "",
