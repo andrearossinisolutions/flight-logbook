@@ -381,7 +381,6 @@ export default function FlightForm({
               value={instructorMinutes}
               placeholder={durationMinutes > 0 ? `Tra 0 e ${durationMinutes} minuti` : "Inserisci prima un tempo di volo valido"}
               onChange={(e) => setInstructorMinutes(e.target.value)}
-              disabled={Number(instructorMinutes || 0) == 0}
             />
           </div>
         </div>
