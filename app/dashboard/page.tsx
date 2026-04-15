@@ -288,25 +288,38 @@ export default async function DashboardPage() {
 function dashboardItem(item: any, movements: any[] = []) {
   type MovementItem = (typeof movements)[number];
 
+  const progressiveSaldo = movements
+    .filter((progrItem: MovementItem) => progrItem.type !== "SERVICE")
+    .reduce(
+      (acc: number, progrItem: MovementItem) => acc + (progrItem.date <= item.date ? Number(progrItem.amount) : 0),
+      0
+    );
+
   switch (item.type) {
     case "TOPUP":
       return (
-        <div>
-          <div>
+        <div className="grid grid-2">
+          <div className="muted">
             { item.type === "TOPUP" && Number(item.amount) < 0
               ? "Correzione saldo / addebito manuale"
-              : "Credito aggiunto"}
+              : "Credito aggiunto" }
           </div>
-          {item.notes ? <div className="muted">{item.notes}</div> : null}
+
+          <div>
+            Progressivo saldo: {eur(progressiveSaldo)}
+          </div>
+
+          {item.notes ? <div>Note: <i>{item.notes}</i></div> : null}
         </div>
       )
     case "SERVICE":
       return (
-        <div>
-          <div>
+        <div className="grid grid-2">
+          <div className="muted">
             Pagamento servizio
           </div>
-          {item.notes ? <div className="muted">{item.notes}</div> : null}
+
+          {item.notes ? <div>Note: <i>{item.notes}</i></div> : null}
         </div>
       )
     case "FLIGHT":
@@ -314,24 +327,27 @@ function dashboardItem(item: any, movements: any[] = []) {
         (acc: number, progrItem: MovementItem) => acc + (progrItem.date <= item.date ? progrItem.flight?.durationMinutes ?? 0 : 0),
         0
       );
-      
+
       return (
-        <div>
+        <div className="grid grid-2">
           <div>
-            {item.flight?.aircraftRegistration ?? "I-4150"} ·{" "}
-            {item.flight?.aircraftType ?? "P92"} ·{" "}
-            {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
+            <div className="muted">
+              { flightType(item.flight) }
+            </div>
+            <div>
+              {item.flight?.aircraftRegistration ?? "I-4150"} ·{" "}
+              {item.flight?.aircraftType ?? "P92"} ·{" "}
+              {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
+            </div>
           </div>
 
-          <div className="muted">
-            { flightType(item.flight) }
+
+          <div>
+            Progressivo ore: {minutesToHoursMinutes(progressiveFlightMinutes)}<br />
+            Progressivo saldo: {eur(progressiveSaldo)}
           </div>
 
-          <div className="muted">
-            Progressivo ore: {minutesToHoursMinutes(progressiveFlightMinutes)}
-          </div>
-
-          {item.notes ? <div className="muted">Note: <i>{item.notes}</i></div> : null}
+          {item.notes ? <div>Note: <i>{item.notes}</i></div> : null}
         </div>
       )
   }
