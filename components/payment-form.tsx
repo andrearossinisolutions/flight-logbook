@@ -100,6 +100,7 @@ export default function PaymentForm({
               type="date"
               className="input"
               value={date}
+              placeholder="Data del pagamento"
               onChange={(e) => setDate(e.target.value)}
               required
             />
@@ -114,6 +115,7 @@ export default function PaymentForm({
               step="0.01"
               className="input"
               value={amount}
+              placeholder="Inserisci un importo"
               onChange={(e) => setAmount(e.target.value)}
               required
             />
