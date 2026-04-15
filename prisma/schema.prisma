@@ -73,6 +73,7 @@ model Flight {
   hobbsEndMinutes       Int?
   durationMinutes       Int
   instructorName        String?
+  instructorMinutes     Int
 
   rentalRateApplied     Decimal
   instructorRateApplied Decimal

@@ -21,6 +21,7 @@ export default function NewFlightForm({
   const [rentalRate, setRentalRate] = useState("150");
   const [instructorRate, setInstructorRate] = useState("80");
   const [instructorName, setInstructorName] = useState("");
+  const [instructorMinutes, setInstructorMinutes] = useState("");
   const [hobbsStartHours, setHobbsStartHours] = useState("");
   const [hobbsStartMinutes, setHobbsStartMinutes] = useState("");
   const [hobbsEndHours, setHobbsEndHours] = useState("");
@@ -62,17 +63,17 @@ export default function NewFlightForm({
       (durationMinutes / 60) *
       (Number.isFinite(rentalRateNumber) ? rentalRateNumber : 0);
 
-    const instructor = instructorName.trim()
-      ? (durationMinutes / 60) *
+    const instructor = instructorMinutes
+      ? (Number(instructorMinutes || 0) / 60) *
         (Number.isFinite(instructorRateNumber) ? instructorRateNumber : 0)
       : 0;
 
     return base + instructor;
   }, [
     durationMinutes,
-    instructorName,
     instructorRateNumber,
     rentalRateNumber,
+    instructorMinutes
   ]);
 
   return (
@@ -118,6 +119,7 @@ export default function NewFlightForm({
                 id="aircraftRegistration"
                 name="aircraftRegistration"
                 defaultValue="I-4150"
+                placeholder="P.es. 'I-4150'"
                 required
               />
             </div>
@@ -129,18 +131,8 @@ export default function NewFlightForm({
                 id="aircraftType"
                 name="aircraftType"
                 defaultValue="P92"
+                placeholder="P.es. 'P92'"
                 required
-              />
-            </div>
-
-            <div className="field">
-              <label htmlFor="instructorName">Istruttore (opzionale)</label>
-              <input
-                className="input"
-                id="instructorName"
-                name="instructorName"
-                value={instructorName}
-                onChange={(e) => setInstructorName(e.target.value)}
               />
             </div>
           </div>
@@ -176,6 +168,7 @@ export default function NewFlightForm({
                     type="number"
                     min="0"
                     value={hobbsStartHours}
+                    placeholder="Ore di partenza"
                     onChange={(e) => setHobbsStartHours(e.target.value)}
                     required
                   />
@@ -189,6 +182,7 @@ export default function NewFlightForm({
                     min="0"
                     max="59"
                     value={hobbsStartMinutes}
+                    placeholder="Minuti di partenza"
                     onChange={(e) => setHobbsStartMinutes(e.target.value)}
                     required
                   />
@@ -204,6 +198,7 @@ export default function NewFlightForm({
                     type="number"
                     min="0"
                     value={hobbsEndHours}
+                    placeholder="Ore di arrivo"
                     onChange={(e) => setHobbsEndHours(e.target.value)}
                     required
                   />
@@ -217,6 +212,7 @@ export default function NewFlightForm({
                     min="0"
                     max="59"
                     value={hobbsEndMinutes}
+                    placeholder="Minuti di arrivo"
                     onChange={(e) => setHobbsEndMinutes(e.target.value)}
                     required
                   />
@@ -286,6 +282,34 @@ export default function NewFlightForm({
         </div>
 
         <div className="card">
+          <div className="field">
+            <label htmlFor="instructorName">Istruttore</label>
+            <input
+              className="input"
+              id="instructorName"
+              name="instructorName"
+              value={instructorName}
+              placeholder="Se è una lezione"
+              onChange={(e) => setInstructorName(e.target.value)}
+            />
+          </div>
+
+          <div className="field" style={{ marginTop: "16px" }}>
+            <label>Minuti istruttore</label>
+            <input
+              className="input"
+              name="instructorMinutes"
+              type="number"
+              min="0"
+              max={durationMinutes}
+              value={instructorMinutes}
+              placeholder={`Tra 0 e ${durationMinutes} minuti`}
+              onChange={(e) => setInstructorMinutes(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="card">
           <h3 style={{ marginTop: 0 }}>Costi</h3>
 
           <div className="grid grid-2">
@@ -301,6 +325,7 @@ export default function NewFlightForm({
                 min="0"
                 step="0.01"
                 value={rentalRate}
+                placeholder="P.es. '150'"
                 onChange={(e) => setRentalRate(e.target.value)}
                 required
               />
@@ -318,6 +343,7 @@ export default function NewFlightForm({
                 min="0"
                 step="0.01"
                 value={instructorRate}
+                placeholder="P.es. '80'"
                 onChange={(e) => setInstructorRate(e.target.value)}
                 required
               />
@@ -356,7 +382,7 @@ export default function NewFlightForm({
             </div>
           </div>
 
-          { instructorName && <div className="field">
+          { Number(instructorMinutes || 0) > 0 && <div className="field">
             <label>Tariffa istruttore applicata</label>
             <div>
               €{" "}
@@ -378,7 +404,7 @@ export default function NewFlightForm({
         { totalCost > 0 && <div style={{ marginTop: 16 }}>
           <div className="muted">Costo {insertMode === "PAST" ? "del volo" : "stimato"}</div>
           <div className="big-number">€ {totalCost.toFixed(2)}</div>
-          { !instructorName && <>
+          { !instructorName && Number(instructorMinutes || 0) == 0 && <>
             { dateBipoExam != null ?
               <div style={{ marginTop: 8 }}>
                 € {(totalCost/2).toFixed(2)} se dividi i costi con il passeggero
@@ -394,7 +420,7 @@ export default function NewFlightForm({
         { totalCost > 0 && <div style={{ marginTop: 16 }}>
           <div className="muted">Nuovo saldo{insertMode === "PAST" ? "" : " stimato"}</div>
           <div className="big-number">€ {(currentBalance - totalCost).toFixed(2)}</div>
-          { !instructorName && dateBipoExam != null && <div style={{ marginTop: 8 }}>
+          { !instructorName && Number(instructorMinutes || 0) == 0 && dateBipoExam != null && <div style={{ marginTop: 8 }}>
             € {(currentBalance - totalCost/2).toFixed(2)} se dividi i costi con il passeggero
           </div> }
           <div style={{ marginTop: 8 }}>
@@ -405,7 +431,7 @@ export default function NewFlightForm({
         { currentBalance - totalCost < 0 && <div style={{ marginTop: 16 }}>
           <div className="muted">Ricarica necessaria{insertMode === "PAST" ? "" : " stimata"}</div>
           <div className="big-number">€ {(totalCost - currentBalance).toFixed(2)}</div>
-          { !instructorName && dateBipoExam != null && <div style={{ marginTop: 8 }}>
+          { !instructorName && Number(instructorMinutes || 0) == 0 && dateBipoExam != null && <div style={{ marginTop: 8 }}>
             € {(totalCost/2 - currentBalance).toFixed(2)} se dividi i costi con il passeggero
           </div> }
         </div> }

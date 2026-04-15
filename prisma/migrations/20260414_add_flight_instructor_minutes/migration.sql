@@ -1,0 +1,1 @@
+ALTER TABLE "Flight" ADD COLUMN "instructorMinutes" INTEGER DEFAULT 0;

@@ -29,7 +29,10 @@ export async function POST(request: Request) {
   const aircraftType =
     String(formData.get("aircraftType") ?? "P92").trim() || "P92";
   const inputModeRaw = String(formData.get("inputMode") ?? FlightInputMode.HOBBS);
-  const instructorNameRaw = String(formData.get("instructorName") ?? "").trim();
+
+  const instructorName = String(formData.get("instructorName") ?? "").trim();
+  const instructorMinutes = parseIntValue(formData.get("instructorMinutes"));
+
   const notesRaw = String(formData.get("notes") ?? "").trim();
 
   if (!dateRaw) {
@@ -115,11 +118,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const hasInstructor = instructorNameRaw.length > 0;
   const durationHours = durationMinutes / 60;
 
   const rentalCost = durationHours * rentalRateApplied;
-  const instructorCost = hasInstructor ? durationHours * instructorRateApplied : 0;
+  const instructorCost = instructorMinutes / 60 * instructorRateApplied;
   const totalCost = rentalCost + instructorCost;
   const movementAmount = -totalCost;
 
@@ -143,7 +145,8 @@ export async function POST(request: Request) {
         durationMinutes,
         hobbsStartMinutes,
         hobbsEndMinutes,
-        instructorName: hasInstructor ? instructorNameRaw : null,
+        instructorName,
+        instructorMinutes,
         rentalRateApplied,
         instructorRateApplied,
         rentalCost,

@@ -314,11 +314,20 @@ function dashboardItem(item: any) {
           </div>
 
           <div className="muted">
-            {item.flight?.instructorName ? "Lezione" : "Noleggio"}
+            { flightType(item.flight) }
           </div>
 
           {item.notes ? <div className="muted">Note: {item.notes}</div> : null}
         </div>
       )
   }
+}
+
+function flightType(flight: any) {
+  if (flight.instructorMinutes == flight.durationMinutes) {
+    return "Lezione";
+  } else if (flight.instructorMinutes < flight.durationMinutes) {
+    return "Noleggio + Lezione";
+  }
+  return "Noleggio";
 }
