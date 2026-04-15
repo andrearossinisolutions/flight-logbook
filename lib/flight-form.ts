@@ -74,6 +74,8 @@ export function parseFlightFormData(formData: FormData) {
     throw new Error("Le tariffe non possono essere negative.");
   }
 
+  const warmupMinutes = toInt(formData.get("warmupMinutes"));
+
   const manualHours = toInt(formData.get("manualHours"));
   const manualMinutes = toInt(formData.get("manualMinutes"));
 
@@ -108,7 +110,7 @@ export function parseFlightFormData(formData: FormData) {
       throw new Error("I minuti manuali devono essere tra 0 e 59.");
     }
 
-    durationMinutes = manualHours * 60 + manualMinutes;
+    durationMinutes = warmupMinutes + manualHours * 60 + manualMinutes;
     hobbsStartMinutes = null;
     hobbsEndMinutes = null;
   }
