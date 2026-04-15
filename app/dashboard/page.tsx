@@ -20,7 +20,7 @@ export default async function DashboardPage() {
   type MovementItem = (typeof movements)[number];
 
   const saldo = movements
-    .filter((item: MovementItem) => item.type !== "SERVICE")
+    .filter((item: MovementItem) => item.type !== "SERVICE" && !item.isDraft)
     .reduce(
       (acc: number, item: MovementItem) => acc + Number(item.amount),
       0
@@ -248,7 +248,7 @@ export default async function DashboardPage() {
 
                   <td>
                     {item.type === "FLIGHT"
-                      ? "Volo"
+                      ? ( item.isDraft ? "Pianificazione" : "Volo")
                       : item.type === "TOPUP" && Number(item.amount) < 0
                       ? "Rettifica saldo"
                       : "Ricarica"}
@@ -340,10 +340,9 @@ function dashboardItem(item: any, movements: any[] = []) {
             </div>
           </div>
 
-
           <div>
-            Progressivo ore: {minutesToHoursMinutes(progressiveFlightMinutes)}<br />
-            Progressivo saldo: {eur(progressiveSaldo)}
+            { item.isDraft ? "Bozza progressivo" : "Progressivo"} ore: {minutesToHoursMinutes(progressiveFlightMinutes)}<br />
+            { item.isDraft ? "Bozza progressivo" : "Progressivo"} saldo: {eur(progressiveSaldo)}
           </div>
 
           {item.notes ? <div>Note: <i>{item.notes}</i></div> : null}

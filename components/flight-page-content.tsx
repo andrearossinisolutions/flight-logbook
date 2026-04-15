@@ -34,6 +34,7 @@ export default async function FlightPageContent(
       type: true,
       notes: true,
       date: true,
+      isDraft: true,
       flight: true,
     },
   });
@@ -69,6 +70,7 @@ export default async function FlightPageContent(
             userId: user.id,
             type: MovementType.FLIGHT,
             date: parsed.date,
+            isDraft: parsed.isDraft,
             amount: parsed.movementAmount,
             notes: parsed.notes,
           },
@@ -137,6 +139,7 @@ export default async function FlightPageContent(
           where: { id: dbMovement.id },
           data: {
             date: parsed.date,
+            isDraft: parsed.isDraft,
             amount: parsed.movementAmount,
             notes: parsed.notes,
           },
@@ -154,20 +157,19 @@ export default async function FlightPageContent(
   let initialValues: Partial<FlightFormValues> | undefined = {
     rentalRateApplied: String(Number(settings?.rentalRatePerHour ?? 150)),
     instructorRateApplied: String(Number(settings?.instructorRatePerHour ?? 80)),
-    insertMode: "PAST",
+    isDraft: movementToEdit?.isDraft ?? false,
     inputMode: "HOBBS",
   };
   let movementId: string | undefined = undefined;
-  let submitLabel = "Salva volo";
 
   if (props.mode === "edit" && movementToEdit?.flight) {
     title = "Modifica volo";
     subtitle = "Stesso form del nuovo volo, con dati precompilati.";
     movementId = movementToEdit.id;
-    submitLabel = "Salva modifiche";
     initialValues = buildFlightInitialValues({
       movementDate: movementToEdit.date,
       notes: movementToEdit.notes,
+      isDraft: movementToEdit.isDraft,
       flight: {
         inputMode: movementToEdit.flight.inputMode,
         aircraftRegistration: movementToEdit.flight.aircraftRegistration,
@@ -193,7 +195,6 @@ export default async function FlightPageContent(
         totalFlightMinutes={totalFlightMinutes}
         dateBipoExam={settings?.dateBipoExam ?? null}
         initialValues={initialValues}
-        submitLabel={submitLabel}
       />
     </AppShell>
   );

@@ -21,7 +21,7 @@ function buildInitialValues(
 ): FlightFormValues {
   return {
     date: initialValues?.date ?? formatDateInput(new Date()),
-    insertMode: initialValues?.insertMode ?? "PAST",
+    isDraft: initialValues?.isDraft ?? false,
     inputMode: initialValues?.inputMode ?? "HOBBS",
     routeMode: initialValues?.routeMode ?? "SINGLE",
     aircraftRegistration: initialValues?.aircraftRegistration ?? "I-4150",
@@ -49,11 +49,10 @@ export default function FlightForm({
   dateBipoExam,
   initialValues,
   movementId,
-  submitLabel,
 }: FlightFormProps) {
   const initial = buildInitialValues(initialValues);
 
-  const [insertMode, setInsertMode] = useState<"PAST" | "FUTURE">(initial.insertMode);
+  const [insertMode, setInsertMode] = useState<"PAST" | "FUTURE">(initial.isDraft ? "FUTURE" : "PAST");
   const [inputMode, setInputMode] = useState<"HOBBS" | "MANUAL">(initial.inputMode);
   const [routeMode, setRouteMode] = useState<"SINGLE" | "DOUBLE">(initial.routeMode);
 
@@ -131,9 +130,13 @@ export default function FlightForm({
     rentalRateNumber,
   ]);
 
-  const canSubmit = insertMode === "PAST";
-  const effectiveSubmitLabel =
-    submitLabel ?? (mode === "edit" ? "Salva modifiche" : "Salva volo");
+  const effectiveSubmitLabel = useMemo(() => {
+    return mode === "edit"
+      ? "Salva modifiche"
+      : insertMode === "PAST"
+        ? "Salva volo"
+        : "Salva pianificazione"
+  }, [mode, insertMode]);
 
   return (
     <div className="grid grid-2">
@@ -156,7 +159,6 @@ export default function FlightForm({
                   setInsertMode(nextMode);
                   setInputMode(nextMode === "FUTURE" ? "MANUAL" : "HOBBS");
                 }}
-                disabled={mode === "edit"}
               >
                 <option value="PAST">Volo passato</option>
                 <option value="FUTURE">Pianificazione</option>
@@ -426,35 +428,26 @@ export default function FlightForm({
         <div className="card">
           <h3 style={{ marginTop: 0 }}>Dettagli</h3>
 
-          {insertMode === "PAST" ? (
-            <>
-              <div className="field">
-                <label htmlFor="notes">Note</label>
-                <textarea
-                  className="textarea"
-                  id="notes"
-                  name="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                />
-              </div>
+          <div className="field">
+            <label htmlFor="notes">Note</label>
+            <textarea
+              className="textarea"
+              id="notes"
+              name="notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
 
-              <div className="row" style={{ gap: 12, marginTop: "16px" }}>
-                <button className="btn" type="submit" disabled={!canSubmit}>
-                  {effectiveSubmitLabel}
-                </button>
+          <div className="row" style={{ gap: 12, marginTop: "16px" }}>
+            <button className="btn" type="submit">
+              {effectiveSubmitLabel}
+            </button>
 
-                <Link href="/dashboard" className="btn secondary">
-                  Annulla
-                </Link>
-              </div>
-            </>
-          ) : (
-            <p style={{ marginBottom: 0 }}>
-              La pianificazione non può essere salvata, ma consente di avere
-              un&apos;anteprima immediata del costo stimato al variare dei parametri.
-            </p>
-          )}
+            <Link href="/dashboard" className="btn secondary">
+              Annulla
+            </Link>
+          </div>
         </div>
       </form>
 

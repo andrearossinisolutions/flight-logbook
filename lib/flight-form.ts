@@ -2,7 +2,7 @@ import { FlightInputMode } from "@prisma/client";
 
 export type FlightFormValues = {
   date: string;
-  insertMode: "PAST" | "FUTURE";
+  isDraft: boolean;
   inputMode: "HOBBS" | "MANUAL";
   routeMode: "SINGLE" | "DOUBLE";
   aircraftRegistration: string;
@@ -61,6 +61,8 @@ export function parseFlightFormData(formData: FormData) {
 
   const rentalRateApplied = toFloat(formData.get("rentalRateApplied"));
   const instructorRateApplied = toFloat(formData.get("instructorRateApplied"));
+
+  const isDraft = formData.get("insertMode") === "FUTURE";
 
   if (!dateRaw) {
     throw new Error("La data è obbligatoria.");
@@ -131,6 +133,7 @@ export function parseFlightFormData(formData: FormData) {
     durationMinutes,
     hobbsStartMinutes,
     hobbsEndMinutes,
+    isDraft,
     instructorName: instructorNameRaw || null,
     instructorMinutes,
     rentalRateApplied,
@@ -145,6 +148,7 @@ export function parseFlightFormData(formData: FormData) {
 export function buildFlightInitialValues(args: {
   movementDate: Date;
   notes: string | null;
+  isDraft: boolean;
   flight: {
     inputMode: FlightInputMode;
     aircraftRegistration: string | null;
@@ -158,7 +162,7 @@ export function buildFlightInitialValues(args: {
     instructorRateApplied: number | string;
   };
 }): Partial<FlightFormValues> {
-  const { movementDate, notes, flight } = args;
+  const { movementDate, notes, isDraft, flight } = args;
 
   const manualPrefill = splitMinutes(flight.durationMinutes);
   const hobbsStartPrefill = splitMinutes(flight.hobbsStartMinutes);
@@ -166,7 +170,7 @@ export function buildFlightInitialValues(args: {
 
   return {
     date: new Date(movementDate).toISOString().slice(0, 10),
-    insertMode: "PAST",
+    isDraft: isDraft,
     inputMode: flight.inputMode === FlightInputMode.HOBBS ? "HOBBS" : "MANUAL",
     routeMode: "SINGLE",
     aircraftRegistration: flight.aircraftRegistration ?? "I-4150",
