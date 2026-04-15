@@ -60,10 +60,10 @@ export function MovementsEditForm({
 
   return (
     <div className="grid grid-2">
-      <div className="card">
-        <form action={updateMovement} className="grid">
-          <input type="hidden" name="movementId" value={movement.id} />
+      <form action={updateMovement} className="grid">
+        <input type="hidden" name="movementId" value={movement.id} />
 
+        <div className="card">
           {movement.type === "FLIGHT" ? (
             <input type="hidden" name="movementType" value={movement.type} />
           ) : (
@@ -116,32 +116,36 @@ export function MovementsEditForm({
             ) : null}
           </div>
 
-          {movement.type === "FLIGHT" ? (
-            <>
-              <div className="grid grid-2">
-                <div className="field">
-                  <label htmlFor="aircraftRegistration">Marche</label>
-                  <input
-                    id="aircraftRegistration"
-                    name="aircraftRegistration"
-                    className="input"
-                    defaultValue={flight?.aircraftRegistration ?? "I-4150"}
-                    required
-                  />
-                </div>
-
-                <div className="field">
-                  <label htmlFor="aircraftType">Tipo</label>
-                  <input
-                    id="aircraftType"
-                    name="aircraftType"
-                    className="input"
-                    defaultValue={flight?.aircraftType ?? "P92"}
-                    required
-                  />
-                </div>
+          {movement.type === "FLIGHT" && (
+            <div className="grid grid-2">
+              <div className="field">
+                <label htmlFor="aircraftRegistration">Marche</label>
+                <input
+                  id="aircraftRegistration"
+                  name="aircraftRegistration"
+                  className="input"
+                  defaultValue={flight?.aircraftRegistration ?? "I-4150"}
+                  required
+                />
               </div>
 
+              <div className="field">
+                <label htmlFor="aircraftType">Tipo</label>
+                <input
+                  id="aircraftType"
+                  name="aircraftType"
+                  className="input"
+                  defaultValue={flight?.aircraftType ?? "P92"}
+                  required
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {movement.type === "FLIGHT" && (
+          <>
+            <div className="card">
               <div className="grid grid-2">
                 <div className="field">
                   <label htmlFor="inputMode">Modalità durata</label>
@@ -155,19 +159,6 @@ export function MovementsEditForm({
                     <option value={FlightInputMode.MANUAL}>Manuale</option>
                   </select>
                 </div>
-
-                <div className="field">
-                  <label htmlFor="instructorName">Istruttore (opzionale)</label>
-                  <input
-                    id="instructorName"
-                    name="instructorName"
-                    className="input"
-                    defaultValue={flight?.instructorName ?? ""}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-2">
                 <div className="field">
                   <label>Ore volo</label>
                   <input
@@ -191,9 +182,6 @@ export function MovementsEditForm({
                     required
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-2">
                 <div className="field">
                   <label>Orametro partenza — ore</label>
                   <input
@@ -217,9 +205,6 @@ export function MovementsEditForm({
                     required
                   />
                 </div>
-              </div>
-
-              <div className="grid grid-2">
                 <div className="field">
                   <label>Orametro arrivo — ore</label>
                   <input
@@ -244,7 +229,37 @@ export function MovementsEditForm({
                   />
                 </div>
               </div>
+            </div>
 
+            <div className="card">
+              <div className="grid grid-2">
+                <div className="field">
+                  <label htmlFor="instructorName">Istruttore</label>
+                  <input
+                    className="input"
+                    id="instructorName"
+                    name="instructorName"
+                    defaultValue={flight?.instructorName ?? ""}
+                    placeholder="Se è una lezione"
+                  />
+                </div>
+
+                <div className="field">
+                  <label>Minuti istruttore</label>
+                  <input
+                    className="input"
+                    id="instructorMinutes"
+                    name="instructorMinutes"
+                    type="number"
+                    min="0"
+                    defaultValue={Number(flight?.instructorMinutes ?? 0)}
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="card">
               <div className="grid grid-2">
                 <div className="field">
                   <label htmlFor="rentalRateApplied">
@@ -278,94 +293,100 @@ export function MovementsEditForm({
                   />
                 </div>
               </div>
-            </>
-          ) : null}
+            </div>
 
-          <div className="field">
-            <label htmlFor="notes">Note</label>
-            <textarea
-              id="notes"
-              name="notes"
-              className="textarea"
-              defaultValue={movement.notes ?? ""}
-            />
-          </div>
+            <div className="card">
+              <div className="grid grid-2">
+                <div className="field">
+                  <label htmlFor="notes">Note</label>
+                  <textarea
+                    id="notes"
+                    name="notes"
+                    className="textarea"
+                    defaultValue={movement.notes ?? ""}
+                  />
+                </div>
 
-          <div className="row" style={{ gap: 12 }}>
-            <button className="btn" type="submit">
-              Salva modifiche
-            </button>
-            <Link href="/dashboard" className="btn secondary">
-              Annulla
-            </Link>
-          </div>
-        </form>
-      </div>
-
-      <div className="card">
-        {movement.type !== "FLIGHT" ? (
-          <>
-            <h3 style={{ marginTop: 0 }}>Riepilogo movimento</h3>
-            <div className="muted">Importo attuale</div>
-            <div className="big-number">€ {Number(movement.amount).toFixed(2)}</div>
-            <p className="muted" style={{ marginTop: 16 }}>
-              Puoi usare importi positivi per ricariche e importi negativi per
-              allineamenti saldo o addebiti manuali.
-            </p>
-          </>
-        ) : (
-          <>
-            <h3 style={{ marginTop: 0 }}>Valori salvati</h3>
-
-            <div style={{ marginTop: 16 }}>
-              <div className="muted">Aeromobile</div>
-              <div className="big-number" style={{ fontSize: "1.5rem" }}>
-                {flight?.aircraftRegistration ?? "I-4150"} ·{" "}
-                {flight?.aircraftType ?? "P92"}
+                <div className="row" style={{ gap: 12 }}>
+                  <button className="btn" type="submit">
+                    Salva modifiche
+                  </button>
+                  <Link href="/dashboard" className="btn secondary">
+                    Annulla
+                  </Link>
+                </div>
               </div>
             </div>
-
-            <div style={{ marginTop: 16 }}>
-              <div className="muted">Durata registrata</div>
-              <div className="big-number">
-                {Math.floor((flight?.durationMinutes ?? 0) / 60)}h{" "}
-                {(flight?.durationMinutes ?? 0) % 60}m
-              </div>
-            </div>
-
-            <div style={{ marginTop: 16 }}>
-              <div className="muted">Tariffa noleggio</div>
-              <div>€ {Number(flight?.rentalRateApplied ?? 0).toFixed(2)}/h</div>
-            </div>
-
-            <div style={{ marginTop: 16 }}>
-              <div className="muted">Tariffa istruttore</div>
-              <div>€ {Number(flight?.instructorRateApplied ?? 0).toFixed(2)}/h</div>
-            </div>
-
-            <div style={{ marginTop: 16 }}>
-              <div className="muted">Costo noleggio</div>
-              <div>€ {Number(flight?.rentalCost ?? 0).toFixed(2)}</div>
-            </div>
-
-            <div style={{ marginTop: 16 }}>
-              <div className="muted">Costo istruttore</div>
-              <div>€ {Number(flight?.instructorCost ?? 0).toFixed(2)}</div>
-            </div>
-
-            <div style={{ marginTop: 16 }}>
-              <div className="muted">Costo totale</div>
-              <div className="big-number">
-                € {Number(flight?.totalCost ?? 0).toFixed(2)}
-              </div>
-            </div>
-
-            <p className="muted" style={{ marginTop: 16 }}>
-              Il costo viene ricalcolato usando i valori che inserisci nel form a
-              sinistra.
-            </p>
           </>
         )}
+      </form>
+
+      <div className="card">
+        <div className="grid grid-2">
+          {movement.type !== "FLIGHT" ? (
+            <>
+              <h3>Riepilogo movimento</h3>
+              <div className="muted">Importo attuale</div>
+              <div className="big-number">€ {Number(movement.amount).toFixed(2)}</div>
+              <p className="muted" style={{ marginTop: 16 }}>
+                Puoi usare importi positivi per ricariche e importi negativi per
+                allineamenti saldo o addebiti manuali.
+              </p>
+            </>
+          ) : (
+            <>
+              <h3>Valori salvati</h3>
+
+              <div>
+                <div className="muted">Aeromobile</div>
+                <div className="big-number" style={{ fontSize: "1.5rem" }}>
+                  {flight?.aircraftRegistration ?? "I-4150"} ·{" "}
+                  {flight?.aircraftType ?? "P92"}
+                </div>
+              </div>
+
+              <div>
+                <div className="muted">Durata registrata</div>
+                <div className="big-number">
+                  {Math.floor((flight?.durationMinutes ?? 0) / 60)}h{" "}
+                  {(flight?.durationMinutes ?? 0) % 60}m
+                </div>
+              </div>
+
+              <div>
+                <div className="muted">Tariffa noleggio</div>
+                <div>€ {Number(flight?.rentalRateApplied ?? 0).toFixed(2)}/h</div>
+              </div>
+
+              <div>
+                <div className="muted">Tariffa istruttore</div>
+                <div>€ {Number(flight?.instructorRateApplied ?? 0).toFixed(2)}/h</div>
+              </div>
+
+              <div>
+                <div className="muted">Costo noleggio</div>
+                <div>€ {Number(flight?.rentalCost ?? 0).toFixed(2)}</div>
+              </div>
+
+              <div>
+                <div className="muted">Costo istruttore</div>
+                <div>€ {Number(flight?.instructorCost ?? 0).toFixed(2)}</div>
+              </div>
+
+              <div>
+                <div className="muted">Costo totale</div>
+                <div className="big-number">
+                  € {Number(flight?.totalCost ?? 0).toFixed(2)}
+                </div>
+              </div>
+
+              <p className="muted">
+                Il costo viene ricalcolato usando i valori che inserisci nel form a
+                sinistra.
+              </p>
+            </>
+          )}
+        </div>
 
         <hr style={{ margin: "24px 0" }} />
 
