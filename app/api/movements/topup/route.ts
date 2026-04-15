@@ -21,6 +21,7 @@ export async function POST(request: Request) {
       userId: session.userId,
       type: "TOPUP",
       date: new Date(parsed.data.date),
+      isDraft: false,
       amount: parsed.data.amount,
       notes: parsed.data.notes || null,
     },

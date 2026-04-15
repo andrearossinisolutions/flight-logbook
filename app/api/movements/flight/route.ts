@@ -28,6 +28,9 @@ export async function POST(request: Request) {
     String(formData.get("aircraftRegistration") ?? "I-4150").trim() || "I-4150";
   const aircraftType =
     String(formData.get("aircraftType") ?? "P92").trim() || "P92";
+
+  const insertMode = String(formData.get("insertMode") as "PAST" | "FUTURE" ?? "PAST");
+
   const inputModeRaw = String(formData.get("inputMode") ?? FlightInputMode.HOBBS);
 
   const instructorName = String(formData.get("instructorName") ?? "").trim();
@@ -131,6 +134,7 @@ export async function POST(request: Request) {
         userId: user.id,
         type: "FLIGHT",
         date: new Date(dateRaw),
+        isDraft: insertMode === "FUTURE",
         amount: movementAmount,
         notes: notesRaw || null,
       },

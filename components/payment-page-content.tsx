@@ -62,6 +62,7 @@ export default async function PaymentPageContent(
           userId: user.id,
           type: parsed.movementType,
           date: parsed.date,
+          isDraft: parsed.isDraft,
           amount: parsed.amount,
           notes: parsed.notes,
         },

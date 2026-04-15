@@ -38,6 +38,7 @@ export function parsePaymentFormData(formData: FormData) {
   return {
     movementType: movementTypeRaw as "TOPUP" | "SERVICE",
     date: new Date(dateRaw),
+    isDraft: false,
     amount,
     notes: notesRaw || null,
   };
