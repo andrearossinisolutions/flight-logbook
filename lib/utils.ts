@@ -45,3 +45,8 @@ export function medicalExamRemaining(medicalExamDate: Date) {
 
   return `${months > 1 ? months + " mesi" : "1 mese"} e ${days > 1 ? days + " giorni" : "1 giorno"}`;
 }
+
+export function daysFromDate(date: Date) {
+  const days = Math.ceil((new Date().getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  return days === 1 ? "1 giorno" : days + " giorni";
+}

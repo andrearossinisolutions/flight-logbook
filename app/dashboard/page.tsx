@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { AppShell } from "@/components/app-shell";
 import { DeleteMovementButton } from "@/components/delete-movement-button";
 import { requireUser } from "@/lib/require-user";
-import { eur, formatDateDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining } from "@/lib/utils";
+import { eur, formatDateDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 
 export default async function DashboardPage() {
@@ -25,6 +25,11 @@ export default async function DashboardPage() {
       (acc: number, item: MovementItem) => acc + Number(item.amount),
       0
     );
+
+  const flights = movements
+    .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft);
+
+  const lastFlight = flights.length > 0 ? flights[0] : null;
 
   const totalFlightMinutes = movements
     .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft)
@@ -176,6 +181,18 @@ export default async function DashboardPage() {
               : "0:00"}
           </div>
         </div>
+
+        { lastFlight && <div className="card">
+          <div className="muted">Non voli da</div>
+          <div className="big-number">{daysFromDate(lastFlight.date)}</div>
+          <div className="muted" style={{ marginTop: 16 }}>Ultimo volo</div>
+          <div style={{ marginTop: 8 }}>
+            Il {formatDateDisplay(lastFlight.date)}
+          </div>
+          <div style={{ marginTop: 8 }}>
+            {flightType(lastFlight.flight)} 
+          </div>
+        </div> }
 
         <div className="card">
           <div className="muted">Ore totali registrate</div>
