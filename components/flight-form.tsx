@@ -119,9 +119,9 @@ export default function FlightForm({
       (durationMinutes / 60) *
       (Number.isFinite(rentalRateNumber) ? rentalRateNumber : 0);
 
-    const instructor =
-      (instructorMinutesNumber / 60) *
-      (Number.isFinite(instructorRateNumber) ? instructorRateNumber : 0);
+    const instructor = instructorMinutesNumber > 0 ?
+      (durationMinutes / 60) *
+      (Number.isFinite(instructorRateNumber) ? instructorRateNumber : 0) : 0;
 
     return base + instructor;
   }, [

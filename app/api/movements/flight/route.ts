@@ -121,7 +121,7 @@ export async function POST(request: Request) {
   const durationHours = durationMinutes / 60;
 
   const rentalCost = durationHours * rentalRateApplied;
-  const instructorCost = instructorMinutes / 60 * instructorRateApplied;
+  const instructorCost = durationHours * instructorRateApplied;
   const totalCost = rentalCost + instructorCost;
   const movementAmount = -totalCost;
 
