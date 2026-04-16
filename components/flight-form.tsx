@@ -1,5 +1,6 @@
 "use client";
 
+import { CopyArrowIcon } from "@/components/icons";
 import Link from "next/link";
 import { formatDateTimeInput, minutesToHoursMinutes } from "@/lib/utils";
 import { useMemo, useState } from "react";
@@ -248,20 +249,7 @@ export default function FlightForm({
                   aria-label="Copia il luogo di decollo nell'arrivo"
                   title="Volo locale"
                 >
-                  <svg
-                    aria-hidden="true"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    width="18"
-                    height="18"
-                  >
-                    <path d="M7 17 17 7" />
-                    <path d="M7 7h10v10" />
-                  </svg>
+                  <CopyArrowIcon size={18} />
                 </button>
               </div>
             </div>

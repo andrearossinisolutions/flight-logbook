@@ -3,6 +3,14 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { AppShell } from "@/components/app-shell";
 import { DeleteMovementButton } from "@/components/delete-movement-button";
+import {
+  AirplaneIcon,
+  CalendarIcon,
+  CalendarPlusIcon,
+  ClockIcon,
+  MoneyBillIcon,
+  PencilIcon,
+} from "@/components/icons";
 import { requireUser } from "@/lib/require-user";
 import { eur, formatDateDisplay, formatTimeDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
@@ -164,8 +172,9 @@ export default async function DashboardPage() {
           <div className="muted" style={{ marginTop: 16 }}>
             Ore di volo disponibili
           </div>
-          <div style={{ marginTop: 8 }}>
-            Pilota In Comando:{" "}
+          <div className="inline-meta" style={{ marginTop: 8 }}>
+            <ClockIcon />
+            PIC:{" "}
             {saldo > 0
               ? minutesToHoursMinutes(
                   (saldo /
@@ -176,8 +185,9 @@ export default async function DashboardPage() {
                 )
               : "0:00"}
           </div>
-          <div style={{ marginTop: 4 }}>
-            Con istruttore:{" "}
+          <div className="inline-meta" style={{ marginTop: 4 }}>
+            <ClockIcon />
+            Istruttore:{" "}
             {saldo > 0
               ? minutesToHoursMinutes(
                   (saldo /
@@ -196,8 +206,9 @@ export default async function DashboardPage() {
         { lastFlight && <div className="card">
           <div className="muted">Ultimo volo</div>
           <div className="medium-number">{daysFromDate(lastFlight.date)} fa</div>
-          <div style={{ marginTop: 8 }}>
-            {formatDateDisplay(lastFlight.date)}
+          <div className="inline-meta" style={{ marginTop: 8 }}>
+            <CalendarIcon />
+            <span>{formatDateDisplay(lastFlight.date)}</span>
           </div>
           <div style={{ marginTop: 8 }}>
             {flightType(lastFlight.flight, true)}
@@ -213,11 +224,13 @@ export default async function DashboardPage() {
           <div className="muted">Negli ultimi 6 mesi</div>
           <div className="medium-number">{last6mFlights.length} voli | {minutesToHoursMinutes(last6mMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
-          <div style={{ marginTop: 8 }}>
-            Pilota In Comando: {minutesToHoursMinutes(last6mPICMinutes)}
+          <div className="inline-meta" style={{ marginTop: 8 }}>
+            <ClockIcon />
+            PIC: {minutesToHoursMinutes(last6mPICMinutes)}
           </div>
-          <div style={{ marginTop: 4 }}>
-            Con istruttore: {minutesToHoursMinutes(last6mInstructorMinutes)}
+          <div className="inline-meta" style={{ marginTop: 4 }}>
+            <ClockIcon />
+            Istruttore: {minutesToHoursMinutes(last6mInstructorMinutes)}
           </div>
         </div> }
 
@@ -225,11 +238,13 @@ export default async function DashboardPage() {
           <div className="muted">Da quando hai l'attestato</div>
           <div className="medium-number">{totalPostExamFlights.length} voli | {minutesToHoursMinutes(totalPostExamMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
-          <div style={{ marginTop: 8 }}>
-            Pilota In Comando: {minutesToHoursMinutes(totalPostExamPICMinutes)}
+          <div className="inline-meta" style={{ marginTop: 8 }}>
+            <ClockIcon />
+            PIC: {minutesToHoursMinutes(totalPostExamPICMinutes)}
           </div>
-          <div style={{ marginTop: 4 }}>
-            Con istruttore: {minutesToHoursMinutes(totalPostExamInstructorMinutes)}
+          <div className="inline-meta" style={{ marginTop: 4 }}>
+            <ClockIcon />
+            Istruttore: {minutesToHoursMinutes(totalPostExamInstructorMinutes)}
           </div>
         </div> }
 
@@ -237,11 +252,13 @@ export default async function DashboardPage() {
           <div className="muted">Dal primo giorno</div>
           <div className="medium-number">{totalFlights.length} voli | {minutesToHoursMinutes(totalFlightMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
-          <div style={{ marginTop: 8 }}>
-            Pilota In Comando: {minutesToHoursMinutes(totalPICMinutes)}
+          <div className="inline-meta" style={{ marginTop: 8 }}>
+            <ClockIcon />
+            PIC: {minutesToHoursMinutes(totalPICMinutes)}
           </div>
-          <div style={{ marginTop: 4 }}>
-            Con istruttore: {minutesToHoursMinutes(totalInstructorMinutes)}
+          <div className="inline-meta" style={{ marginTop: 4 }}>
+            <ClockIcon />
+            Istruttore: {minutesToHoursMinutes(totalInstructorMinutes)}
           </div>
         </div>
 
@@ -249,10 +266,11 @@ export default async function DashboardPage() {
           <div className="muted">Scadenza visita medica</div>
           <div className="big-number">{formatDateDisplay(medicalExamExpirationDate(settings.dateMedicalExam))}</div>
           <div style={{ marginTop: 8 }}>
-            Data visita: {formatDateDisplay(settings.dateMedicalExam)}
+            Scade tra {medicalExamRemaining(settings.dateMedicalExam)}
           </div>
-          <div style={{ marginTop: 8 }}>
-            Rimanenti: {medicalExamRemaining(settings.dateMedicalExam)}
+          <div className="inline-meta" style={{ marginTop: 32 }}>
+            <CalendarIcon />
+            <span>Visita: {formatDateDisplay(settings.dateMedicalExam)}</span>
           </div>
         </div> }
 
@@ -304,41 +322,13 @@ export default async function DashboardPage() {
                 <tr key={item.id}>
                   <td>
                     <div className="inline-meta">
-                      <svg
-                        aria-hidden="true"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        width="16"
-                        height="16"
-                      >
-                        <path d="M8 2v4" />
-                        <path d="M16 2v4" />
-                        <rect x="3" y="4" width="18" height="18" rx="2" />
-                        <path d="M3 10h18" />
-                      </svg>
+                      <CalendarIcon />
                       <span>{formatDateDisplay(item.date)}</span>
                     </div>
                     <br />
                     { item.type === "FLIGHT" &&
                       <div className="inline-meta">
-                        <svg
-                          aria-hidden="true"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          width="16"
-                          height="16"
-                        >
-                          <circle cx="12" cy="12" r="9" />
-                          <path d="M12 7v5l3 3" />
-                        </svg>
+                        <ClockIcon />
                         <span>{formatTimeDisplay(item.date)}</span>
                       </div>
                     }
@@ -347,37 +337,9 @@ export default async function DashboardPage() {
                   <td>
                     <div className="inline-meta">
                       {item.type === "FLIGHT" ? (
-                        <svg
-                          aria-hidden="true"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          width="16"
-                          height="16"
-                        >
-                          <path d="M12 2v8" />
-                          <path d="m9 10-5 2v2l5-1.2V17l-2 1.5v1.5l5-1 5 1v-1.5L15 17v-4.2L20 14v-2l-5-2V2" />
-                        </svg>
+                        <AirplaneIcon />
                       ) : (
-                        <svg
-                          aria-hidden="true"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          width="16"
-                          height="16"
-                        >
-                          <rect x="3" y="6" width="18" height="12" rx="2" />
-                          <circle cx="12" cy="12" r="2.5" />
-                          <path d="M7 9h1" />
-                          <path d="M16 15h1" />
-                        </svg>
+                        <MoneyBillIcon />
                       )}
                       <span>
                         {item.type === "FLIGHT"
@@ -414,24 +376,7 @@ export default async function DashboardPage() {
                           target="_blank"
                           rel="noreferrer"
                         >
-                          <svg
-                            aria-hidden="true"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            width="18"
-                            height="18"
-                          >
-                            <path d="M8 2v4" />
-                            <path d="M16 2v4" />
-                            <rect x="3" y="4" width="18" height="18" rx="2" />
-                            <path d="M3 10h18" />
-                            <path d="M8 14h3" />
-                            <path d="M8 18h8" />
-                          </svg>
+                          <CalendarPlusIcon size={18} />
                         </a>
                       ) : null}
 
@@ -441,20 +386,7 @@ export default async function DashboardPage() {
                         aria-label="Modifica"
                         title="Modifica"
                       >
-                        <svg
-                          aria-hidden="true"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          width="18"
-                          height="18"
-                        >
-                          <path d="M12 20h9" />
-                          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
-                        </svg>
+                        <PencilIcon size={18} />
                       </Link>
 
                       <form action={deleteMovement}>
