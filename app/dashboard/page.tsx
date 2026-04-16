@@ -367,7 +367,7 @@ export default async function DashboardPage() {
 
                   <td>
                     <div className="row" style={{ gap: 8, flexWrap: "nowrap", whiteSpace: "nowrap" }}>
-                      {item.type === "FLIGHT" && item.isDraft && item.date >= today ? (
+                      {item.isDraft && item.date >= today ? (
                         <a
                           className="btn secondary icon-btn"
                           href={buildCalendarLink(item)}
@@ -483,6 +483,10 @@ function flightType(flight: any, short = false) {
 }
 
 function buildCalendarLink(item: any) {
+  if (item.type !== "FLIGHT") {
+    return buildPaymentCalendarLink(item);
+  }
+
   const start = new Date(item.date);
   const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
 
@@ -491,6 +495,32 @@ function buildCalendarLink(item: any) {
     `Tipo: ${flightType(item.flight)}`,
     `Aeromobile: ${item.flight?.aircraftRegistration ?? "I-4150"} · ${item.flight?.aircraftType ?? "P92"}`,
     `Durata prevista: ${minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}`,
+    item.notes ? `Note: ${item.notes}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${formatCalendarDate(start)}/${formatCalendarDate(end)}`,
+    details,
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function buildPaymentCalendarLink(item: any) {
+  const start = new Date(item.date);
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
+
+  const title = item.type === "SERVICE"
+    ? `Scadenza pagamento servizio · ${eur(Number(item.amount))}`
+    : `Scadenza pagamento · ${eur(Number(item.amount))}`;
+
+  const details = [
+    `Tipo: ${item.type === "SERVICE" ? "Pagamento servizio" : "Pagamento"}`,
+    `Importo: ${eur(Number(item.amount))}`,
     item.notes ? `Note: ${item.notes}` : null,
   ]
     .filter(Boolean)
