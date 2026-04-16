@@ -1,10 +1,14 @@
-import type { SVGProps } from "react";
+import type { CSSProperties, HTMLAttributes, ReactNode, SVGProps } from "react";
 
 type IconProps = SVGProps<SVGSVGElement> & {
   size?: number;
 };
 
-function BaseIcon({ size = 16, children, ...props }: IconProps & { children: React.ReactNode }) {
+type EmojiIconProps = HTMLAttributes<HTMLSpanElement> & {
+  size?: number;
+};
+
+function BaseIcon({ size = 16, children, ...props }: IconProps & { children: ReactNode }) {
   return (
     <svg
       aria-hidden="true"
@@ -24,13 +28,21 @@ function BaseIcon({ size = 16, children, ...props }: IconProps & { children: Rea
 }
 
 export function CalendarIcon(props: IconProps) {
+  const { size = 16, style, ...rest } = props as EmojiIconProps;
+
   return (
-    <BaseIcon {...props}>
-      <path d="M8 2v4" />
-      <path d="M16 2v4" />
-      <rect x="3" y="4" width="18" height="18" rx="2" />
-      <path d="M3 10h18" />
-    </BaseIcon>
+    <span
+      aria-hidden="true"
+      style={{
+        fontSize: size,
+        lineHeight: 1,
+        display: "inline-block",
+        ...(style as CSSProperties | undefined),
+      } as CSSProperties}
+      {...rest}
+    >
+      📅
+    </span>
   );
 }
 
@@ -48,31 +60,59 @@ export function CalendarPlusIcon(props: IconProps) {
 }
 
 export function ClockIcon(props: IconProps) {
+  const { size = 16, style, ...rest } = props as EmojiIconProps;
+
   return (
-    <BaseIcon {...props}>
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l3 3" />
-    </BaseIcon>
+    <span
+      aria-hidden="true"
+      style={{
+        fontSize: size,
+        lineHeight: 1,
+        display: "inline-block",
+        ...(style as CSSProperties | undefined),
+      } as CSSProperties}
+      {...rest}
+    >
+      🕒
+    </span>
   );
 }
 
 export function AirplaneIcon(props: IconProps) {
+  const { size = 16, style, ...rest } = props as EmojiIconProps;
+
   return (
-    <BaseIcon {...props}>
-      <path d="M12 2v8" />
-      <path d="m9 10-5 2v2l5-1.2V17l-2 1.5v1.5l5-1 5 1v-1.5L15 17v-4.2L20 14v-2l-5-2V2" />
-    </BaseIcon>
+    <span
+      aria-hidden="true"
+      style={{
+        fontSize: size,
+        lineHeight: 1,
+        display: "inline-block",
+        ...(style as CSSProperties | undefined),
+      } as CSSProperties}
+      {...rest}
+    >
+      ✈️
+    </span>
   );
 }
 
 export function MoneyBillIcon(props: IconProps) {
+  const { size = 16, style, ...rest } = props as EmojiIconProps;
+
   return (
-    <BaseIcon {...props}>
-      <rect x="3" y="6" width="18" height="12" rx="2" />
-      <circle cx="12" cy="12" r="2.5" />
-      <path d="M7 9h1" />
-      <path d="M16 15h1" />
-    </BaseIcon>
+    <span
+      aria-hidden="true"
+      style={{
+        fontSize: size,
+        lineHeight: 1,
+        display: "inline-block",
+        ...(style as CSSProperties | undefined),
+      } as CSSProperties}
+      {...rest}
+    >
+      💶
+    </span>
   );
 }
 
