@@ -19,6 +19,16 @@ function parseIntValue(value: FormDataEntryValue | null, fallback = 0) {
   return Math.trunc(parsed);
 }
 
+function parseDateTimeValue(value: FormDataEntryValue | null) {
+  if (value === null) return null;
+
+  const str = String(value).trim();
+  if (str === "") return null;
+
+  const parsed = new Date(str);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
 export async function POST(request: Request) {
   const user = await requireUser();
   const formData = await request.formData();
@@ -28,6 +38,10 @@ export async function POST(request: Request) {
     String(formData.get("aircraftRegistration") ?? "I-4150").trim() || "I-4150";
   const aircraftType =
     String(formData.get("aircraftType") ?? "P92").trim() || "P92";
+  const takeoffPlace = String(formData.get("takeoffPlace") ?? "").trim() || null;
+  const arrivalPlace = String(formData.get("arrivalPlace") ?? "").trim() || null;
+  const engineOn = parseDateTimeValue(formData.get("engineOn"));
+  const engineOff = parseDateTimeValue(formData.get("engineOff"));
 
   const insertMode = String(formData.get("insertMode") as "PAST" | "FUTURE" ?? "PAST");
 
@@ -40,6 +54,13 @@ export async function POST(request: Request) {
 
   if (!dateRaw) {
     return NextResponse.json({ error: "La data è obbligatoria." }, { status: 400 });
+  }
+
+  if (engineOn && engineOff && engineOff < engineOn) {
+    return NextResponse.json(
+      { error: "L'ora motore spento deve essere successiva a quella motore acceso." },
+      { status: 400 }
+    );
   }
 
   const inputMode: FlightInputMode =
@@ -145,6 +166,10 @@ export async function POST(request: Request) {
         movementId: movement.id,
         aircraftRegistration,
         aircraftType,
+        takeoffPlace,
+        arrivalPlace,
+        engineOn,
+        engineOff,
         inputMode,
         durationMinutes,
         hobbsStartMinutes,

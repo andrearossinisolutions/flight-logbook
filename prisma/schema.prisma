@@ -77,6 +77,11 @@ model Flight {
   instructorName        String?
   instructorMinutes     Int
 
+  takeoffPlace          String?
+  arrivalPlace          String?
+  engineOn              DateTime?
+  engineOff             DateTime?
+
   rentalRateApplied     Decimal
   instructorRateApplied Decimal
   rentalCost            Decimal

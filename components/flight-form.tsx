@@ -26,6 +26,10 @@ function buildInitialValues(
     routeMode: initialValues?.routeMode ?? "SINGLE",
     aircraftRegistration: initialValues?.aircraftRegistration ?? "I-4150",
     aircraftType: initialValues?.aircraftType ?? "P92",
+    takeoffPlace: initialValues?.takeoffPlace ?? "",
+    arrivalPlace: initialValues?.arrivalPlace ?? "",
+    engineOn: initialValues?.engineOn ?? "",
+    engineOff: initialValues?.engineOff ?? "",
     passengerName: initialValues?.passengerName ?? "",
     instructorName: initialValues?.instructorName ?? "",
     instructorMinutes: initialValues?.instructorMinutes ?? "",
@@ -60,6 +64,10 @@ export default function FlightForm({
   const [date, setDate] = useState(initial.date);
   const [aircraftRegistration, setAircraftRegistration] = useState(initial.aircraftRegistration);
   const [aircraftType, setAircraftType] = useState(initial.aircraftType);
+  const [takeoffPlace, setTakeoffPlace] = useState(initial.takeoffPlace);
+  const [arrivalPlace, setArrivalPlace] = useState(initial.arrivalPlace);
+  const [engineOn, setEngineOn] = useState(initial.engineOn);
+  const [engineOff, setEngineOff] = useState(initial.engineOff);
 
   const [rentalRate, setRentalRate] = useState(initial.rentalRateApplied);
   const [instructorRate, setInstructorRate] = useState(initial.instructorRateApplied);
@@ -205,6 +213,58 @@ export default function FlightForm({
                 value={aircraftType}
                 onChange={(e) => setAircraftType(e.target.value)}
                 required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-2" style={{ marginTop: "16px" }}>
+            <div className="field">
+              <label htmlFor="takeoffPlace">Luogo decollo</label>
+              <input
+                className="input"
+                id="takeoffPlace"
+                name="takeoffPlace"
+                value={takeoffPlace}
+                onChange={(e) => setTakeoffPlace(e.target.value)}
+                placeholder="Es. Dovera"
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="arrivalPlace">Luogo arrivo</label>
+              <input
+                className="input"
+                id="arrivalPlace"
+                name="arrivalPlace"
+                value={arrivalPlace}
+                onChange={(e) => setArrivalPlace(e.target.value)}
+                placeholder="Es. Dovera"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-2" style={{ marginTop: "16px" }}>
+            <div className="field">
+              <label htmlFor="engineOn">Motore acceso</label>
+              <input
+                className="input"
+                id="engineOn"
+                name="engineOn"
+                type="datetime-local"
+                value={engineOn}
+                onChange={(e) => setEngineOn(e.target.value)}
+              />
+            </div>
+
+            <div className="field">
+              <label htmlFor="engineOff">Motore spento</label>
+              <input
+                className="input"
+                id="engineOff"
+                name="engineOff"
+                type="datetime-local"
+                value={engineOff}
+                onChange={(e) => setEngineOff(e.target.value)}
               />
             </div>
           </div>

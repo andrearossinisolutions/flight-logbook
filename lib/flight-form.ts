@@ -1,4 +1,5 @@
 import { FlightInputMode } from "@prisma/client";
+import { formatDateTimeInput } from "@/lib/utils";
 
 export type FlightFormValues = {
   date: string;
@@ -7,6 +8,10 @@ export type FlightFormValues = {
   routeMode: "SINGLE" | "DOUBLE";
   aircraftRegistration: string;
   aircraftType: string;
+  takeoffPlace: string;
+  arrivalPlace: string;
+  engineOn: string;
+  engineOff: string;
   passengerName: string;
   instructorName: string;
   instructorMinutes: string;
@@ -42,6 +47,22 @@ export function splitMinutes(totalMinutes: number | null | undefined) {
   };
 }
 
+function parseOptionalDateTime(value: FormDataEntryValue | null, label: string) {
+  const raw = String(value ?? "").trim();
+
+  if (!raw) {
+    return null;
+  }
+
+  const parsed = new Date(raw);
+
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(`${label} non valida.`);
+  }
+
+  return parsed;
+}
+
 export function parseFlightFormData(formData: FormData) {
   const dateRaw = String(formData.get("date") ?? "");
   const notesRaw = String(formData.get("notes") ?? "").trim();
@@ -50,6 +71,16 @@ export function parseFlightFormData(formData: FormData) {
     String(formData.get("aircraftRegistration") ?? "I-4150").trim() || "I-4150";
   const aircraftType =
     String(formData.get("aircraftType") ?? "P92").trim() || "P92";
+  const takeoffPlaceRaw = String(formData.get("takeoffPlace") ?? "").trim();
+  const arrivalPlaceRaw = String(formData.get("arrivalPlace") ?? "").trim();
+  const engineOn = parseOptionalDateTime(
+    formData.get("engineOn"),
+    "L'ora motore acceso"
+  );
+  const engineOff = parseOptionalDateTime(
+    formData.get("engineOff"),
+    "L'ora motore spento"
+  );
 
   const inputModeRaw = String(formData.get("inputMode") ?? FlightInputMode.MANUAL);
   const inputMode: FlightInputMode =
@@ -72,6 +103,12 @@ export function parseFlightFormData(formData: FormData) {
 
   if (rentalRateApplied < 0 || instructorRateApplied < 0) {
     throw new Error("Le tariffe non possono essere negative.");
+  }
+
+  if (engineOn && engineOff && engineOff < engineOn) {
+    throw new Error(
+      "L'ora motore spento deve essere successiva a quella motore acceso."
+    );
   }
 
   const warmupMinutes = toInt(formData.get("warmupMinutes"));
@@ -133,6 +170,10 @@ export function parseFlightFormData(formData: FormData) {
     notes: notesRaw || null,
     aircraftRegistration,
     aircraftType,
+    takeoffPlace: takeoffPlaceRaw || null,
+    arrivalPlace: arrivalPlaceRaw || null,
+    engineOn,
+    engineOff,
     inputMode,
     durationMinutes,
     hobbsStartMinutes,
@@ -158,6 +199,10 @@ export function buildFlightInitialValues(args: {
     inputMode: FlightInputMode;
     aircraftRegistration: string | null;
     aircraftType: string | null;
+    takeoffPlace: string | null;
+    arrivalPlace: string | null;
+    engineOn: Date | null;
+    engineOff: Date | null;
     passengerName: string | null;
     instructorName: string | null;
     instructorMinutes: number | null;
@@ -182,6 +227,10 @@ export function buildFlightInitialValues(args: {
     routeMode: "SINGLE",
     aircraftRegistration: flight.aircraftRegistration ?? "I-4150",
     aircraftType: flight.aircraftType ?? "P92",
+    takeoffPlace: flight.takeoffPlace ?? "",
+    arrivalPlace: flight.arrivalPlace ?? "",
+    engineOn: formatDateTimeInput(flight.engineOn),
+    engineOff: formatDateTimeInput(flight.engineOff),
     passengerName: flight.passengerName ?? "",
     instructorName: flight.instructorName ?? "",
     instructorMinutes: String(flight.instructorMinutes ?? 0),

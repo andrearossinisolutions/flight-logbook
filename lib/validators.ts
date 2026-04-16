@@ -86,6 +86,10 @@ export const flightSchema = z
   .object({
     date: z.string().min(1),
     aircraft: z.string().trim().min(1).max(50).default("P92"),
+    takeoffPlace: z.string().trim().max(100).optional().or(z.literal("")),
+    arrivalPlace: z.string().trim().max(100).optional().or(z.literal("")),
+    engineOn: z.string().trim().optional().or(z.literal("")),
+    engineOff: z.string().trim().optional().or(z.literal("")),
     inputMode: z.enum(["HOBBS", "MANUAL"]),
     hobbsStartHours: nonNegativeInt.optional(),
     hobbsStartMinutes: z.coerce.number().int().min(0).max(59).optional(),
@@ -97,6 +101,27 @@ export const flightSchema = z
     notes: z.string().trim().max(500).optional().or(z.literal("")),
   })
   .superRefine((value, ctx) => {
+    if (value.engineOn && Number.isNaN(new Date(value.engineOn).getTime())) {
+      ctx.addIssue({ code: "custom", message: "Motore acceso non valido." });
+    }
+
+    if (value.engineOff && Number.isNaN(new Date(value.engineOff).getTime())) {
+      ctx.addIssue({ code: "custom", message: "Motore spento non valido." });
+    }
+
+    if (
+      value.engineOn &&
+      value.engineOff &&
+      !Number.isNaN(new Date(value.engineOn).getTime()) &&
+      !Number.isNaN(new Date(value.engineOff).getTime()) &&
+      new Date(value.engineOff) < new Date(value.engineOn)
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        message: "L'ora motore spento deve essere successiva a quella motore acceso.",
+      });
+    }
+
     if (value.inputMode === "HOBBS") {
       const required = [
         value.hobbsStartHours,
