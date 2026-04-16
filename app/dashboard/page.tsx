@@ -325,15 +325,30 @@ export default async function DashboardPage() {
                   <td>
                     <div className="row" style={{ gap: 8, flexWrap: "nowrap", whiteSpace: "nowrap" }}>
                       <Link
-                        className="btn secondary"
+                        className="btn secondary icon-btn"
                         href={item.type === "FLIGHT" ? `/edit-flight/${item.id}` : `/edit-payment/${item.id}`}
+                        aria-label="Modifica"
+                        title="Modifica"
                       >
-                        Modifica
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          width="18"
+                          height="18"
+                        >
+                          <path d="M12 20h9" />
+                          <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                        </svg>
                       </Link>
 
                       <form action={deleteMovement}>
                         <input type="hidden" name="movementId" value={item.id} />
-                        <DeleteMovementButton />
+                        <DeleteMovementButton iconOnly />
                       </form>
                     </div>
                   </td>
