@@ -488,7 +488,7 @@ function buildCalendarLink(item: any) {
   }
 
   const start = new Date(item.date);
-  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
+  const end = new Date(start.getTime() + (item.flight?.durationMinutes ?? 0) * 60 * 1000);
 
   const title = `${flightType(item.flight, true)} · ${item.flight?.aircraftRegistration ?? "I-4150"} (${item.flight?.aircraftType ?? "P92"})`;
   const details = [
@@ -503,7 +503,7 @@ function buildCalendarLink(item: any) {
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: title,
-    dates: `${formatCalendarDate(start)}/${formatCalendarDate(end)}`,
+    dates: `${formatCalendarDateTime(start)}/${formatCalendarDateTime(end)}`,
     details,
   });
 
@@ -541,4 +541,14 @@ function formatCalendarDate(date: Date) {
   const mm = String(date.getMonth() + 1).padStart(2, "0");
   const dd = String(date.getDate()).padStart(2, "0");
   return `${yyyy}${mm}${dd}`;
+}
+
+function formatCalendarDateTime(date: Date) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  const hh = String(date.getHours()).padStart(2, "0");
+  const min = String(date.getMinutes()).padStart(2, "0");
+  const ss = String(date.getSeconds()).padStart(2, "0");
+  return `${yyyy}${mm}${dd}T${hh}${min}${ss}`;
 }
