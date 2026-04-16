@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Route } from "next";
 import { LogoutButton } from "@/components/logout-button";
 
 export function AppShell({
@@ -21,6 +22,9 @@ export function AppShell({
         <div className="row">
           <Link className="btn secondary" href="/dashboard">
             Dashboard
+          </Link>
+          <Link className="btn secondary" href={"/print-logbook" as Route}>
+            Stampa Logbook
           </Link>
           <Link className="btn secondary" href="/new-flight">
             Nuovo volo

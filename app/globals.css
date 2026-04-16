@@ -220,3 +220,47 @@ textarea {
   font-size: 1.75rem;
   font-weight: 800;
 }
+
+.no-print {
+  display: block;
+}
+
+.print-page {
+  max-width: 1400px;
+}
+
+.print-card {
+  overflow-x: auto;
+}
+
+.print-table th,
+.print-table td {
+  font-size: 0.92rem;
+}
+
+@media print {
+  body {
+    background: white;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .container {
+    max-width: none;
+    padding: 0;
+  }
+
+  .card,
+  .print-card {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .table th,
+  .table td {
+    padding: 8px 6px;
+  }
+}
