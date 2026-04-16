@@ -195,7 +195,7 @@ export default async function DashboardPage() {
 
         { lastFlight && <div className="card">
           <div className="muted">Ultimo volo</div>
-          <div className="big-number">{daysFromDate(lastFlight.date)} fa</div>
+          <div className="medium-number">{daysFromDate(lastFlight.date)} fa</div>
           <div style={{ marginTop: 8 }}>
             {formatDateDisplay(lastFlight.date)}
           </div>
@@ -211,7 +211,7 @@ export default async function DashboardPage() {
 
         { last6mFlights.length > 0 && <div className="card">
           <div className="muted">Negli ultimi 6 mesi</div>
-          <div className="big-number">{last6mFlights.length} voli | {minutesToHoursMinutes(last6mMinutes)}</div>
+          <div className="medium-number">{last6mFlights.length} voli | {minutesToHoursMinutes(last6mMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
           <div style={{ marginTop: 8 }}>
             Pilota In Comando: {minutesToHoursMinutes(last6mPICMinutes)}
@@ -223,7 +223,7 @@ export default async function DashboardPage() {
 
         { settings?.dateMonoExam != null && <div className="card">
           <div className="muted">Da quando hai l'attestato</div>
-          <div className="big-number">{totalPostExamFlights.length} voli | {minutesToHoursMinutes(totalPostExamMinutes)}</div>
+          <div className="medium-number">{totalPostExamFlights.length} voli | {minutesToHoursMinutes(totalPostExamMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
           <div style={{ marginTop: 8 }}>
             Pilota In Comando: {minutesToHoursMinutes(totalPostExamPICMinutes)}
@@ -235,7 +235,7 @@ export default async function DashboardPage() {
 
         <div className="card">
           <div className="muted">Dal primo giorno</div>
-          <div className="big-number">{totalFlights.length} voli | {minutesToHoursMinutes(totalFlightMinutes)}</div>
+          <div className="medium-number">{totalFlights.length} voli | {minutesToHoursMinutes(totalFlightMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
           <div style={{ marginTop: 8 }}>
             Pilota In Comando: {minutesToHoursMinutes(totalPICMinutes)}
