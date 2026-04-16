@@ -104,6 +104,29 @@ export default async function DashboardPage() {
       0
     );
 
+  const draftCostMovements = movements
+    .filter((item: MovementItem) => item.type !== "FLIGHT" && item.isDraft);
+
+  const draftCosts = draftCostMovements
+    .reduce(
+      (acc: number, item: MovementItem) => acc + Math.abs(Number(item.amount)),
+      0
+    );
+
+  const draftFutureCosts = draftCostMovements
+    .filter((item: MovementItem) => item.date >= new Date())
+    .reduce(
+      (acc: number, item: MovementItem) => acc + Math.abs(Number(item.amount)),
+      0
+    );
+
+  const draftPastCosts = draftCostMovements
+    .filter((item: MovementItem) => item.date < new Date())
+    .reduce(
+      (acc: number, item: MovementItem) => acc + Math.abs(Number(item.amount)),
+      0
+    );
+
   const totalTopups = movements
     .filter((item: MovementItem) => item.type === "TOPUP" && !item.isDraft)
     .reduce(
@@ -280,6 +303,14 @@ export default async function DashboardPage() {
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
           <div style={{ marginTop: 8 }}>Ricariche: {eur(totalTopups)}</div>
           <div style={{ marginTop: 4 }}>Servizi: {eur(totalServices)}</div>
+        </div>
+
+        <div className="card">
+          <div className="muted">Spese in scadenza</div>
+          <div className="big-number">{eur(draftCosts)}</div>
+          <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
+          <div style={{ marginTop: 8 }}>Futuri: {eur(draftFutureCosts)}</div>
+          <div style={{ marginTop: 4 }}>Da confermare: {eur(draftPastCosts)}</div>
         </div>
       </div>
 
