@@ -31,6 +31,18 @@ export default async function DashboardPage() {
 
   const lastFlight = flights.length > 0 ? flights[0] : null;
 
+  const last6mFlights = movements
+    .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft && item.date >= new Date(new Date().setMonth(new Date().getMonth() - 6)));
+
+  const last6mMinutes = last6mFlights
+    .reduce((sum, flight) => sum + (flight.flight?.durationMinutes ?? 0), 0);
+
+  const last6mPICMinutes = last6mFlights
+    .reduce((sum, flight) => sum + (flight.flight?.durationMinutes ?? 0) - (flight.flight?.instructorMinutes ?? 0), 0);
+
+  const last6mInstructorMinutes = last6mFlights
+    .reduce((sum, flight) => sum + (flight.flight?.instructorMinutes ?? 0), 0);
+
   const totalFlightMinutes = movements
     .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft)
     .reduce(
@@ -183,14 +195,30 @@ export default async function DashboardPage() {
         </div>
 
         { lastFlight && <div className="card">
-          <div className="muted">Non voli da</div>
-          <div className="big-number">{daysFromDate(lastFlight.date)}</div>
-          <div className="muted" style={{ marginTop: 16 }}>Ultimo volo</div>
+          <div className="muted">Ultimo volo</div>
+          <div className="big-number">{daysFromDate(lastFlight.date)} fa</div>
           <div style={{ marginTop: 8 }}>
-            Il {formatDateDisplay(lastFlight.date)}
+            {formatDateDisplay(lastFlight.date)}
           </div>
           <div style={{ marginTop: 8 }}>
-            {flightType(lastFlight.flight)} 
+            {flightType(lastFlight.flight, true)}
+          </div>
+          <div style={{ marginTop: 8 }}>
+            {lastFlight.flight?.aircraftRegistration ?? "I-4150"} ·{" "}
+            {lastFlight.flight?.aircraftType ?? "P92"} ·{" "}
+            {minutesToHoursMinutes(lastFlight.flight?.durationMinutes ?? 0)}
+          </div>
+        </div> }
+
+        { last6mFlights.length > 0 && <div className="card">
+          <div className="muted">Negli ultimi 6 mesi</div>
+          <div className="big-number">{last6mFlights.length} voli - {minutesToHoursMinutes(last6mMinutes)}</div>
+          <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
+          <div style={{ marginTop: 8 }}>
+            PIC: {minutesToHoursMinutes(last6mPICMinutes)}
+          </div>
+          <div style={{ marginTop: 4 }}>
+            Istruttore: {minutesToHoursMinutes(last6mInstructorMinutes)}
           </div>
         </div> }
 
@@ -386,13 +414,13 @@ function dashboardItem(item: any, movements: any[] = []) {
   }
 }
 
-function flightType(flight: any) {
+function flightType(flight: any, short = false) {
   if (flight.instructorMinutes == flight.durationMinutes) {
-    return "Lezione: " + flight.instructorName;
+    return "Lezione" + (!short ? (": " + flight.instructorName) : "");
   } else if (flight.instructorMinutes > 0 && flight.instructorMinutes < flight.durationMinutes) {
-    return `Noleggio con lezione: ${flight.instructorName}`;
+    return "Noleggio con lezione" + (!short ? (": " + flight.instructorName) : "");
   } else if (flight.passengerName) {
-    return `Noleggio con passeggero: ${flight.passengerName}`;
+    return "Noleggio con passeggero" + (!short ? (": " + flight.passengerName) : "");
   }
   return "Noleggio";
 }
