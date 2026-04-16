@@ -43,47 +43,46 @@ export default async function DashboardPage() {
   const last6mInstructorMinutes = last6mFlights
     .reduce((sum, flight) => sum + (flight.flight?.instructorMinutes ?? 0), 0);
 
-  const totalFlightMinutes = movements
-    .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft)
+  const totalFlights = movements.filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft);
+
+  const totalFlightMinutes = totalFlights
     .reduce(
       (acc: number, item: MovementItem) => acc + (item.flight?.durationMinutes ?? 0),
       0
     );
 
-  const totalPICMinutes = movements
-    .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft)
+  const totalPICMinutes = totalFlights
     .reduce(
       (acc: number, item: MovementItem) =>
         acc + (item.flight?.durationMinutes ?? 0) - (item.flight?.instructorMinutes ?? 0),
       0
     );
 
-  const totalInstructorMinutes = movements
-    .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft)
+  const totalInstructorMinutes = totalFlights
     .reduce(
       (acc: number, item: MovementItem) =>
         acc + (item.flight?.instructorMinutes ?? 0),
       0
   );
 
-  const totalPostExamMinutes = movements
-    .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft)
+  const totalPostExamFlights = movements
+    .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft && settings?.dateMonoExam != null && item.date > settings.dateMonoExam);
+
+  const totalPostExamMinutes = totalPostExamFlights
     .reduce(
       (acc: number, item: MovementItem) =>
         acc + (settings?.dateMonoExam != null && item.date > settings.dateMonoExam ? (item.flight?.durationMinutes ?? 0) : 0),
       0
     );
 
-  const totalPostExamPICMinutes = movements
-    .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft)
+  const totalPostExamPICMinutes = totalPostExamFlights
     .reduce(
       (acc: number, item: MovementItem) =>
       acc + (settings?.dateMonoExam != null && item.date > settings.dateMonoExam ? ((item.flight?.durationMinutes ?? 0) - (item.flight?.instructorMinutes ?? 0)) : 0),
     0
   );
 
-  const totalPostExamInstructorMinutes = movements
-    .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft)
+  const totalPostExamInstructorMinutes = totalPostExamFlights
     .reduce(
       (acc: number, item: MovementItem) =>
         acc + (settings?.dateMonoExam != null && item.date > settings.dateMonoExam ? (item.flight?.instructorMinutes ?? 0) : 0),
@@ -166,7 +165,7 @@ export default async function DashboardPage() {
             Ore di volo disponibili
           </div>
           <div style={{ marginTop: 8 }}>
-            PIC:{" "}
+            Pilota In Comando:{" "}
             {saldo > 0
               ? minutesToHoursMinutes(
                   (saldo /
@@ -178,7 +177,7 @@ export default async function DashboardPage() {
               : "0:00"}
           </div>
           <div style={{ marginTop: 4 }}>
-            Istruttore:{" "}
+            Con istruttore:{" "}
             {saldo > 0
               ? minutesToHoursMinutes(
                   (saldo /
@@ -212,39 +211,39 @@ export default async function DashboardPage() {
 
         { last6mFlights.length > 0 && <div className="card">
           <div className="muted">Negli ultimi 6 mesi</div>
-          <div className="big-number">{last6mFlights.length} voli - {minutesToHoursMinutes(last6mMinutes)}</div>
+          <div className="big-number">{last6mFlights.length} voli | {minutesToHoursMinutes(last6mMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
           <div style={{ marginTop: 8 }}>
-            PIC: {minutesToHoursMinutes(last6mPICMinutes)}
+            Pilota In Comando: {minutesToHoursMinutes(last6mPICMinutes)}
           </div>
           <div style={{ marginTop: 4 }}>
-            Istruttore: {minutesToHoursMinutes(last6mInstructorMinutes)}
+            Con istruttore: {minutesToHoursMinutes(last6mInstructorMinutes)}
+          </div>
+        </div> }
+
+        { settings?.dateMonoExam != null && <div className="card">
+          <div className="muted">Da quando hai l'attestato</div>
+          <div className="big-number">{totalPostExamFlights.length} voli | {minutesToHoursMinutes(totalPostExamMinutes)}</div>
+          <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
+          <div style={{ marginTop: 8 }}>
+            Pilota In Comando: {minutesToHoursMinutes(totalPostExamPICMinutes)}
+          </div>
+          <div style={{ marginTop: 4 }}>
+            Con istruttore: {minutesToHoursMinutes(totalPostExamInstructorMinutes)}
           </div>
         </div> }
 
         <div className="card">
-          <div className="muted">Ore totali registrate</div>
-          <div className="big-number">{minutesToHoursMinutes(totalFlightMinutes)}</div>
+          <div className="muted">Dal primo giorno</div>
+          <div className="big-number">{totalFlights.length} voli | {minutesToHoursMinutes(totalFlightMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
           <div style={{ marginTop: 8 }}>
-            PIC: {minutesToHoursMinutes(totalPICMinutes)}
+            Pilota In Comando: {minutesToHoursMinutes(totalPICMinutes)}
           </div>
           <div style={{ marginTop: 4 }}>
-            Istruttore: {minutesToHoursMinutes(totalInstructorMinutes)}
+            Con istruttore: {minutesToHoursMinutes(totalInstructorMinutes)}
           </div>
         </div>
-
-        { settings?.dateMonoExam != null && <div className="card">
-          <div className="muted">Ore con attestato</div>
-          <div className="big-number">{minutesToHoursMinutes(totalPostExamMinutes)}</div>
-          <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
-          <div style={{ marginTop: 8 }}>
-            PIC: {minutesToHoursMinutes(totalPostExamPICMinutes)}
-          </div>
-          <div style={{ marginTop: 4 }}>
-            Istruttore: {minutesToHoursMinutes(totalPostExamInstructorMinutes)}
-          </div>
-        </div> }
 
         { settings?.dateMedicalExam != null && <div className="card">
           <div className="muted">Scadenza visita medica</div>
