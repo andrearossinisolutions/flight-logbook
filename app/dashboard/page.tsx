@@ -206,14 +206,14 @@ export default async function DashboardPage() {
         { lastFlight && <div className="card">
           <div className="muted">Ultimo volo</div>
           <div className="medium-number">{daysFromDate(lastFlight.date)} fa</div>
-          <div className="inline-meta" style={{ marginTop: 8 }}>
+          <div className="inline-meta" style={{ marginTop: 24 }}>
             <CalendarIcon />
             <span>{formatDateDisplay(lastFlight.date)}</span>
           </div>
-          <div style={{ marginTop: 8 }}>
+          <div style={{ marginTop: 4 }}>
             {flightType(lastFlight.flight, true)}
           </div>
-          <div style={{ marginTop: 8 }}>
+          <div style={{ marginTop: 4 }}>
             {lastFlight.flight?.aircraftRegistration ?? "I-4150"} ·{" "}
             {lastFlight.flight?.aircraftType ?? "P92"} ·{" "}
             {minutesToHoursMinutes(lastFlight.flight?.durationMinutes ?? 0)}
@@ -279,7 +279,7 @@ export default async function DashboardPage() {
           <div className="big-number">{eur(totalCosts)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
           <div style={{ marginTop: 8 }}>Ricariche: {eur(totalTopups)}</div>
-          <div style={{ marginTop: 8 }}>Servizi: {eur(totalServices)}</div>
+          <div style={{ marginTop: 4 }}>Servizi: {eur(totalServices)}</div>
         </div>
       </div>
 
