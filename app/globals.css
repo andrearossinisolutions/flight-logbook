@@ -154,6 +154,10 @@ textarea {
   gap: 6px;
 }
 
+.future-movement {
+  font-weight: lighter;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;

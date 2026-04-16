@@ -318,16 +318,17 @@ export default async function DashboardPage() {
             {movements.map((item: MovementItem) => {
               const now = new Date()
               const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+              const isFutureMovement = item.date > now;
               return (
                 <tr key={item.id}>
                   <td>
-                    <div className="inline-meta">
+                    <div className={ "inline-meta" + (isFutureMovement ? " future-movement" : "")}>
                       <CalendarIcon />
                       <span>{formatDateDisplay(item.date)}</span>
                     </div>
                     <br />
                     { item.type === "FLIGHT" &&
-                      <div className="inline-meta">
+                      <div className={ "inline-meta" + (isFutureMovement ? " future-movement" : "")}>
                         <ClockIcon />
                         <span>{formatTimeDisplay(item.date)}</span>
                       </div>
@@ -341,7 +342,7 @@ export default async function DashboardPage() {
                       ) : (
                         <MoneyBillIcon />
                       )}
-                      <span>
+                      <span className={isFutureMovement ? "future-movement" : undefined}>
                         {item.type === "FLIGHT"
                           ? item.isDraft
                             ? item.date < now
@@ -360,7 +361,7 @@ export default async function DashboardPage() {
                   </td>
 
                   <td>
-                    { dashboardItem(item, movements) }
+                    { dashboardItem(item, movements, isFutureMovement) }
                   </td>
 
                   <td style={{ fontWeight: 700 }}>{eur(Number(item.amount))}</td>
@@ -405,7 +406,7 @@ export default async function DashboardPage() {
   );
 }
 
-function dashboardItem(item: any, movements: any[] = []) {
+function dashboardItem(item: any, movements: any[] = [], isFutureMovement = false) {
   type MovementItem = (typeof movements)[number];
 
   const progressiveSaldo = movements
@@ -425,10 +426,12 @@ function dashboardItem(item: any, movements: any[] = []) {
           }
 
           <div>
-            Progressivo saldo: {eur(progressiveSaldo)}
+            <span className={isFutureMovement ? "future-movement" : undefined}>
+              Progressivo saldo: {eur(progressiveSaldo)}
+            </span>
           </div>
 
-          {item.notes ? <div>Note: <i>{item.notes}</i></div> : null}
+          {item.notes ? <div className={isFutureMovement ? "future-movement" : undefined}>Note: <i>{item.notes}</i></div> : null}
         </div>
       )
     case "SERVICE":
@@ -438,7 +441,7 @@ function dashboardItem(item: any, movements: any[] = []) {
             Pagamento servizio
           </div>
 
-          {item.notes ? <div>Note: <i>{item.notes}</i></div> : null}
+          {item.notes ? <div className={isFutureMovement ? "future-movement" : undefined}>Note: <i>{item.notes}</i></div> : null}
         </div>
       )
     case "FLIGHT":
@@ -453,7 +456,7 @@ function dashboardItem(item: any, movements: any[] = []) {
             <div className="muted">
               { flightType(item.flight) }
             </div>
-            <div>
+            <div className={isFutureMovement ? "future-movement" : undefined}>
               {item.flight?.aircraftRegistration ?? "I-4150"} ·{" "}
               {item.flight?.aircraftType ?? "P92"} ·{" "}
               {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
@@ -461,11 +464,16 @@ function dashboardItem(item: any, movements: any[] = []) {
           </div>
 
           <div>
-            { item.isDraft ? "Bozza progressivo" : "Progressivo"} ore: {minutesToHoursMinutes(progressiveFlightMinutes)}<br />
-            { item.isDraft ? "Bozza progressivo" : "Progressivo"} saldo: {eur(progressiveSaldo)}
+            <span className={isFutureMovement ? "future-movement" : undefined}>
+              { item.isDraft ? "Bozza progressivo" : "Progressivo"} ore: {minutesToHoursMinutes(progressiveFlightMinutes)}
+            </span>
+            <br />
+            <span className={isFutureMovement ? "future-movement" : undefined}>
+              { item.isDraft ? "Bozza progressivo" : "Progressivo"} saldo: {eur(progressiveSaldo)}
+            </span>
           </div>
 
-          {item.notes ? <div>Note: <i>{item.notes}</i></div> : null}
+          {item.notes ? <div className={isFutureMovement ? "future-movement" : undefined}>Note: <i>{item.notes}</i></div> : null}
         </div>
       )
   }
