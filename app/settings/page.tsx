@@ -44,6 +44,18 @@ export default async function SettingsPage() {
           </div>
 
           <div className="field">
+            <label htmlFor="defaultBase">Base predefinita</label>
+            <input
+              className="input"
+              id="defaultBase"
+              name="defaultBase"
+              defaultValue={settings?.defaultBase ?? ""}
+              placeholder="Es. Alzate Brianza"
+              maxLength={100}
+            />
+          </div>
+
+          <div className="field">
             <label htmlFor="dateMonoExam">Data visita medica</label>
 
             <input

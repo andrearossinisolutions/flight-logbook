@@ -18,6 +18,7 @@ export const settingsSchema = z.object({
   rentalRatePerHour: z.preprocess(toNumber, z.number().positive()),
   instructorRatePerHour: z.preprocess(toNumber, z.number().min(0)),
   currency: z.string().trim().min(3).max(3).default("EUR"),
+  defaultBase: z.string().trim().max(100).optional().or(z.literal("")),
   dateMedicalExam: z.preprocess((value) => {
   if (typeof value === "string" && value.trim() !== "") {
     const date = new Date(`${value}T00:00:00.000Z`);

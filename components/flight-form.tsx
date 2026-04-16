@@ -232,42 +232,68 @@ export default function FlightForm({
 
             <div className="field">
               <label htmlFor="arrivalPlace">Luogo arrivo</label>
-              <input
-                className="input"
-                id="arrivalPlace"
-                name="arrivalPlace"
-                value={arrivalPlace}
-                onChange={(e) => setArrivalPlace(e.target.value)}
-                placeholder="Es. Dovera"
-              />
+              <div className="input-action">
+                <input
+                  className="input"
+                  id="arrivalPlace"
+                  name="arrivalPlace"
+                  value={arrivalPlace}
+                  onChange={(e) => setArrivalPlace(e.target.value)}
+                  placeholder="Es. Dovera"
+                />
+                <button
+                  className="btn secondary icon-btn"
+                  type="button"
+                  onClick={() => setArrivalPlace(takeoffPlace)}
+                  aria-label="Copia il luogo di decollo nell'arrivo"
+                  title="Volo locale"
+                >
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    width="18"
+                    height="18"
+                  >
+                    <path d="M7 17 17 7" />
+                    <path d="M7 7h10v10" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-2" style={{ marginTop: "16px" }}>
-            <div className="field">
-              <label htmlFor="engineOn">Motore acceso</label>
-              <input
-                className="input"
-                id="engineOn"
-                name="engineOn"
-                type="datetime-local"
-                value={engineOn}
-                onChange={(e) => setEngineOn(e.target.value)}
-              />
-            </div>
+          {insertMode === "PAST" && <>
+            <div className="grid grid-2" style={{ marginTop: "16px" }}>
+              <div className="field">
+                <label htmlFor="engineOn">Accensione motore</label>
+                <input
+                  className="input"
+                  id="engineOn"
+                  name="engineOn"
+                  type="datetime-local"
+                  value={engineOn}
+                  onChange={(e) => setEngineOn(e.target.value)}
+                />
+              </div>
 
-            <div className="field">
-              <label htmlFor="engineOff">Motore spento</label>
-              <input
-                className="input"
-                id="engineOff"
-                name="engineOff"
-                type="datetime-local"
-                value={engineOff}
-                onChange={(e) => setEngineOff(e.target.value)}
-              />
+              <div className="field">
+                <label htmlFor="engineOff">Spegnimento motore</label>
+                <input
+                  className="input"
+                  id="engineOff"
+                  name="engineOff"
+                  type="datetime-local"
+                  value={engineOff}
+                  onChange={(e) => setEngineOff(e.target.value)}
+                />
+              </div>
             </div>
-          </div>
+          </>}
         </div>
 
         <div className="card">

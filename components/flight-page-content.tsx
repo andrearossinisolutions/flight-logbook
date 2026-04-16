@@ -169,6 +169,7 @@ export default async function FlightPageContent(
   let initialValues: Partial<FlightFormValues> | undefined = {
     rentalRateApplied: String(Number(settings?.rentalRatePerHour ?? 150)),
     instructorRateApplied: String(Number(settings?.instructorRatePerHour ?? 80)),
+    takeoffPlace: settings?.defaultBase ?? "",
     isDraft: movementToEdit?.isDraft ?? false,
     inputMode: "HOBBS",
   };
