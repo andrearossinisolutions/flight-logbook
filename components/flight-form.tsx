@@ -411,7 +411,6 @@ export default function FlightForm({
                   min="0"
                   value={manualHours}
                   onChange={(e) => setManualHours(e.target.value)}
-                  required
                 />
               </div>
 
@@ -425,7 +424,6 @@ export default function FlightForm({
                   max="59"
                   value={manualMinutes}
                   onChange={(e) => setManualMinutes(e.target.value)}
-                  required
                 />
               </div>
             </div>
@@ -543,8 +541,12 @@ export default function FlightForm({
             />
           </div>
 
+          { (durationMinutes === 0 || durationMinutes === Number(warmupMinutes || 0) || (instructorMinutesNumber > 0 && instructorMinutesNumber > durationMinutes)) && <div className="error" style={{ marginTop: 16 }}>
+            <span>Imposta una durata valida.</span>
+          </div> }
+
           <div className="row" style={{ gap: 12, marginTop: "16px" }}>
-            <button className="btn" type="submit">
+            <button className="btn" type="submit" disabled={durationMinutes === 0 || durationMinutes === Number(warmupMinutes || 0) || (instructorMinutesNumber > 0 && instructorMinutesNumber > durationMinutes)}>
               {effectiveSubmitLabel}
             </button>
 
