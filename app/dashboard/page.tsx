@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { AppShell } from "@/components/app-shell";
 import { DeleteMovementButton } from "@/components/delete-movement-button";
 import { requireUser } from "@/lib/require-user";
-import { eur, formatDateDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate } from "@/lib/utils";
+import { eur, formatDateDisplay, formatTimeDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 
 export default async function DashboardPage() {
@@ -302,7 +302,12 @@ export default async function DashboardPage() {
               const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
               return (
                 <tr key={item.id}>
-                  <td>{formatDateDisplay(item.date)}</td>
+                  <td>
+                    <div>{formatDateDisplay(item.date)}</div>
+                    { item.type === "FLIGHT" &&
+                      <div>{formatTimeDisplay(item.date)}</div>
+                    }
+                  </td>
 
                   <td>
                     {item.type === "FLIGHT"

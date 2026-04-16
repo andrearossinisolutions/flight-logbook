@@ -17,6 +17,13 @@ export function formatDateDisplay(date: Date | string) {
   return new Intl.DateTimeFormat("it-IT").format(new Date(date));
 }
 
+export function formatTimeDisplay(date: Date | string) {
+  return new Intl.DateTimeFormat("it-IT", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(date));
+}
+
 export function formatDateTimeInput(date: Date | string | null | undefined) {
   if (!date) return "";
 
