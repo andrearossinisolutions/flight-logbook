@@ -324,6 +324,36 @@ export default async function DashboardPage() {
 
                   <td>
                     <div className="row" style={{ gap: 8, flexWrap: "nowrap", whiteSpace: "nowrap" }}>
+                      {item.type === "FLIGHT" && item.isDraft && item.date >= today ? (
+                        <a
+                          className="btn secondary icon-btn"
+                          href={buildCalendarLink(item)}
+                          aria-label="Aggiungi al calendario"
+                          title="Aggiungi al calendario"
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          <svg
+                            aria-hidden="true"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            width="18"
+                            height="18"
+                          >
+                            <path d="M8 2v4" />
+                            <path d="M16 2v4" />
+                            <rect x="3" y="4" width="18" height="18" rx="2" />
+                            <path d="M3 10h18" />
+                            <path d="M8 14h3" />
+                            <path d="M8 18h8" />
+                          </svg>
+                        </a>
+                      ) : null}
+
                       <Link
                         className="btn secondary icon-btn"
                         href={item.type === "FLIGHT" ? `/edit-flight/${item.id}` : `/edit-payment/${item.id}`}
@@ -437,4 +467,35 @@ function flightType(flight: any, short = false) {
     return "Noleggio con passeggero" + (!short ? (": " + flight.passengerName) : "");
   }
   return "Noleggio";
+}
+
+function buildCalendarLink(item: any) {
+  const start = new Date(item.date);
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
+
+  const title = `${flightType(item.flight, true)} · ${item.flight?.aircraftRegistration ?? "I-4150"} (${item.flight?.aircraftType ?? "P92"})`;
+  const details = [
+    `Tipo: ${flightType(item.flight)}`,
+    `Aeromobile: ${item.flight?.aircraftRegistration ?? "I-4150"} · ${item.flight?.aircraftType ?? "P92"}`,
+    `Durata prevista: ${minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}`,
+    item.notes ? `Note: ${item.notes}` : null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${formatCalendarDate(start)}/${formatCalendarDate(end)}`,
+    details,
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function formatCalendarDate(date: Date) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+  return `${yyyy}${mm}${dd}`;
 }
