@@ -58,8 +58,7 @@ export default async function PrintLogbookPage() {
         <table className="table print-table">
           <thead>
             <tr>
-              <th>Data</th>
-              <th>Ora</th>
+              <th>Data/Ora</th>
               <th>Tipo</th>
               <th>Aeromobile</th>
               <th>Tratta</th>
@@ -81,8 +80,10 @@ export default async function PrintLogbookPage() {
 
             {flights.map((item) => (
               <tr key={item.id}>
-                <td>{formatDateDisplay(item.date)}</td>
-                <td>{formatTimeDisplay(item.date)}</td>
+                <td>
+                  {formatDateDisplay(item.date)}<br />
+                  {formatTimeDisplay(item.date)}
+                </td>
                 <td>{flightType(item.flight)}</td>
                 <td>
                   {item.flight?.aircraftRegistration ?? "I-4150"}
