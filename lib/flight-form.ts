@@ -221,7 +221,7 @@ export function buildFlightInitialValues(args: {
   const hobbsEndPrefill = splitMinutes(flight.hobbsEndMinutes);
 
   return {
-    date: new Date(movementDate).toISOString().slice(0, 10),
+    date: formatDateTimeInput(movementDate),
     isDraft: isDraft,
     inputMode: flight.inputMode === FlightInputMode.HOBBS ? "HOBBS" : "MANUAL",
     routeMode: "SINGLE",

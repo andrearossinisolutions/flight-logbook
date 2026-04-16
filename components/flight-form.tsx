@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { formatDateInput, minutesToHoursMinutes } from "@/lib/utils";
+import { formatDateTimeInput, minutesToHoursMinutes } from "@/lib/utils";
 import { useMemo, useState } from "react";
 import type { FlightFormValues } from "@/lib/flight-form";
 
@@ -20,7 +20,7 @@ function buildInitialValues(
   initialValues?: Partial<FlightFormValues>
 ): FlightFormValues {
   return {
-    date: initialValues?.date ?? formatDateInput(new Date()),
+    date: initialValues?.date ?? formatDateTimeInput(new Date()),
     isDraft: initialValues?.isDraft ?? false,
     inputMode: initialValues?.inputMode ?? "HOBBS",
     routeMode: initialValues?.routeMode ?? "SINGLE",
@@ -177,16 +177,16 @@ export default function FlightForm({
               </select>
             </div>
 
-            <label htmlFor="date">Data</label>
+            <label htmlFor="date">Data e ora</label>
             <input
               className="input"
               id="date"
               name="date"
-              type="date"
+              type="datetime-local"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              max={insertMode === "PAST" ? formatDateInput(new Date()) : undefined}
-              min={insertMode === "FUTURE" ? formatDateInput(new Date()) : undefined}
+              max={insertMode === "PAST" ? formatDateTimeInput(new Date()) : undefined}
+              min={insertMode === "FUTURE" ? formatDateTimeInput(new Date()) : undefined}
               required
             />
           </div>
