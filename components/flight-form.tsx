@@ -254,34 +254,6 @@ export default function FlightForm({
               </div>
             </div>
           </div>
-
-          {insertMode === "PAST" && <>
-            <div className="grid grid-2" style={{ marginTop: "16px" }}>
-              <div className="field">
-                <label htmlFor="engineOn">Accensione motore</label>
-                <input
-                  className="input"
-                  id="engineOn"
-                  name="engineOn"
-                  type="datetime-local"
-                  value={engineOn}
-                  onChange={(e) => setEngineOn(e.target.value)}
-                />
-              </div>
-
-              <div className="field">
-                <label htmlFor="engineOff">Spegnimento motore</label>
-                <input
-                  className="input"
-                  id="engineOff"
-                  name="engineOff"
-                  type="datetime-local"
-                  value={engineOff}
-                  onChange={(e) => setEngineOff(e.target.value)}
-                />
-              </div>
-            </div>
-          </>}
         </div>
 
         <div className="card">
@@ -334,10 +306,8 @@ export default function FlightForm({
                     required
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-2">
-                <div className="field" style={{ marginTop: "16px" }}>
+                <div className="field">
                   <label>Orametro arrivo — ore</label>
                   <input
                     className="input"
@@ -428,6 +398,34 @@ export default function FlightForm({
               </div>
             </div>
           )}
+
+          {insertMode === "PAST" && <>
+            <div className="grid grid-2" style={{ marginTop: "16px" }}>
+              <div className="field">
+                <label htmlFor="engineOn">Accensione motore</label>
+                <input
+                  className="input"
+                  id="engineOn"
+                  name="engineOn"
+                  type="datetime-local"
+                  value={engineOn}
+                  onChange={(e) => setEngineOn(e.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="engineOff">Spegnimento motore</label>
+                <input
+                  className="input"
+                  id="engineOff"
+                  name="engineOff"
+                  type="datetime-local"
+                  value={engineOff}
+                  onChange={(e) => setEngineOff(e.target.value)}
+                />
+              </div>
+            </div>
+          </>}
         </div>
 
         <div className="card">
