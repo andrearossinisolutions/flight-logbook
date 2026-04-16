@@ -303,26 +303,98 @@ export default async function DashboardPage() {
               return (
                 <tr key={item.id}>
                   <td>
-                    <div>{formatDateDisplay(item.date)}</div>
+                    <div className="inline-meta">
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        width="16"
+                        height="16"
+                      >
+                        <path d="M8 2v4" />
+                        <path d="M16 2v4" />
+                        <rect x="3" y="4" width="18" height="18" rx="2" />
+                        <path d="M3 10h18" />
+                      </svg>
+                      <span>{formatDateDisplay(item.date)}</span>
+                    </div>
+                    <br />
                     { item.type === "FLIGHT" &&
-                      <div>{formatTimeDisplay(item.date)}</div>
+                      <div className="inline-meta">
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          width="16"
+                          height="16"
+                        >
+                          <circle cx="12" cy="12" r="9" />
+                          <path d="M12 7v5l3 3" />
+                        </svg>
+                        <span>{formatTimeDisplay(item.date)}</span>
+                      </div>
                     }
                   </td>
 
                   <td>
-                    {item.type === "FLIGHT"
-                      ? item.isDraft
-                        ? item.date < today
-                          ? <div style={{ color: "#b91c1c" }}>Pianificazione<br />da confermare</div>
-                          : "Pianificazione"
-                        : "Volo"
-                      : item.isDraft
-                        ? item.date < today
-                          ? <div style={{ color: "#b91c1c" }}>Pagamento<br />da confermare</div>
-                          : "Scadenza"
-                      : item.type === "TOPUP" && Number(item.amount) < 0
-                        ? "Rettifica saldo"
-                        : "Pagamento" }
+                    <div className="inline-meta">
+                      {item.type === "FLIGHT" ? (
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          width="16"
+                          height="16"
+                        >
+                          <path d="M12 2v8" />
+                          <path d="m9 10-5 2v2l5-1.2V17l-2 1.5v1.5l5-1 5 1v-1.5L15 17v-4.2L20 14v-2l-5-2V2" />
+                        </svg>
+                      ) : (
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          width="16"
+                          height="16"
+                        >
+                          <rect x="3" y="6" width="18" height="12" rx="2" />
+                          <circle cx="12" cy="12" r="2.5" />
+                          <path d="M7 9h1" />
+                          <path d="M16 15h1" />
+                        </svg>
+                      )}
+                      <span>
+                        {item.type === "FLIGHT"
+                          ? item.isDraft
+                            ? item.date < today
+                              ? <span style={{ color: "#b91c1c" }}>Pianificazione<br />da confermare</span>
+                              : "Pianificazione"
+                            : "Volo"
+                          : item.isDraft
+                            ? item.date < today
+                              ? <span style={{ color: "#b91c1c" }}>Pagamento<br />da confermare</span>
+                              : "Scadenza"
+                          : item.type === "TOPUP" && Number(item.amount) < 0
+                            ? "Rettifica saldo"
+                            : "Pagamento" }
+                      </span>
+                    </div>
                   </td>
 
                   <td>

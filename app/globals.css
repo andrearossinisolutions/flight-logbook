@@ -148,6 +148,12 @@ textarea {
   align-items: center;
 }
 
+.inline-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
