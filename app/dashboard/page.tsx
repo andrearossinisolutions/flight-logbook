@@ -492,6 +492,11 @@ function dashboardItem(item: any, movements: any[] = [], isFutureMovement = fals
               {item.flight?.aircraftType ?? "P92"} ·{" "}
               {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
             </div>
+            { (item.flight?.takeoffPlace != null || item.flight?.arrivalPlace != null) &&
+              <div className={isFutureMovement ? "future-movement" : undefined}>
+                {item.flight?.takeoffPlace ?? "?"} ➡️ {item.flight?.arrivalPlace ?? "?"}
+              </div>
+            }
           </div>
 
           <div>
