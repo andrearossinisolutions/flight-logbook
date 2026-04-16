@@ -88,6 +88,7 @@ export default async function PaymentPageContent(
         data: {
           type: parsed.movementType,
           date: parsed.date,
+          isDraft: parsed.isDraft,
           amount: parsed.amount,
           notes: parsed.notes,
         },
@@ -113,6 +114,7 @@ export default async function PaymentPageContent(
     initialValues = buildPaymentInitialValues({
       movementType: movementToEdit.type as "TOPUP" | "SERVICE",
       date: movementToEdit.date,
+      isDraft: movementToEdit.isDraft,
       amount: Number(movementToEdit.amount),
       notes: movementToEdit.notes,
     });

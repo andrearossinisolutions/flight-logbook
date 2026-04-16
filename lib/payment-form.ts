@@ -3,6 +3,7 @@ import { MovementType } from "@prisma/client";
 export type PaymentFormValues = {
   movementType: "TOPUP" | "SERVICE";
   date: string;
+  isDraft: boolean;
   amount: string;
   notes: string;
 };
@@ -35,10 +36,17 @@ export function parsePaymentFormData(formData: FormData) {
     throw new Error("L'importo deve essere diverso da zero.");
   }
 
+  const date = new Date(dateRaw);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const paymentDate = new Date(date);
+  paymentDate.setHours(0, 0, 0, 0);
+
   return {
     movementType: movementTypeRaw as "TOPUP" | "SERVICE",
-    date: new Date(dateRaw),
-    isDraft: false,
+    date,
+    isDraft: paymentDate > today,
     amount,
     notes: notesRaw || null,
   };
@@ -47,12 +55,14 @@ export function parsePaymentFormData(formData: FormData) {
 export function buildPaymentInitialValues(args: {
   movementType: "TOPUP" | "SERVICE";
   date: Date;
+  isDraft: boolean;
   amount: number | string;
   notes: string | null;
 }): Partial<PaymentFormValues> {
   return {
     movementType: args.movementType,
     date: new Date(args.date).toISOString().slice(0, 10),
+    isDraft: args.isDraft,
     amount: String(Number(args.amount)),
     notes: args.notes ?? "",
   };

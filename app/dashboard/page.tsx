@@ -311,9 +311,13 @@ export default async function DashboardPage() {
                           ? <div style={{ color: "#b91c1c" }}>Pianificazione<br />da confermare</div>
                           : "Pianificazione"
                         : "Volo"
+                      : item.isDraft
+                        ? item.date < today
+                          ? <div style={{ color: "#b91c1c" }}>Pagamento<br />da confermare</div>
+                          : "Scadenza"
                       : item.type === "TOPUP" && Number(item.amount) < 0
                         ? "Rettifica saldo"
-                        : "Ricarica" }
+                        : "Pagamento" }
                   </td>
 
                   <td>

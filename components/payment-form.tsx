@@ -22,6 +22,7 @@ function buildInitialValues(
   return {
     movementType: initialValues?.movementType ?? "TOPUP",
     date: initialValues?.date ?? new Date().toISOString().slice(0, 10),
+    isDraft: initialValues?.isDraft ?? false,
     amount: initialValues?.amount ?? "",
     notes: initialValues?.notes ?? "",
   };
@@ -46,6 +47,23 @@ export default function PaymentForm({
   const [amount, setAmount] = useState(initial.amount);
   const [notes, setNotes] = useState(initial.notes);
 
+  const isFutureDate = useMemo(() => {
+    const parsedDate = new Date(date);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return false;
+    }
+
+    parsedDate.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    return parsedDate > today;
+  }, [date]);
+
+  const isTodayOrPastDate = useMemo(() => !isFutureDate, [isFutureDate]);
+
   const amountNumber = Number(amount || 0);
   const normalizedAmount = Number.isFinite(amountNumber) ? amountNumber : 0;
 
@@ -65,8 +83,17 @@ export default function PaymentForm({
     return (estimatedBalance / fullRate) * 60;
   }, [estimatedBalance, rentalRatePerHour, instructorRatePerHour]);
 
-  const effectiveSubmitLabel =
-    submitLabel ?? (mode === "edit" ? "Salva modifiche" : "Salva");
+  const effectiveSubmitLabel = useMemo(() => {
+    if (mode === "create") {
+      return isFutureDate ? "Aggiungi scadenza" : (submitLabel ?? "Salva");
+    }
+
+    if (initial.isDraft && isTodayOrPastDate) {
+      return "Conferma pagamento";
+    }
+
+    return submitLabel ?? "Salva modifiche";
+  }, [initial.isDraft, isFutureDate, isTodayOrPastDate, mode, submitLabel]);
 
   return (
     <div className="grid grid-2">
