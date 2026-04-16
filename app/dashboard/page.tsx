@@ -344,7 +344,7 @@ export default async function DashboardPage() {
                       <span>
                         {item.type === "FLIGHT"
                           ? item.isDraft
-                            ? item.date < today
+                            ? item.date < now
                               ? <span style={{ color: "#b91c1c" }}>Pianificazione<br />da confermare</span>
                               : "Pianificazione"
                             : "Volo"
