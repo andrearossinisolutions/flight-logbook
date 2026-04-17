@@ -86,25 +86,31 @@ export default async function PrintLogbookPage() {
                   {item.flight?.aircraftRegistration ?? "I-4150"}
                 </td>
                 <td>
-                  Part.: {item.flight?.takeoffPlace ?? "?"}<br />
-                  Eng.On: {formatOptionalDateTime(item.flight?.engineOn)}<br />
-                  Oram.Start.: {formatOptionalHobbs(item.flight?.hobbsStartMinutes)}<br />
+                  { (item.flight?.takeoffPlace != null || item.flight?.arrivalPlace != null) &&
+                    <>Partenza: {item.flight?.takeoffPlace ?? "?"}<br /></> }
+                  { (item.flight?.engineOn != null || item.flight?.engineOff != null) &&
+                    <>Accensione: {formatOptionalDateTime(item.flight?.engineOn)}<br /></> }
+                  { (item.flight?.hobbsStartMinutes != null || item.flight?.hobbsEndMinutes != null) &&
+                    <>Oram.Inizio: {formatOptionalHobbs(item.flight?.hobbsStartMinutes)}<br /></> }
                   Temp.Tot.: {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
                 </td>
                 <td>
-                  Arr.: {item.flight?.arrivalPlace ?? "?"}<br />
-                  Eng.Off: {formatOptionalDateTime(item.flight?.engineOff)}<br />
-                  Oram.End: {formatOptionalHobbs(item.flight?.hobbsEndMinutes)}<br />
+                  { (item.flight?.arrivalPlace != null || item.flight?.engineOff != null) &&
+                    <>Arrivo: {item.flight?.arrivalPlace ?? "?"}<br /></> }
+                  { (item.flight?.engineOff != null) &&
+                    <>Spegnimento: {formatOptionalDateTime(item.flight?.engineOff)}<br /></> }
+                  { (item.flight?.hobbsEndMinutes != null) &&
+                    <>Oram.Fine: {formatOptionalHobbs(item.flight?.hobbsEndMinutes)}<br /></> }
                 </td>
                 <td>
                   {item.flight?.instructorName && item.flight?.instructorMinutes > 0 ? (
                     <div>
-                      Istr.: {item.flight.instructorName}<br />
+                      Istruttore: {item.flight.instructorName}<br />
                       Temp.Istr.: {minutesToHoursMinutes(item.flight.instructorMinutes)}
                     </div>
                   ) : null}
                   {!(item.flight?.instructorName && item.flight?.instructorMinutes > 0) && item.flight?.passengerName ? (
-                    <div>Pax: {item.flight.passengerName}</div>
+                    <div>Passeggero: {item.flight.passengerName}</div>
                   ) : null}
                   {!(item.flight?.instructorName && item.flight?.instructorMinutes > 0) && !item.flight?.passengerName ? "—" : null}
                 </td>
