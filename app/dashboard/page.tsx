@@ -214,7 +214,7 @@ export default async function DashboardPage() {
                     60
                 )
               : "0:00"}
-          </div>
+          </div><br />
           <div className="inline-meta" style={{ marginTop: 4 }}>
             <ClockIcon />
             Istruttore:{" "}
@@ -274,7 +274,7 @@ export default async function DashboardPage() {
           <div className="inline-meta" style={{ marginTop: 8 }}>
             <ClockIcon />
             PIC: {minutesToHoursMinutes(last6mPICMinutes)}
-          </div>
+          </div><br />
           <div className="inline-meta" style={{ marginTop: 4 }}>
             <ClockIcon />
             Istruttore: {minutesToHoursMinutes(last6mInstructorMinutes)}
@@ -288,7 +288,7 @@ export default async function DashboardPage() {
           <div className="inline-meta" style={{ marginTop: 8 }}>
             <ClockIcon />
             PIC: {minutesToHoursMinutes(totalPostExamPICMinutes)}
-          </div>
+          </div><br />
           <div className="inline-meta" style={{ marginTop: 4 }}>
             <ClockIcon />
             Istruttore: {minutesToHoursMinutes(totalPostExamInstructorMinutes)}
@@ -302,7 +302,7 @@ export default async function DashboardPage() {
           <div className="inline-meta" style={{ marginTop: 8 }}>
             <ClockIcon />
             PIC: {minutesToHoursMinutes(totalPICMinutes)}
-          </div>
+          </div><br />
           <div className="inline-meta" style={{ marginTop: 4 }}>
             <ClockIcon />
             Istruttore: {minutesToHoursMinutes(totalInstructorMinutes)}
@@ -383,8 +383,7 @@ export default async function DashboardPage() {
                     <div className={ "inline-meta" + (isFutureMovement ? " future-movement" : "")}>
                       <CalendarIcon />
                       <span>{formatDateDisplay(item.date)}</span>
-                    </div>
-                    <br />
+                    </div><br />
                     { item.type === "FLIGHT" &&
                       <div className={ "inline-meta" + (isFutureMovement ? " future-movement" : "")}>
                         <ClockIcon />
