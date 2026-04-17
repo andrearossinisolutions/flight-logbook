@@ -406,7 +406,7 @@ export default async function DashboardPage() {
                             ? item.date < now
                               ? <span style={{ color: "#b91c1c" }}>Pianificazione<br />da confermare</span>
                               : "Pianificazione"
-                            : "Volo"
+                            : flightType(item.flight)
                           : item.isDraft
                             ? item.date < today
                               ? <span style={{ color: "#b91c1c" }}>Pagamento<br />da confermare</span>
@@ -485,7 +485,7 @@ function dashboardItem(item: any, movements: any[] = [], isFutureMovement = fals
 
           <div>
             <span className={isFutureMovement ? "future-movement" : undefined}>
-              Progressivo saldo: {eur(progressiveSaldo)}
+              Progressivo: 💶 {eur(progressiveSaldo)}
             </span>
           </div>
 
@@ -511,28 +511,22 @@ function dashboardItem(item: any, movements: any[] = [], isFutureMovement = fals
       return (
         <div className="grid grid-2">
           <div>
-            <div className="muted">
-              { flightType(item.flight) }
-            </div>
-            <div className={isFutureMovement ? "future-movement" : undefined}>
-              {item.flight?.aircraftRegistration ?? "I-4150"} ·{" "}
-              {item.flight?.aircraftType ?? "P92"} ·{" "}
-              {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
+            <div className={ "muted" + (isFutureMovement ? " future-movement" : "")}>
+              ✈️ {(item.flight?.aircraftRegistration ?? "I-4150") + " · "}
+              🕒 {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
             </div>
             { (item.flight?.takeoffPlace != null || item.flight?.arrivalPlace != null) &&
               <div className={isFutureMovement ? "future-movement" : undefined}>
-                {item.flight?.takeoffPlace ?? "?"} ➡️ {item.flight?.arrivalPlace ?? "?"}
+                🛫 {item.flight?.takeoffPlace ?? "?"} · 🛬 {item.flight?.arrivalPlace ?? "?"}
               </div>
             }
           </div>
 
           <div>
             <span className={isFutureMovement ? "future-movement" : undefined}>
-              { item.isDraft ? "Bozza progressivo" : "Progressivo"} ore: {minutesToHoursMinutes(progressiveFlightMinutes)}
-            </span>
-            <br />
-            <span className={isFutureMovement ? "future-movement" : undefined}>
-              { item.isDraft ? "Bozza progressivo" : "Progressivo"} saldo: {eur(progressiveSaldo)}
+              { item.isDraft ? "Bozza progressivo: " : "Progressivo: "}
+              🕒 {minutesToHoursMinutes(progressiveFlightMinutes) + " · "}
+              💶 {eur(progressiveSaldo)}
             </span>
           </div>
 
@@ -542,14 +536,14 @@ function dashboardItem(item: any, movements: any[] = [], isFutureMovement = fals
   }
 }
 
-function flightType(flight: any, short = false) {
+function flightType(flight: any) {
   if (flight.instructorMinutes == flight.durationMinutes) {
-    return "Lezione" + (!short ? (": " + flight.instructorName) : "");
+    return "Lezione";
   } else if (flight.instructorMinutes > 0 && flight.instructorMinutes < flight.durationMinutes) {
-    return "Noleggio con lezione" + (!short ? (": " + flight.instructorName) : "");
-  } else if (flight.passengerName) {
-    return "Noleggio con passeggero" + (!short ? (": " + flight.passengerName) : "");
-  }
+    return "Noleggio con lezione";
+  }/*  else if (flight.passengerName) {
+    return "Noleggio con passeggero";
+  } */
   return "Noleggio";
 }
 
@@ -561,7 +555,7 @@ function buildCalendarLink(item: any) {
   const start = new Date(item.date);
   const end = new Date(start.getTime() + (item.flight?.durationMinutes ?? 0) * 60 * 1000);
 
-  const title = `${flightType(item.flight, true)} · ${item.flight?.aircraftRegistration ?? "I-4150"} (${item.flight?.aircraftType ?? "P92"})`;
+  const title = `${flightType(item.flight)} · ${item.flight?.aircraftRegistration ?? "I-4150"} (${item.flight?.aircraftType ?? "P92"})`;
   const details = [
     `Tipo: ${flightType(item.flight)}`,
     `Aeromobile: ${item.flight?.aircraftRegistration ?? "I-4150"} · ${item.flight?.aircraftType ?? "P92"}`,
