@@ -53,8 +53,8 @@ export function CalendarPlusIcon(props: IconProps) {
       <path d="M16 2v4" />
       <rect x="3" y="4" width="18" height="18" rx="2" />
       <path d="M3 10h18" />
-      <path d="M8 14h3" />
-      <path d="M8 18h8" />
+      <path d="M12 13v6" />
+      <path d="M9 16h6" />
     </BaseIcon>
   );
 }
