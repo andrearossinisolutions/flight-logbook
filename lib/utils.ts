@@ -66,12 +66,31 @@ export function medicalExamRemaining(medicalExamDate: Date) {
   return `${months > 1 ? months + " mesi" : "1 mese"} e ${days > 1 ? days + " giorni" : "1 giorno"}`;
 }
 
-export function daysFromDate(date: Date) {
-  const days = Math.ceil((new Date().getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-  return days === 1 ? "1 giorno fa" : `${days} giorni fa`;
+function startOfLocalDay(date: Date | string) {
+  const d = new Date(date);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
-export function daysToDate(date: Date) {
-  const days = Math.ceil((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
-  return days === 1 ? "Tra 1 giorno" : `Tra ${days} giorni`;
+function differenceInLocalCalendarDays(from: Date | string, to: Date | string) {
+  const fromDay = startOfLocalDay(from);
+  const toDay = startOfLocalDay(to);
+  return Math.round((toDay.getTime() - fromDay.getTime()) / (1000 * 60 * 60 * 24));
+}
+
+export function daysFromDate(date: Date | string) {
+  const days = differenceInLocalCalendarDays(date, new Date());
+
+  if (days <= 0) return "Oggi";
+  if (days === 1) return "Ieri";
+
+  return `${days} giorni fa`;
+}
+
+export function daysToDate(date: Date | string) {
+  const days = differenceInLocalCalendarDays(new Date(), date);
+
+  if (days <= 0) return "Oggi";
+  if (days === 1) return "Domani";
+
+  return `Tra ${days} giorni`;
 }
