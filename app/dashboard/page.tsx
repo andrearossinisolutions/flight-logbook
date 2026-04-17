@@ -3,6 +3,7 @@ import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { AppShell } from "@/components/app-shell";
+import { DashboardWidgets } from "@/components/dashboard-widgets";
 import { DeleteMovementButton } from "@/components/delete-movement-button";
 import {
   AirplaneIcon,
@@ -195,7 +196,7 @@ export default async function DashboardPage() {
       title={`Ciao${user.fullName ? `, ${user.fullName}` : ""}`}
       subtitle="Saldo, movimenti e accesso rapido a inserimento volo, ricarica e settings."
     >
-      <div className="summary-grid" style={{ marginBottom: 24 }}>
+      <DashboardWidgets>
         <div className="card">
           <div className="muted">Saldo attuale</div>
           <div className="big-number">{eur(saldo)}</div>
@@ -336,7 +337,7 @@ export default async function DashboardPage() {
           <div style={{ marginTop: 8 }}>Futuri: {eur(draftFutureCosts)}</div>
           <div style={{ marginTop: 4 }}>Da confermare: {eur(draftPastCosts)}</div>
         </div>
-      </div>
+      </DashboardWidgets>
 
       <div className="between" style={{ marginBottom: 16 }}>
         <h2 style={{ margin: 0 }}>Registro movimenti</h2>
