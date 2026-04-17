@@ -51,7 +51,7 @@ export default async function PrintLogbookPage() {
           </div>
           <div className="muted" style={{ textAlign: "right" }}>
             <div>Totale voli: {flights.length}</div>
-            <div>Generato il {formatDateDisplay(new Date())}</div>
+            <div>Generato il {formatDateDisplay(new Date())} {formatTimeDisplay(new Date())}</div>
           </div>
         </div>
 
@@ -61,10 +61,7 @@ export default async function PrintLogbookPage() {
               <th>Data/Ora</th>
               <th>Tipo</th>
               <th>Aeromobile</th>
-              <th>Tratta</th>
-              <th>Motore</th>
-              <th>Orametro</th>
-              <th>Durata</th>
+              <th colSpan={2}>Tratta</th>
               <th>Persone</th>
               <th>Note</th>
             </tr>
@@ -90,20 +87,21 @@ export default async function PrintLogbookPage() {
                 </td>
                 <td>
                   Part.: {item.flight?.takeoffPlace ?? "?"}<br />
-                  Arr.: {item.flight?.arrivalPlace ?? "?"}
+                  Eng.On: {formatOptionalDateTime(item.flight?.engineOn)}<br />
+                  Oram.Start.: {formatOptionalHobbs(item.flight?.hobbsStartMinutes)}<br />
+                  Temp.Tot.: {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
                 </td>
                 <td>
-                  <div>On: {formatOptionalDateTime(item.flight?.engineOn)}</div>
-                  <div>Off: {formatOptionalDateTime(item.flight?.engineOff)}</div>
+                  Arr.: {item.flight?.arrivalPlace ?? "?"}<br />
+                  Eng.Off: {formatOptionalDateTime(item.flight?.engineOff)}<br />
+                  Oram.End: {formatOptionalHobbs(item.flight?.hobbsEndMinutes)}<br />
                 </td>
-                <td>
-                  <div>Start: {formatOptionalHobbs(item.flight?.hobbsStartMinutes)}</div>
-                  <div>End: {formatOptionalHobbs(item.flight?.hobbsEndMinutes)}</div>
-                </td>
-                <td>{minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}</td>
                 <td>
                   {item.flight?.instructorName && item.flight?.instructorMinutes > 0 ? (
-                    <div>Istr.: {item.flight.instructorName}</div>
+                    <div>
+                      Istr.: {item.flight.instructorName}<br />
+                      Temp.Istr.: {minutesToHoursMinutes(item.flight.instructorMinutes)}
+                    </div>
                   ) : null}
                   {!(item.flight?.instructorName && item.flight?.instructorMinutes > 0) && item.flight?.passengerName ? (
                     <div>Pax: {item.flight.passengerName}</div>
@@ -124,9 +122,9 @@ function flightType(flight: any, short = false) {
   if (flight.instructorMinutes == flight.durationMinutes) {
     return "Lezione";
   } else if (flight.instructorMinutes > 0 && flight.instructorMinutes < flight.durationMinutes) {
-    return "Noleggio con lezione";
+    return <>Noleggio<br />con lezione</>;
   } else if (flight.passengerName) {
-    return "Noleggio con passeggero";
+    return <>Noleggio<br />con passeggero</>;
   }
   return "Noleggio";
 }
