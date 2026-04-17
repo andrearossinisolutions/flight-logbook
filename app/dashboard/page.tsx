@@ -242,7 +242,7 @@ export default async function DashboardPage() {
             <span>{formatDateDisplay(lastFlight.date)}</span>
           </div>
           <div style={{ marginTop: 4 }}>
-            {flightType(lastFlight.flight, true)}
+            {flightType(lastFlight.flight)}
           </div>
           <div style={{ marginTop: 4 }}>
             {lastFlight.flight?.aircraftRegistration ?? "I-4150"} ·{" "}
@@ -259,7 +259,7 @@ export default async function DashboardPage() {
             <span>{formatDateDisplay(nextFlight.date)}</span>
           </div>
           <div style={{ marginTop: 4 }}>
-            {flightType(nextFlight.flight, true)}
+            {flightType(nextFlight.flight)}
           </div>
           <div style={{ marginTop: 4 }}>
             {nextFlight.flight?.aircraftRegistration ?? "I-4150"} ·{" "}
