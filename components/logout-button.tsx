@@ -15,7 +15,7 @@ export function LogoutButton() {
   }
 
   return (
-    <button className="btn secondary" onClick={onClick} disabled={loading}>
+    <button className="btn" style={{ background: "#b91c1c", color: "white" }} onClick={onClick} disabled={loading}>
       {loading ? "Uscita..." : "Logout"}
     </button>
   );

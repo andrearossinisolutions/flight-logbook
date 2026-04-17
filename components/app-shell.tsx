@@ -23,17 +23,8 @@ export function AppShell({
           <Link className="btn secondary" href="/dashboard">
             Dashboard
           </Link>
-          <Link className="btn secondary" href={"/print-logbook" as Route}>
-            Stampa Logbook
-          </Link>
-          <Link className="btn secondary" href="/new-flight">
-            Nuovo volo
-          </Link>
-          <Link className="btn secondary" href="/new-payment">
-            Nuovo pagamento
-          </Link>
           <Link className="btn secondary" href="/settings">
-            Settings
+            Impostazioni
           </Link>
           <LogoutButton />
         </div>

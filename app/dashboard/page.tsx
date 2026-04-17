@@ -342,14 +342,14 @@ export default async function DashboardPage() {
       <div className="between" style={{ marginBottom: 16 }}>
         <h2 style={{ margin: 0 }}>Registro movimenti</h2>
         <div className="row">
-          <Link className="btn secondary" href={"/print-logbook" as Route}>
-            Stampa logbook
-          </Link>
           <Link className="btn" href="/new-flight">
             Nuovo volo
           </Link>
           <Link className="btn secondary" href="/new-payment">
             Nuovo pagamento
+          </Link>
+          <Link className="btn secondary" href={"/print-logbook" as Route}>
+            Stampa logbook
           </Link>
         </div>
       </div>
