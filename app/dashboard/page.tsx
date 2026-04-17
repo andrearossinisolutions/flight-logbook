@@ -480,7 +480,7 @@ function dashboardItem(item: any, movements: any[] = [], isFutureMovement = fals
         <div className="grid grid-2">
           { item.type === "TOPUP" && Number(item.amount) < 0
               ? <div className="muted" style={{ color: "#b91c1c" }}>Correzione saldo / addebito manuale</div>
-              : <div className="muted" style={{ color: "green" }}>Credito aggiunto</div>
+              : <div className="muted" style={{ color: "green" }}>Ricarica credito</div>
           }
 
           <div>
