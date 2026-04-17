@@ -13,7 +13,7 @@ import {
   PencilIcon,
 } from "@/components/icons";
 import { requireUser } from "@/lib/require-user";
-import { eur, formatDateDisplay, formatTimeDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate } from "@/lib/utils";
+import { eur, formatDateDisplay, formatTimeDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate, daysToDate } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 
 export default async function DashboardPage() {
@@ -34,6 +34,12 @@ export default async function DashboardPage() {
       (acc: number, item: MovementItem) => acc + Number(item.amount),
       0
     );
+
+  const futureFlights = movements
+    .filter((item: MovementItem) => item.type === "FLIGHT" && item.isDraft && item.date > new Date())
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  const nextFlight = futureFlights.length > 0 ? futureFlights[0] : null;
 
   const flights = movements
     .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft);
@@ -229,7 +235,7 @@ export default async function DashboardPage() {
 
         { lastFlight && <div className="card">
           <div className="muted">Ultimo volo</div>
-          <div className="medium-number">{daysFromDate(lastFlight.date)} fa</div>
+          <div className="medium-number">{daysFromDate(lastFlight.date)}</div>
           <div className="inline-meta" style={{ marginTop: 24 }}>
             <CalendarIcon />
             <span>{formatDateDisplay(lastFlight.date)}</span>
@@ -241,6 +247,23 @@ export default async function DashboardPage() {
             {lastFlight.flight?.aircraftRegistration ?? "I-4150"} ·{" "}
             {lastFlight.flight?.aircraftType ?? "P92"} ·{" "}
             {minutesToHoursMinutes(lastFlight.flight?.durationMinutes ?? 0)}
+          </div>
+        </div> }
+
+        { nextFlight && <div className="card">
+          <div className="muted">Prossimo volo</div>
+          <div className="medium-number">{daysToDate(nextFlight.date)}</div>
+          <div className="inline-meta" style={{ marginTop: 24 }}>
+            <CalendarIcon />
+            <span>{formatDateDisplay(nextFlight.date)}</span>
+          </div>
+          <div style={{ marginTop: 4 }}>
+            {flightType(nextFlight.flight, true)}
+          </div>
+          <div style={{ marginTop: 4 }}>
+            {nextFlight.flight?.aircraftRegistration ?? "I-4150"} ·{" "}
+            {nextFlight.flight?.aircraftType ?? "P92"} ·{" "}
+            {minutesToHoursMinutes(nextFlight.flight?.durationMinutes ?? 0)}
           </div>
         </div> }
 

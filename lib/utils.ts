@@ -68,5 +68,10 @@ export function medicalExamRemaining(medicalExamDate: Date) {
 
 export function daysFromDate(date: Date) {
   const days = Math.ceil((new Date().getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
-  return days === 1 ? "1 giorno" : days + " giorni";
+  return days === 1 ? "1 giorno fa" : `${days} giorni fa`;
+}
+
+export function daysToDate(date: Date) {
+  const days = Math.ceil((date.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+  return days === 1 ? "Tra 1 giorno" : `Tra ${days} giorni`;
 }
