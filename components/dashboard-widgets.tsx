@@ -4,23 +4,24 @@ import { Children, ReactNode, useMemo, useState } from "react";
 
 type DashboardWidgetsProps = {
   children: ReactNode;
-  initiallyVisible?: number;
 };
 
-export function DashboardWidgets({
-  children,
-  initiallyVisible = 4,
-}: DashboardWidgetsProps) {
+export function DashboardWidgets({ children }: DashboardWidgetsProps) {
   const items = useMemo(() => Children.toArray(children), [children]);
   const [isExpanded, setIsExpanded] = useState(false);
-
-  const visibleItems = isExpanded ? items : items.slice(0, initiallyVisible);
-  const hasHiddenItems = items.length > initiallyVisible;
+  const hasHiddenItems = items.length > 4;
 
   return (
     <>
-      <div className="summary-grid" style={{ marginBottom: 16 }}>
-        {visibleItems}
+      <div
+        className={"summary-grid dashboard-widgets" + (isExpanded ? " is-expanded" : "")}
+        style={{ marginBottom: 16 }}
+      >
+        {items.map((item, index) => (
+          <div key={index} className="dashboard-widget-item">
+            {item}
+          </div>
+        ))}
       </div>
 
       {hasHiddenItems ? (

@@ -211,6 +211,20 @@ textarea {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+.dashboard-widgets:not(.is-expanded) .dashboard-widget-item:nth-child(n + 3) {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .dashboard-widgets:not(.is-expanded) .dashboard-widget-item:nth-child(n + 5) {
+    display: none;
+  }
+
+  .dashboard-widgets:not(.is-expanded) .dashboard-widget-item:nth-child(-n + 4) {
+    display: block;
+  }
+}
+
 .big-number {
   font-size: 2rem;
   font-weight: 800;
