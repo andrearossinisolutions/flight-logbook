@@ -231,28 +231,6 @@ function buildDailyDigestEmail(args: {
     </div>
   `;
 
-  const statsHtml = `
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 24px; border-collapse: separate; border-spacing: 0 12px;">
-      <tr>
-        <td width="50%" style="padding-right: 6px;">
-          <div style="background: #f5f8fc; border: 1px solid #dbe5f0; border-radius: 18px; padding: 18px;">
-            <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #5b718c; margin-bottom: 8px;">Voli domani</div>
-            <div style="font-size: 28px; font-weight: 800; color: #17324d;">${tomorrowFlights.length}</div>
-          </div>
-        </td>
-        <td width="50%" style="padding-left: 6px;">
-          <div style="background: #fff7f2; border: 1px solid #f1d7c8; border-radius: 18px; padding: 18px;">
-            <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #8b5c3d; margin-bottom: 8px;">Scadenze oggi</div>
-            <div style="font-size: 28px; font-weight: 800; color: #7f3f1d;">${duePayments.length}</div>
-            ${duePayments.length > 0
-              ? `<div style="margin-top: 8px; font-size: 14px; color: #8b5c3d;">Totale: <strong>${escapeHtml(eur(totalPaymentsAmount))}</strong></div>`
-              : ""}
-          </div>
-        </td>
-      </tr>
-    </table>
-  `;
-
   const flightHtml = tomorrowFlights.length > 0
     ? `
       <div style="margin: 0 0 28px;">
@@ -356,7 +334,6 @@ function buildDailyDigestEmail(args: {
     <div style="margin: 0; padding: 32px 16px; background: #edf3f8; font-family: Inter, 'Segoe UI', Arial, sans-serif; color: #17324d;">
       <div style="max-width: 760px; margin: 0 auto;">
         ${summaryHtml}
-        ${statsHtml}
 
         <div style="background: #ffffff; border: 1px solid #dbe5f0; border-radius: 28px; padding: 24px;">
           <div style="font-size: 15px; line-height: 1.7; color: #4c5f76; margin-bottom: 24px;">
