@@ -16,7 +16,17 @@ export async function POST(request: Request) {
     return new Response(parsed.error.issues[0]?.message ?? "Dati non validi", { status: 400 });
   }
 
-  const { rentalRatePerHour, instructorRatePerHour, currency, defaultBase, dateMedicalExam, dateMonoExam, dateBipoExam, dateFoniaExam, dateAdvanced } = parsed.data;
+  const {
+    rentalRatePerHour,
+    instructorRatePerHour,
+    currency,
+    defaultBase,
+    dateMedicalExam,
+    dateMonoExam,
+    dateBipoExam,
+    dateFoniaExam,
+    dateAdvanced,
+  } = parsed.data;
 
   await prisma.settings.upsert({
     where: { userId: session.userId },
