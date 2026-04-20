@@ -11,6 +11,7 @@ import {
 const ONE_MINUTE_MS = 60 * 1000;
 const DAILY_RUN_HOUR = 9;
 const ROME_TIME_ZONE = "Europe/Rome";
+const DAILY_DIGEST_JOB_KEY = "daily-digest-email";
 
 type DailyJobsSchedulerState = {
   started: boolean;
@@ -282,6 +283,30 @@ async function runDailyJobs(now = new Date()) {
   await runDailyChecksAndActions(now);
 }
 
+async function getPersistedLastRunDateKey() {
+  const jobState = await prisma.dailyJobState.findUnique({
+    where: { key: DAILY_DIGEST_JOB_KEY },
+    select: { lastRunDateKey: true },
+  });
+
+  return jobState?.lastRunDateKey ?? null;
+}
+
+async function savePersistedLastRun(now: Date, dateKey: string) {
+  await prisma.dailyJobState.upsert({
+    where: { key: DAILY_DIGEST_JOB_KEY },
+    update: {
+      lastRunDateKey: dateKey,
+      lastRunAt: now,
+    },
+    create: {
+      key: DAILY_DIGEST_JOB_KEY,
+      lastRunDateKey: dateKey,
+      lastRunAt: now,
+    },
+  });
+}
+
 export async function runDailyChecksAndActions(now = new Date()) {
   const todayRange = getRomeDayRange(now, 0);
   const tomorrowRange = getRomeDayRange(now, 1);
@@ -375,10 +400,17 @@ async function tickDailyJobs() {
     return;
   }
 
-  state.lastRunDateKey = todayKey;
-
   try {
+    const persistedLastRunDateKey = await getPersistedLastRunDateKey();
+
+    if (persistedLastRunDateKey === todayKey) {
+      state.lastRunDateKey = todayKey;
+      return;
+    }
+
     await runDailyJobs(now);
+    await savePersistedLastRun(now, todayKey);
+    state.lastRunDateKey = todayKey;
   } catch (error) {
     console.error("[daily-jobs] Errore durante l'esecuzione giornaliera", error);
     state.lastRunDateKey = null;
