@@ -159,6 +159,7 @@ function buildDailyDigestEmail(args: {
   duePayments: PaymentMovement[];
 }) {
   const { tomorrowFlights, duePayments } = args;
+  const totalPaymentsAmount = duePayments.reduce((sum, item) => sum + Math.abs(Number(item.amount)), 0);
 
   const subjectParts = [];
   if (tomorrowFlights.length > 0) {
@@ -214,64 +215,159 @@ function buildDailyDigestEmail(args: {
     .filter(Boolean)
     .join("\n\n");
 
+  const summaryHtml = `
+    <div style="margin: 0 0 24px; padding: 22px; border-radius: 24px; background: linear-gradient(135deg, #17324d 0%, #244a70 100%); color: #ffffff;">
+      <div style="font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.78; margin-bottom: 10px;">
+        Promemoria giornaliero
+      </div>
+      <div style="font-size: 30px; line-height: 1.1; font-weight: 800; margin-bottom: 10px;">
+        Flight Logbook
+      </div>
+      <div style="font-size: 15px; line-height: 1.6; opacity: 0.92;">
+        ${tomorrowFlights.length > 0 ? `Hai <strong>${tomorrowFlights.length}</strong> ${tomorrowFlights.length === 1 ? "volo pianificato per domani" : "voli pianificati per domani"}` : "Nessun volo pianificato per domani"}
+        ${tomorrowFlights.length > 0 && duePayments.length > 0 ? "<br />" : ""}
+        ${duePayments.length > 0 ? `Hai <strong>${duePayments.length}</strong> ${duePayments.length === 1 ? "pagamento in scadenza oggi" : "pagamenti in scadenza oggi"}` : ""}
+      </div>
+    </div>
+  `;
+
+  const statsHtml = `
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin: 0 0 24px; border-collapse: separate; border-spacing: 0 12px;">
+      <tr>
+        <td width="50%" style="padding-right: 6px;">
+          <div style="background: #f5f8fc; border: 1px solid #dbe5f0; border-radius: 18px; padding: 18px;">
+            <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #5b718c; margin-bottom: 8px;">Voli domani</div>
+            <div style="font-size: 28px; font-weight: 800; color: #17324d;">${tomorrowFlights.length}</div>
+          </div>
+        </td>
+        <td width="50%" style="padding-left: 6px;">
+          <div style="background: #fff7f2; border: 1px solid #f1d7c8; border-radius: 18px; padding: 18px;">
+            <div style="font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; color: #8b5c3d; margin-bottom: 8px;">Scadenze oggi</div>
+            <div style="font-size: 28px; font-weight: 800; color: #7f3f1d;">${duePayments.length}</div>
+            ${duePayments.length > 0
+              ? `<div style="margin-top: 8px; font-size: 14px; color: #8b5c3d;">Totale: <strong>${escapeHtml(eur(totalPaymentsAmount))}</strong></div>`
+              : ""}
+          </div>
+        </td>
+      </tr>
+    </table>
+  `;
+
   const flightHtml = tomorrowFlights.length > 0
     ? `
-      <h2>Voli pianificati per domani</h2>
-      <ul>
+      <div style="margin: 0 0 28px;">
+        <div style="font-size: 20px; font-weight: 800; color: #17324d; margin: 0 0 14px;">Voli pianificati per domani</div>
         ${tomorrowFlights
           .map((item) => {
             const route = item.flight?.takeoffPlace || item.flight?.arrivalPlace
-              ? ` · ${escapeHtml(item.flight?.takeoffPlace ?? "?")} ➡️ ${escapeHtml(item.flight?.arrivalPlace ?? "?")}`
+              ? `
+                <div style="margin-top: 10px; font-size: 14px; color: #17324d;">
+                  <span style="font-weight: 700;">Tratta:</span>
+                  🛫 ${escapeHtml(item.flight?.takeoffPlace ?? "?")} <span style="opacity: 0.6;"> · </span> 🛬 ${escapeHtml(item.flight?.arrivalPlace ?? "?")}
+                </div>
+              `
               : "";
 
             const notes = item.notes
-              ? `<br /><span><strong>Note:</strong> ${escapeHtml(item.notes)}</span>`
+              ? `
+                <div style="margin-top: 10px; font-size: 14px; line-height: 1.5; color: #4c5f76;">
+                  <span style="font-weight: 700; color: #17324d;">Note:</span> ${escapeHtml(item.notes)}
+                </div>
+              `
               : "";
 
             return `
-              <li>
-                <strong>${escapeHtml(flightType(item.flight))}</strong> ·
-                ${escapeHtml(item.flight?.aircraftRegistration ?? "I-4150")} (${escapeHtml(item.flight?.aircraftType ?? "P92")}) ·
-                ${escapeHtml(formatDateDisplay(item.date))} ${escapeHtml(formatTimeDisplay(item.date))} ·
-                ${escapeHtml(minutesToHoursMinutes(item.flight?.durationMinutes ?? 0))}
+              <div style="margin: 0 0 14px; padding: 18px; border: 1px solid #dbe5f0; border-radius: 20px; background: #ffffff;">
+                <div style="display: flex; justify-content: space-between; gap: 12px; align-items: flex-start;">
+                  <div>
+                    <div style="font-size: 17px; font-weight: 800; color: #17324d; margin-bottom: 6px;">
+                      ${escapeHtml(flightType(item.flight))}
+                    </div>
+                    <div style="font-size: 14px; color: #4c5f76;">
+                      ${escapeHtml(item.flight?.aircraftRegistration ?? "I-4150")} (${escapeHtml(item.flight?.aircraftType ?? "P92")})
+                    </div>
+                  </div>
+                  <div style="text-align: right;">
+                    <div style="font-size: 13px; color: #5b718c;">Durata prevista</div>
+                    <div style="font-size: 18px; font-weight: 800; color: #17324d;">
+                      ${escapeHtml(minutesToHoursMinutes(item.flight?.durationMinutes ?? 0))}
+                    </div>
+                  </div>
+                </div>
+
+                <div style="margin-top: 14px; font-size: 14px; color: #17324d;">
+                  <span style="display: inline-block; margin-right: 14px;">📅 ${escapeHtml(formatDateDisplay(item.date))}</span>
+                  <span style="display: inline-block;">🕒 ${escapeHtml(formatTimeDisplay(item.date))}</span>
+                </div>
+
                 ${route}
                 ${notes}
-              </li>
+              </div>
             `;
           })
           .join("")}
-      </ul>
+      </div>
     `
     : "";
 
   const paymentsHtml = duePayments.length > 0
     ? `
-      <h2>Pagamenti in scadenza oggi</h2>
-      <ul>
+      <div style="margin: 0;">
+        <div style="font-size: 20px; font-weight: 800; color: #17324d; margin: 0 0 14px;">Pagamenti in scadenza oggi</div>
         ${duePayments
           .map((item) => {
             const notes = item.notes
-              ? `<br /><span><strong>Note:</strong> ${escapeHtml(item.notes)}</span>`
+              ? `
+                <div style="margin-top: 10px; font-size: 14px; line-height: 1.5; color: #6b5a4b;">
+                  <span style="font-weight: 700; color: #7f3f1d;">Note:</span> ${escapeHtml(item.notes)}
+                </div>
+              `
               : "";
 
             return `
-              <li>
-                <strong>${escapeHtml(paymentTypeLabel(item))}</strong> ·
-                ${escapeHtml(eur(Number(item.amount)))}
+              <div style="margin: 0 0 14px; padding: 18px; border: 1px solid #f1d7c8; border-radius: 20px; background: #fffdfb;">
+                <div style="display: flex; justify-content: space-between; gap: 12px; align-items: flex-start;">
+                  <div>
+                    <div style="font-size: 17px; font-weight: 800; color: #7f3f1d; margin-bottom: 6px;">
+                      ${escapeHtml(paymentTypeLabel(item))}
+                    </div>
+                    <div style="font-size: 14px; color: #8b5c3d;">
+                      📅 ${escapeHtml(formatDateDisplay(item.date))}
+                    </div>
+                  </div>
+                  <div style="text-align: right;">
+                    <div style="font-size: 13px; color: #8b5c3d;">Importo</div>
+                    <div style="font-size: 18px; font-weight: 800; color: #7f3f1d;">
+                      ${escapeHtml(eur(Number(item.amount)))}
+                    </div>
+                  </div>
+                </div>
+
                 ${notes}
-              </li>
+              </div>
             `;
           })
           .join("")}
-      </ul>
+      </div>
     `
     : "";
 
   const html = `
-    <div>
-      <p>Promemoria giornaliero <strong>Flight Logbook</strong>.</p>
-      ${flightHtml}
-      ${paymentsHtml}
+    <div style="margin: 0; padding: 32px 16px; background: #edf3f8; font-family: Inter, 'Segoe UI', Arial, sans-serif; color: #17324d;">
+      <div style="max-width: 760px; margin: 0 auto;">
+        ${summaryHtml}
+        ${statsHtml}
+
+        <div style="background: #ffffff; border: 1px solid #dbe5f0; border-radius: 28px; padding: 24px;">
+          <div style="font-size: 15px; line-height: 1.7; color: #4c5f76; margin-bottom: 24px;">
+            Questo riepilogo è stato generato automaticamente da <strong style="color: #17324d;">Flight Logbook</strong>
+            per aiutarti a tenere sotto controllo pianificazioni e scadenze della giornata.
+          </div>
+
+          ${flightHtml}
+          ${paymentsHtml}
+        </div>
+      </div>
     </div>
   `;
 
