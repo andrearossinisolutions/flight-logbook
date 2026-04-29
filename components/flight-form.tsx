@@ -58,8 +58,18 @@ export default function FlightForm({
 }: FlightFormProps) {
   const initial = buildInitialValues(initialValues);
 
-  const [insertMode, setInsertMode] = useState<"PAST" | "FUTURE">(initial.isDraft ? "FUTURE" : "PAST");
-  const [inputMode, setInputMode] = useState<"HOBBS" | "MANUAL">(initial.inputMode);
+  const initialDate = new Date(initial.date);
+  const initialIsTodayOrPastDateTime =
+    !Number.isNaN(initialDate.getTime()) && initialDate <= new Date();
+  const shouldAutoConfirmDraftFlight =
+    mode === "edit" && initial.isDraft && initialIsTodayOrPastDateTime;
+
+  const [insertMode, setInsertMode] = useState<"PAST" | "FUTURE">(
+    shouldAutoConfirmDraftFlight ? "PAST" : initial.isDraft ? "FUTURE" : "PAST"
+  );
+  const [inputMode, setInputMode] = useState<"HOBBS" | "MANUAL">(
+    shouldAutoConfirmDraftFlight ? "HOBBS" : initial.inputMode
+  );
   const [routeMode, setRouteMode] = useState<"SINGLE" | "DOUBLE">(initial.routeMode);
 
   const [date, setDate] = useState(initial.date);
@@ -126,6 +136,16 @@ export default function FlightForm({
   const instructorRateNumber = Number(instructorRate || 0);
   const instructorMinutesNumber = Number(instructorMinutes || 0);
 
+  const isTodayOrPastDateTime = useMemo(() => {
+    const parsedDate = new Date(date);
+
+    if (Number.isNaN(parsedDate.getTime())) {
+      return false;
+    }
+
+    return parsedDate <= new Date();
+  }, [date]);
+
   const totalCost = useMemo(() => {
     const base =
       (durationMinutes / 60) *
@@ -144,12 +164,16 @@ export default function FlightForm({
   ]);
 
   const effectiveSubmitLabel = useMemo(() => {
+    if (mode === "edit" && initial.isDraft && isTodayOrPastDateTime) {
+      return "Conferma volo";
+    }
+
     return mode === "edit"
       ? "Salva modifiche"
       : insertMode === "PAST"
         ? "Salva volo"
         : "Salva pianificazione"
-  }, [mode, insertMode]);
+  }, [initial.isDraft, insertMode, isTodayOrPastDateTime, mode]);
 
   return (
     <div className="grid grid-2">
