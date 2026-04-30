@@ -9,6 +9,7 @@ import {
   parseFlightFormData,
   type FlightFormValues,
 } from "@/lib/flight-form";
+import { defaultWarmupMinutesForDate } from "@/lib/utils";
 import { MovementType } from "@prisma/client";
 
 type FlightPageContentProps =
@@ -179,6 +180,10 @@ export default async function FlightPageContent(
     title = "Modifica volo";
     subtitle = "Stesso form del nuovo volo, con dati precompilati.";
     movementId = movementToEdit.id;
+    const defaultWarmupMinutes = defaultWarmupMinutesForDate(
+      movementToEdit.date
+    );
+
     initialValues = buildFlightInitialValues({
       movementDate: movementToEdit.date,
       notes: movementToEdit.notes,
@@ -194,8 +199,10 @@ export default async function FlightPageContent(
         passengerName: movementToEdit.flight.passengerName,
         instructorName: movementToEdit.flight.instructorName,
         instructorMinutes: movementToEdit.flight.instructorMinutes,
-        warmupMinutes: movementToEdit.isDraft ? 15 : 0,
-        durationMinutes: movementToEdit.flight.durationMinutes - (movementToEdit.isDraft ? 15 : 0),
+        warmupMinutes: movementToEdit.isDraft ? defaultWarmupMinutes : 0,
+        durationMinutes:
+          movementToEdit.flight.durationMinutes -
+          (movementToEdit.isDraft ? defaultWarmupMinutes : 0),
         hobbsStartMinutes: movementToEdit.flight.hobbsStartMinutes,
         hobbsEndMinutes: movementToEdit.flight.hobbsEndMinutes,
         rentalRateApplied: Number(movementToEdit.flight.rentalRateApplied),

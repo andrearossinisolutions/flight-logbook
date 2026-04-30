@@ -43,6 +43,11 @@ export function minutesToHoursMinutes(totalMinutes: number) {
   return `${hours}:${minutes < 10 ? "0" : ""}${minutes}`;
 }
 
+export function defaultWarmupMinutesForDate(date: Date | string) {
+  const month = new Date(date).getMonth() + 1;
+  return month >= 4 && month <= 10 ? 10 : 15;
+}
+
 export function toNumber(value: unknown) {
   if (typeof value === "number") return value;
   if (typeof value === "string") return Number(value.replace(",", "."));

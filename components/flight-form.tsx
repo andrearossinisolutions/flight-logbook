@@ -2,7 +2,11 @@
 
 import { CopyArrowIcon } from "@/components/icons";
 import Link from "next/link";
-import { formatDateTimeInput, minutesToHoursMinutes } from "@/lib/utils";
+import {
+  defaultWarmupMinutesForDate,
+  formatDateTimeInput,
+  minutesToHoursMinutes,
+} from "@/lib/utils";
 import { useMemo, useState } from "react";
 import type { FlightFormValues } from "@/lib/flight-form";
 
@@ -20,6 +24,8 @@ type FlightFormProps = {
 function buildInitialValues(
   initialValues?: Partial<FlightFormValues>
 ): FlightFormValues {
+  const defaultDate = initialValues?.date ?? new Date();
+
   return {
     date: initialValues?.date ?? formatDateTimeInput(new Date()),
     isDraft: initialValues?.isDraft ?? false,
@@ -40,7 +46,9 @@ function buildInitialValues(
     hobbsEndMinutes: initialValues?.hobbsEndMinutes ?? "",
     manualHours: initialValues?.manualHours ?? "",
     manualMinutes: initialValues?.manualMinutes ?? "",
-    warmupMinutes: initialValues?.warmupMinutes ?? "15",
+    warmupMinutes:
+      initialValues?.warmupMinutes ??
+      String(defaultWarmupMinutesForDate(defaultDate)),
     rentalRateApplied: initialValues?.rentalRateApplied ?? "150",
     instructorRateApplied: initialValues?.instructorRateApplied ?? "80",
     notes: initialValues?.notes ?? "",
