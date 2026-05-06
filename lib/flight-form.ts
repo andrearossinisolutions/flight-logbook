@@ -88,6 +88,9 @@ export function parseFlightFormData(formData: FormData) {
       ? FlightInputMode.HOBBS
       : FlightInputMode.MANUAL;
 
+  const routeModeRaw = String(formData.get("routeMode") ?? "SINGLE");
+  const routeMode = routeModeRaw === "DOUBLE" ? "DOUBLE" : "SINGLE";
+
   const passengerNameRaw = String(formData.get("passengerName") ?? "").trim();
   const instructorNameRaw = String(formData.get("instructorName") ?? "").trim();
   const instructorMinutes = toInt(formData.get("instructorMinutes"));
@@ -147,7 +150,7 @@ export function parseFlightFormData(formData: FormData) {
       throw new Error("I minuti manuali devono essere tra 0 e 59.");
     }
 
-    durationMinutes = warmupMinutes + manualHours * 60 + manualMinutes;
+    durationMinutes = (warmupMinutes + manualHours * 60 + manualMinutes) * (routeMode === "SINGLE" ? 1 : 2);
     hobbsStartMinutes = null;
     hobbsEndMinutes = null;
   }

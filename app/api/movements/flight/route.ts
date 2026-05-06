@@ -46,6 +46,7 @@ export async function POST(request: Request) {
   const insertMode = String(formData.get("insertMode") as "PAST" | "FUTURE" ?? "PAST");
 
   const inputModeRaw = String(formData.get("inputMode") ?? FlightInputMode.HOBBS);
+  const routeModeRaw = String(formData.get("routeMode") ?? "SINGLE");
 
   const instructorName = String(formData.get("instructorName") ?? "").trim();
   const instructorMinutes = parseIntValue(formData.get("instructorMinutes"));
@@ -67,6 +68,11 @@ export async function POST(request: Request) {
     inputModeRaw === FlightInputMode.MANUAL
       ? FlightInputMode.MANUAL
       : FlightInputMode.HOBBS;
+
+  const routeMode: "SINGLE" | "DOUBLE" =
+    routeModeRaw === "DOUBLE"
+      ? "DOUBLE"
+      : "SINGLE";
 
   const hobbsStartHours = parseIntValue(formData.get("hobbsStartHours"));
   const hobbsStartMinutesOnly = parseIntValue(formData.get("hobbsStartMinutes"));
@@ -114,7 +120,7 @@ export async function POST(request: Request) {
       );
     }
 
-    durationMinutes = manualHours * 60 + manualMinutes;
+    durationMinutes = (manualHours * 60 + manualMinutes) * (routeMode === "SINGLE" ? 1 : 2);
   }
 
   if (durationMinutes <= 0) {
