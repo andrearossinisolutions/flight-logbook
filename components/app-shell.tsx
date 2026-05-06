@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Route } from "next";
 import { LogoutButton } from "@/components/logout-button";
+import { version } from "../package.json";
 
 export function AppShell({
   title,
@@ -16,6 +17,7 @@ export function AppShell({
       <div className="between" style={{ marginBottom: 24 }}>
         <div>
           <div className="pill">Flight Logbook</div>
+          <div className="pill">v{version}</div>
           <h1 style={{ marginBottom: 8 }}>{title}</h1>
           {subtitle ? <p className="muted">{subtitle}</p> : null}
         </div>
