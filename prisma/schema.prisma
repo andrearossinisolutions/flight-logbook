@@ -24,6 +24,7 @@ model User {
   fullName     String?
   settings     Settings?
   movements    Movement[]
+  partnerships PartnershipMember[]
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
@@ -66,6 +67,9 @@ model Flight {
   movementId            String          @unique
   movement              Movement        @relation(fields: [movementId], references: [id], onDelete: Cascade)
 
+  partnershipAircraftId String?
+  partnershipAircraft   PartnershipAircraft? @relation(fields: [partnershipAircraftId], references: [id], onDelete: SetNull)
+
   aircraft              String          @default("P92") // legacy field, non più usato dal codice
   aircraftRegistration  String          @default("I-4150")
   aircraftType          String          @default("P92")
@@ -100,3 +104,57 @@ model DailyJobState {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 }
+
+model Partnership {
+  id          String   @id @default(cuid())
+  name        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members     PartnershipMember[]
+  aircrafts   PartnershipAircraft[]
+  fixedCosts  PartnershipFixedCost[]
+}
+
+model PartnershipMember {
+  id             String      @id @default(cuid())
+  partnershipId  String
+  partnership    Partnership @relation(fields: [partnershipId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           String      @default("MEMBER") // ADMIN or MEMBER
+  
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@unique([partnershipId, userId])
+}
+
+model PartnershipAircraft {
+  id               String      @id @default(cuid())
+  partnershipId    String
+  partnership      Partnership @relation(fields: [partnershipId], references: [id], onDelete: Cascade)
+  registration     String      @unique
+  type             String
+  
+  hourlyFuelCost   Decimal     @default(0)
+  hourlyMaintCost  Decimal     @default(0)
+  hourlyEngineFund Decimal     @default(0)
+
+  flights          Flight[]
+
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+}
+
+model PartnershipFixedCost {
+  id             String      @id @default(cuid())
+  partnershipId  String
+  partnership    Partnership @relation(fields: [partnershipId], references: [id], onDelete: Cascade)
+  description    String
+  amount         Decimal
+  
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+

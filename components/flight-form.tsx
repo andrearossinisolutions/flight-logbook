@@ -19,6 +19,14 @@ type FlightFormProps = {
   initialValues?: Partial<FlightFormValues>;
   movementId?: string;
   submitLabel?: string;
+  partnershipAircrafts?: Array<{
+    id: string;
+    registration: string;
+    type: string;
+    hourlyFuelCost: number;
+    hourlyMaintCost: number;
+    hourlyEngineFund: number;
+  }>;
 };
 
 function buildInitialValues(
@@ -63,6 +71,7 @@ export default function FlightForm({
   dateBipoExam,
   initialValues,
   movementId,
+  partnershipAircrafts = [],
 }: FlightFormProps) {
   const initial = buildInitialValues(initialValues);
 
@@ -144,6 +153,14 @@ export default function FlightForm({
   const instructorRateNumber = Number(instructorRate || 0);
   const instructorMinutesNumber = Number(instructorMinutes || 0);
 
+  const isPartnershipAircraft = useMemo(() => {
+    return partnershipAircrafts.find(a => a.registration === aircraftRegistration);
+  }, [partnershipAircrafts, aircraftRegistration]);
+
+  const effectiveRentalRate = isPartnershipAircraft
+    ? (isPartnershipAircraft.hourlyFuelCost + isPartnershipAircraft.hourlyMaintCost + isPartnershipAircraft.hourlyEngineFund)
+    : rentalRateNumber;
+
   const isTodayOrPastDateTime = useMemo(() => {
     const parsedDate = new Date(date);
 
@@ -157,7 +174,7 @@ export default function FlightForm({
   const totalCost = useMemo(() => {
     const base =
       (durationMinutes / 60) *
-      (Number.isFinite(rentalRateNumber) ? rentalRateNumber : 0);
+      (Number.isFinite(effectiveRentalRate) ? effectiveRentalRate : 0);
 
     const instructor = instructorMinutesNumber > 0 ?
       (durationMinutes / 60) *
@@ -168,7 +185,7 @@ export default function FlightForm({
     durationMinutes,
     instructorMinutesNumber,
     instructorRateNumber,
-    rentalRateNumber,
+    effectiveRentalRate,
   ]);
 
   const effectiveSubmitLabel = useMemo(() => {
@@ -231,10 +248,23 @@ export default function FlightForm({
                 className="input"
                 id="aircraftRegistration"
                 name="aircraftRegistration"
+                list="partnershipAircraftsList"
                 value={aircraftRegistration}
-                onChange={(e) => setAircraftRegistration(e.target.value)}
+                onChange={(e) => {
+                  const reg = e.target.value;
+                  setAircraftRegistration(reg);
+                  const pa = partnershipAircrafts.find(a => a.registration === reg);
+                  if (pa) {
+                    setAircraftType(pa.type);
+                  }
+                }}
                 required
               />
+              <datalist id="partnershipAircraftsList">
+                {partnershipAircrafts.map(pa => (
+                  <option key={pa.id} value={pa.registration}>{pa.type} (Società)</option>
+                ))}
+              </datalist>
             </div>
 
             <div className="field">
@@ -524,7 +554,9 @@ export default function FlightForm({
 
           <div className="grid grid-2">
             <div className="field">
-              <label htmlFor="rentalRateApplied">Tariffa noleggio applicata (€/h)</label>
+              <label htmlFor="rentalRateApplied">
+                {isPartnershipAircraft ? "Tariffa societaria (Costo orario totale)" : "Tariffa noleggio applicata (€/h)"}
+              </label>
               <input
                 className="input"
                 id="rentalRateApplied"
@@ -532,10 +564,16 @@ export default function FlightForm({
                 type="number"
                 min="0"
                 step="0.01"
-                value={rentalRate}
-                onChange={(e) => setRentalRate(e.target.value)}
+                value={isPartnershipAircraft ? effectiveRentalRate : rentalRate}
+                onChange={(e) => {
+                  if (!isPartnershipAircraft) {
+                    setRentalRate(e.target.value);
+                  }
+                }}
+                readOnly={!!isPartnershipAircraft}
                 required
               />
+              {isPartnershipAircraft && <span className="muted" style={{ fontSize: 12, marginTop: 4 }}>Tariffa calcolata dai costi orari della società.</span>}
             </div>
 
             <div className="field">
@@ -592,9 +630,9 @@ export default function FlightForm({
 
         <div className="grid">
           <div className="field">
-            <label>Tariffa noleggio applicata</label>
+            <label>{isPartnershipAircraft ? "Tariffa societaria applicata" : "Tariffa noleggio applicata"}</label>
             <div>
-              € {Number.isFinite(rentalRateNumber) ? rentalRateNumber.toFixed(2) : "0.00"}/h
+              € {Number.isFinite(effectiveRentalRate) ? effectiveRentalRate.toFixed(2) : "0.00"}/h
             </div>
           </div>
 
@@ -627,7 +665,7 @@ export default function FlightForm({
           </div>
         )}
 
-        {totalCost > 0 && (
+        {totalCost > 0 && !isPartnershipAircraft && (
           <div style={{ marginTop: 16 }}>
             <div className="muted">Nuovo saldo{insertMode === "PAST" ? "" : " stimato"}</div>
             <div className="big-number">€ {(currentBalance - totalCost).toFixed(2)}</div>
@@ -644,7 +682,16 @@ export default function FlightForm({
           </div>
         )}
 
-        {currentBalance - totalCost < 0 && (
+        {totalCost > 0 && isPartnershipAircraft && (
+          <div style={{ marginTop: 16 }}>
+            <div className="muted" style={{ color: "#0284c7" }}>Volo in società</div>
+            <div style={{ marginTop: 8 }}>
+              Questo volo non ridurrà il tuo saldo ricariche personale. Il costo verrà rendicontato a fine mese.
+            </div>
+          </div>
+        )}
+
+        {currentBalance - totalCost < 0 && !isPartnershipAircraft && (
           <div style={{ marginTop: 16 }}>
             <div className="muted">Ricarica necessaria{insertMode === "PAST" ? "" : " stimata"}</div>
             <div className="big-number">€ {(totalCost - currentBalance).toFixed(2)}</div>

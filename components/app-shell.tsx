@@ -25,6 +25,9 @@ export function AppShell({
           <Link className="btn secondary" href="/dashboard">
             Dashboard
           </Link>
+          <Link className="btn secondary" href={"/societa" as Route}>
+            Società
+          </Link>
           <Link className="btn secondary" href="/settings">
             Impostazioni
           </Link>

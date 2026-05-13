@@ -40,6 +40,26 @@ export default async function FlightPageContent(
     },
   });
 
+  const partnershipMemberships = await prisma.partnershipMember.findMany({
+    where: { userId: user.id },
+    include: {
+      partnership: {
+        include: {
+          aircrafts: true,
+        },
+      },
+    },
+  });
+
+  const partnershipAircrafts = partnershipMemberships.flatMap(pm => pm.partnership.aircrafts).map(a => ({
+    id: a.id,
+    registration: a.registration,
+    type: a.type,
+    hourlyFuelCost: Number(a.hourlyFuelCost),
+    hourlyMaintCost: Number(a.hourlyMaintCost),
+    hourlyEngineFund: Number(a.hourlyEngineFund),
+  }));
+
   const currentBalance = movements
     .filter((m) => m.type !== "SERVICE" && !m.isDraft)
     .reduce((acc, item) => acc + Number(item.amount), 0);
@@ -68,13 +88,18 @@ export default async function FlightPageContent(
 
     if (props.mode === "create") {
       await prisma.$transaction(async (tx) => {
+        const partnershipAircraft = partnershipAircrafts.find(a => a.registration === parsed.aircraftRegistration);
+        
+        // If it's a partnership flight, the movement amount is 0 so it doesn't affect personal balance
+        const movementAmount = partnershipAircraft ? 0 : parsed.movementAmount;
+
         const movement = await tx.movement.create({
           data: {
             userId: user.id,
             type: MovementType.FLIGHT,
             date: parsed.date,
             isDraft: parsed.isDraft,
-            amount: parsed.movementAmount,
+            amount: movementAmount,
             notes: parsed.notes,
           },
         });
@@ -100,6 +125,7 @@ export default async function FlightPageContent(
             rentalCost: parsed.rentalCost,
             instructorCost: parsed.instructorCost,
             totalCost: parsed.totalCost,
+            partnershipAircraftId: partnershipAircraft ? partnershipAircraft.id : null,
           },
         });
       });
@@ -122,6 +148,9 @@ export default async function FlightPageContent(
       }
 
       await prisma.$transaction(async (tx) => {
+        const partnershipAircraft = partnershipAircrafts.find(a => a.registration === parsed.aircraftRegistration);
+        const movementAmount = partnershipAircraft ? 0 : parsed.movementAmount;
+
         await tx.flight.update({
           where: {
             movementId: dbMovement.id,
@@ -145,6 +174,7 @@ export default async function FlightPageContent(
             rentalCost: parsed.rentalCost,
             instructorCost: parsed.instructorCost,
             totalCost: parsed.totalCost,
+            partnershipAircraftId: partnershipAircraft ? partnershipAircraft.id : null,
           },
         });
 
@@ -153,7 +183,7 @@ export default async function FlightPageContent(
           data: {
             date: parsed.date,
             isDraft: parsed.isDraft,
-            amount: parsed.movementAmount,
+            amount: movementAmount,
             notes: parsed.notes,
           },
         });
@@ -221,6 +251,7 @@ export default async function FlightPageContent(
         totalFlightMinutes={totalFlightMinutes}
         dateBipoExam={settings?.dateBipoExam ?? null}
         initialValues={initialValues}
+        partnershipAircrafts={partnershipAircrafts}
       />
     </AppShell>
   );
