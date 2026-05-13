@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { addAircraft, addFixedCost, addMember, getMonthlyReport } from "./actions";
+import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost } from "./actions";
 
 function formatMinutes(minutes: number) {
   const h = Math.floor(minutes / 60);
@@ -12,6 +12,10 @@ function formatMinutes(minutes: number) {
 export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
   const [activeTab, setActiveTab] = useState("AIRCRAFTS");
   
+  // Edit state
+  const [editingAircraftId, setEditingAircraftId] = useState<string | null>(null);
+  const [editingFixedCostId, setEditingFixedCostId] = useState<string | null>(null);
+
   // Report state
   const [reportMonth, setReportMonth] = useState(new Date().getMonth());
   const [reportYear, setReportYear] = useState(new Date().getFullYear());
@@ -72,16 +76,82 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                     <th>Marche</th>
                     <th>Tipo</th>
                     <th>Costo Orario (Totale)</th>
+                    {isAdmin && <th>Azioni</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {partnership.aircrafts.map((a: any) => (
+                  {partnership.aircrafts.map((a: any) => {
+                    const isEditing = editingAircraftId === a.id;
+                    return (
                     <tr key={a.id}>
-                      <td><strong>{a.registration}</strong></td>
-                      <td>{a.type}</td>
-                      <td>€ {(a.hourlyFuelCost + a.hourlyMaintCost + a.hourlyEngineFund).toFixed(2)} / h</td>
+                      {isEditing ? (
+                        <td colSpan={isAdmin ? 4 : 3}>
+                          <form action={async (fd) => {
+                            await updateAircraft(partnership.id, a.id, fd);
+                            setEditingAircraftId(null);
+                          }} className="grid grid-4" style={{ gap: 8, alignItems: "end" }}>
+                            <div>
+                              <label style={{ fontSize: 11 }}>Marche</label>
+                              <input className="input" name="registration" defaultValue={a.registration} required style={{ padding: "4px 8px" }} />
+                            </div>
+                            <div>
+                              <label style={{ fontSize: 11 }}>Tipo</label>
+                              <input className="input" name="type" defaultValue={a.type} required style={{ padding: "4px 8px" }} />
+                            </div>
+                            <div className="row" style={{ gridColumn: "span 2", gap: 8 }}>
+                              <div>
+                                <label style={{ fontSize: 11 }}>Benzina</label>
+                                <input className="input" name="hourlyFuelCost" type="number" step="0.01" min="0" defaultValue={a.hourlyFuelCost} required style={{ padding: "4px 8px" }} />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: 11 }}>Manutenz.</label>
+                                <input className="input" name="hourlyMaintCost" type="number" step="0.01" min="0" defaultValue={a.hourlyMaintCost} required style={{ padding: "4px 8px" }} />
+                              </div>
+                              <div>
+                                <label style={{ fontSize: 11 }}>Fondo</label>
+                                <input className="input" name="hourlyEngineFund" type="number" step="0.01" min="0" defaultValue={a.hourlyEngineFund} required style={{ padding: "4px 8px" }} />
+                              </div>
+                              <div className="row" style={{ gap: 4 }}>
+                                <button className="btn" type="submit" style={{ padding: "4px 12px" }}>Salva</button>
+                                <button className="btn secondary" type="button" onClick={() => setEditingAircraftId(null)} style={{ padding: "4px 12px" }}>Annulla</button>
+                              </div>
+                            </div>
+                          </form>
+                        </td>
+                      ) : (
+                        <>
+                          <td><strong>{a.registration}</strong></td>
+                          <td>{a.type}</td>
+                          <td>€ {(a.hourlyFuelCost + a.hourlyMaintCost + a.hourlyEngineFund).toFixed(2)} / h</td>
+                          {isAdmin && (
+                            <td>
+                              <div className="row" style={{ gap: 8 }}>
+                                <button 
+                                  className="btn secondary" 
+                                  style={{ padding: "4px 8px", fontSize: 12 }}
+                                  onClick={() => setEditingAircraftId(a.id)}
+                                >
+                                  Modifica
+                                </button>
+                                <button 
+                                  className="btn secondary" 
+                                  style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
+                                  onClick={() => {
+                                    if (confirm(`Sei sicuro di voler eliminare l'aereo ${a.registration}?`)) {
+                                      deleteAircraft(partnership.id, a.id);
+                                    }
+                                  }}
+                                >
+                                  Elimina
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </>
+                      )}
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             )}
@@ -130,15 +200,59 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                   <tr>
                     <th>Descrizione</th>
                     <th>Importo (Mese)</th>
+                    {isAdmin && <th>Azioni</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {partnership.fixedCosts.map((c: any) => (
+                  {partnership.fixedCosts.map((c: any) => {
+                    const isEditing = editingFixedCostId === c.id;
+                    return (
                     <tr key={c.id}>
-                      <td>{c.description}</td>
-                      <td>€ {c.amount.toFixed(2)}</td>
+                      {isEditing ? (
+                        <td colSpan={isAdmin ? 3 : 2}>
+                          <form action={async (fd) => {
+                            await updateFixedCost(partnership.id, c.id, fd);
+                            setEditingFixedCostId(null);
+                          }} className="row" style={{ gap: 8 }}>
+                            <input className="input" name="description" defaultValue={c.description} required style={{ padding: "4px 8px", flex: 1 }} />
+                            <input className="input" name="amount" type="number" step="0.01" min="0" defaultValue={c.amount} required style={{ padding: "4px 8px", width: 100 }} />
+                            <button className="btn" type="submit" style={{ padding: "4px 12px" }}>Salva</button>
+                            <button className="btn secondary" type="button" onClick={() => setEditingFixedCostId(null)} style={{ padding: "4px 12px" }}>Annulla</button>
+                          </form>
+                        </td>
+                      ) : (
+                        <>
+                          <td>{c.description}</td>
+                          <td>€ {c.amount.toFixed(2)}</td>
+                          {isAdmin && (
+                            <td>
+                              <div className="row" style={{ gap: 8 }}>
+                                <button 
+                                  className="btn secondary" 
+                                  style={{ padding: "4px 8px", fontSize: 12 }}
+                                  onClick={() => setEditingFixedCostId(c.id)}
+                                >
+                                  Modifica
+                                </button>
+                                <button 
+                                  className="btn secondary" 
+                                  style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
+                                  onClick={() => {
+                                    if (confirm(`Sei sicuro di voler eliminare il costo fisso "${c.description}"?`)) {
+                                      deleteFixedCost(partnership.id, c.id);
+                                    }
+                                  }}
+                                >
+                                  Elimina
+                                </button>
+                              </div>
+                            </td>
+                          )}
+                        </>
+                      )}
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             )}
@@ -173,6 +287,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                   <th>Nome</th>
                   <th>Email</th>
                   <th>Ruolo</th>
+                  {isAdmin && <th>Azioni</th>}
                 </tr>
               </thead>
               <tbody>
@@ -181,6 +296,23 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                     <td>{m.user.fullName || "Utente senza nome"} {m.user.id === currentUserId ? "(Tu)" : ""}</td>
                     <td>{m.user.email}</td>
                     <td>{m.role === "ADMIN" ? "Amministratore" : "Socio"}</td>
+                    {isAdmin && (
+                      <td>
+                        {m.user.id !== currentUserId && (
+                          <button 
+                            className="btn secondary" 
+                            style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
+                            onClick={() => {
+                              if (confirm(`Sei sicuro di voler rimuovere l'utente ${m.user.email}?`)) {
+                                removeMember(partnership.id, m.userId);
+                              }
+                            }}
+                          >
+                            Rimuovi
+                          </button>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
