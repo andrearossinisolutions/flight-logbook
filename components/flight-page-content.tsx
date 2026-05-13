@@ -194,6 +194,10 @@ export default async function FlightPageContent(
     redirect("/dashboard");
   }
 
+  const lastFlightMovement = movements
+    .filter((m) => m.type === "FLIGHT" && m.flight)
+    .sort((a, b) => b.date.getTime() - a.date.getTime())[0];
+
   let title = "Nuovo volo";
   let subtitle =
     "Durata da orametro o inserimento manuale; costo calcolato automaticamente.";
@@ -203,6 +207,8 @@ export default async function FlightPageContent(
     takeoffPlace: settings?.defaultBase ?? "",
     isDraft: movementToEdit?.isDraft ?? false,
     inputMode: "HOBBS",
+    aircraftRegistration: lastFlightMovement?.flight?.aircraftRegistration ?? "I-4150",
+    aircraftType: lastFlightMovement?.flight?.aircraftType ?? "P92",
   };
   let movementId: string | undefined = undefined;
 
