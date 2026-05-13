@@ -261,6 +261,15 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                     );
                   })}
                 </tbody>
+                <tfoot>
+                  <tr style={{ background: "var(--bg-secondary)", fontWeight: "bold" }}>
+                    <td>Totale mensile societario</td>
+                    <td>
+                      € {partnership.fixedCosts.reduce((acc: number, c: any) => acc + (c.period === 'YEARLY' ? Number(c.amount) / 12 : Number(c.amount)), 0).toFixed(2)}
+                    </td>
+                    {isAdmin && <td></td>}
+                  </tr>
+                </tfoot>
               </table>
             )}
 
