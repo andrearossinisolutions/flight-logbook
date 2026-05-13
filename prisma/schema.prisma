@@ -153,6 +153,7 @@ model PartnershipFixedCost {
   partnership    Partnership @relation(fields: [partnershipId], references: [id], onDelete: Cascade)
   description    String
   amount         Decimal
+  period         String      @default("MONTHLY")
   
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt

@@ -215,6 +215,10 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                             setEditingFixedCostId(null);
                           }} className="row" style={{ gap: 8 }}>
                             <input className="input" name="description" defaultValue={c.description} required style={{ padding: "4px 8px", flex: 1 }} />
+                            <select className="select" name="period" defaultValue={c.period} style={{ padding: "4px 8px", width: 120 }}>
+                              <option value="MONTHLY">Mensile</option>
+                              <option value="YEARLY">Annuale</option>
+                            </select>
                             <input className="input" name="amount" type="number" step="0.01" min="0" defaultValue={c.amount} required style={{ padding: "4px 8px", width: 100 }} />
                             <button className="btn" type="submit" style={{ padding: "4px 12px" }}>Salva</button>
                             <button className="btn secondary" type="button" onClick={() => setEditingFixedCostId(null)} style={{ padding: "4px 12px" }}>Annulla</button>
@@ -223,7 +227,10 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                       ) : (
                         <>
                           <td>{c.description}</td>
-                          <td>€ {c.amount.toFixed(2)}</td>
+                          <td>
+                            € {c.period === "YEARLY" ? (c.amount / 12).toFixed(2) : c.amount.toFixed(2)}
+                            {c.period === "YEARLY" && <span className="muted" style={{ fontSize: 12, marginLeft: 4 }}>(da € {c.amount.toFixed(2)}/anno)</span>}
+                          </td>
                           {isAdmin && (
                             <td>
                               <div className="row" style={{ gap: 8 }}>
@@ -265,9 +272,18 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                     <label>Descrizione</label>
                     <input className="input" name="description" required placeholder="Es. Affitto Hangar" />
                   </div>
-                  <div className="field">
-                    <label>Importo Mensile (€)</label>
-                    <input className="input" name="amount" type="number" step="0.01" min="0" required />
+                  <div className="grid grid-2">
+                    <div className="field">
+                      <label>Periodicità</label>
+                      <select className="select" name="period">
+                        <option value="MONTHLY">Mensile</option>
+                        <option value="YEARLY">Annuale</option>
+                      </select>
+                    </div>
+                    <div className="field">
+                      <label>Importo (€)</label>
+                      <input className="input" name="amount" type="number" step="0.01" min="0" required />
+                    </div>
                   </div>
                   <button className="btn">Aggiungi costo fisso</button>
                 </form>

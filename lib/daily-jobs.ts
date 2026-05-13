@@ -490,7 +490,7 @@ async function runMonthlyReports(now: Date) {
   for (const partnership of partnerships) {
     if (partnership.members.length === 0) continue;
 
-    const fixedCostTotal = partnership.fixedCosts.reduce((acc, c) => acc + Number(c.amount), 0);
+    const fixedCostTotal = partnership.fixedCosts.reduce((acc, c) => acc + (c.period === 'YEARLY' ? Number(c.amount) / 12 : Number(c.amount)), 0);
     const fixedCostPerMember = fixedCostTotal / partnership.members.length;
 
     const aircraftIds = partnership.aircrafts.map(a => a.id);
