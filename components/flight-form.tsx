@@ -177,7 +177,7 @@ export default function FlightForm({
       (Number.isFinite(effectiveRentalRate) ? effectiveRentalRate : 0);
 
     const instructor = instructorMinutesNumber > 0 ?
-      (durationMinutes / 60) *
+      (instructorMinutesNumber / 60) *
       (Number.isFinite(instructorRateNumber) ? instructorRateNumber : 0) : 0;
 
     return base + instructor;
@@ -187,6 +187,15 @@ export default function FlightForm({
     instructorRateNumber,
     effectiveRentalRate,
   ]);
+
+  const deductedAmount = useMemo(() => {
+    if (isPartnershipAircraft) {
+      return instructorMinutesNumber > 0 ?
+        (instructorMinutesNumber / 60) *
+        (Number.isFinite(instructorRateNumber) ? instructorRateNumber : 0) : 0;
+    }
+    return totalCost;
+  }, [totalCost, isPartnershipAircraft, instructorMinutesNumber, instructorRateNumber]);
 
   const effectiveSubmitLabel = useMemo(() => {
     if (mode === "edit" && initial.isDraft && isTodayOrPastDateTime) {
@@ -492,7 +501,7 @@ export default function FlightForm({
 
         <div className="card">
           <div className="grid grid-2">
-            { dateBipoExam && <div className="field">
+            {dateBipoExam && <div className="field">
               <label htmlFor="passengerName">Passeggero</label>
               <input
                 className="input"
@@ -509,7 +518,7 @@ export default function FlightForm({
                 }}
                 placeholder="Nome passeggero (se presente)"
               />
-            </div> }
+            </div>}
 
             <div className="field">
               <label htmlFor="instructorName">Istruttore</label>
@@ -609,9 +618,9 @@ export default function FlightForm({
             />
           </div>
 
-          { (durationMinutes === 0 || durationMinutes === Number(warmupMinutes || 0) || (instructorMinutesNumber > 0 && instructorMinutesNumber > durationMinutes)) && <div className="error" style={{ marginTop: 16 }}>
+          {(durationMinutes === 0 || durationMinutes === Number(warmupMinutes || 0) || (instructorMinutesNumber > 0 && instructorMinutesNumber > durationMinutes)) && <div className="error" style={{ marginTop: 16 }}>
             <span>Imposta una durata valida.</span>
-          </div> }
+          </div>}
 
           <div className="row" style={{ gap: 12, marginTop: "16px" }}>
             <button className="btn" type="submit" disabled={durationMinutes === 0 || durationMinutes === Number(warmupMinutes || 0) || (instructorMinutesNumber > 0 && instructorMinutesNumber > durationMinutes)}>
@@ -665,14 +674,14 @@ export default function FlightForm({
           </div>
         )}
 
-        {totalCost > 0 && !isPartnershipAircraft && (
+        {deductedAmount > 0 && (
           <div style={{ marginTop: 16 }}>
             <div className="muted">Nuovo saldo{insertMode === "PAST" ? "" : " stimato"}</div>
-            <div className="big-number">€ {(currentBalance - totalCost).toFixed(2)}</div>
+            <div className="big-number">€ {(currentBalance - deductedAmount).toFixed(2)}</div>
 
-            {!instructorName && instructorMinutesNumber === 0 && dateBipoExam != null && (
+            {!instructorName && instructorMinutesNumber === 0 && dateBipoExam != null && !isPartnershipAircraft && (
               <div style={{ marginTop: 8 }}>
-                € {(currentBalance - totalCost / 2).toFixed(2)} se dividi i costi con il passeggero
+                € {(currentBalance - deductedAmount / 2).toFixed(2)} se dividi i costi con il passeggero
               </div>
             )}
 
@@ -686,15 +695,23 @@ export default function FlightForm({
           <div style={{ marginTop: 16 }}>
             <div className="muted" style={{ color: "#0284c7" }}>Volo in società</div>
             <div style={{ marginTop: 8 }}>
-              Questo volo non ridurrà il tuo saldo ricariche personale. Il costo verrà rendicontato a fine mese.
+              {instructorMinutesNumber > 0 ? (
+                <>
+                  Il costo dell'aereo (<strong>€ {(totalCost - deductedAmount).toFixed(2)}</strong>) verrà rendicontato a fine mese.
+                  <br />
+                  Il costo dell'istruttore (<strong>€ {deductedAmount.toFixed(2)}</strong>) verrà sottratto dal tuo saldo personale.
+                </>
+              ) : (
+                "Questo volo non ridurrà il tuo saldo ricariche personale. Il costo verrà rendicontato a fine mese."
+              )}
             </div>
           </div>
         )}
 
-        {currentBalance - totalCost < 0 && !isPartnershipAircraft && (
+        {currentBalance - deductedAmount < 0 && (
           <div style={{ marginTop: 16 }}>
             <div className="muted">Ricarica necessaria{insertMode === "PAST" ? "" : " stimata"}</div>
-            <div className="big-number">€ {(totalCost - currentBalance).toFixed(2)}</div>
+            <div className="big-number">€ {(deductedAmount - currentBalance).toFixed(2)}</div>
           </div>
         )}
 

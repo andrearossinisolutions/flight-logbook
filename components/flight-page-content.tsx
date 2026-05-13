@@ -90,8 +90,8 @@ export default async function FlightPageContent(
       await prisma.$transaction(async (tx) => {
         const partnershipAircraft = partnershipAircrafts.find(a => a.registration === parsed.aircraftRegistration);
         
-        // If it's a partnership flight, the movement amount is 0 so it doesn't affect personal balance
-        const movementAmount = partnershipAircraft ? 0 : parsed.movementAmount;
+        // If it's a partnership flight, the movement amount only subtracts the instructor cost (if any)
+        const movementAmount = partnershipAircraft ? -(parsed.instructorCost || 0) : parsed.movementAmount;
 
         const movement = await tx.movement.create({
           data: {
@@ -149,7 +149,7 @@ export default async function FlightPageContent(
 
       await prisma.$transaction(async (tx) => {
         const partnershipAircraft = partnershipAircrafts.find(a => a.registration === parsed.aircraftRegistration);
-        const movementAmount = partnershipAircraft ? 0 : parsed.movementAmount;
+        const movementAmount = partnershipAircraft ? -(parsed.instructorCost || 0) : parsed.movementAmount;
 
         await tx.flight.update({
           where: {
