@@ -7,6 +7,7 @@ import {
   formatTimeDisplay,
   minutesToHoursMinutes,
 } from "@/lib/utils";
+import { buildMonthlyReportEmail } from "@/lib/monthly-report-email";
 
 const ONE_MINUTE_MS = 60 * 1000;
 const DAILY_RUN_HOUR = 9;
@@ -381,6 +382,8 @@ async function savePersistedLastRun(now: Date, dateKey: string) {
 }
 
 export async function runDailyChecksAndActions(now = new Date()) {
+  await runMonthlyReports(now);
+
   const todayRange = getRomeDayRange(now, 0);
   const tomorrowRange = getRomeDayRange(now, 1);
 
@@ -457,6 +460,123 @@ export async function runDailyChecksAndActions(now = new Date()) {
       console.error(`[daily-jobs] Errore invio email per utente ${userId}`, error);
     }
   }
+}
+
+async function runMonthlyReports(now: Date) {
+  const parts = getRomeDateTimeParts(now);
+  if (parts.day !== 1) return;
+
+  const targetMonth = parts.month === 1 ? 12 : parts.month - 1;
+  const targetYear = parts.month === 1 ? parts.year - 1 : parts.year;
+  
+  const jobKey = `monthly-report-${targetYear}-${targetMonth}`;
+  
+  const jobState = await prisma.dailyJobState.findUnique({
+    where: { key: jobKey }
+  });
+  if (jobState) return;
+
+  const partnerships = await prisma.partnership.findMany({
+    include: {
+      members: { include: { user: true } },
+      fixedCosts: true,
+      aircrafts: true,
+    }
+  });
+
+  const startOfMonth = new Date(Date.UTC(targetYear, targetMonth - 1, 1));
+  const endOfMonth = new Date(Date.UTC(parts.year, parts.month - 1, 1));
+
+  for (const partnership of partnerships) {
+    if (partnership.members.length === 0) continue;
+
+    const fixedCostTotal = partnership.fixedCosts.reduce((acc, c) => acc + Number(c.amount), 0);
+    const fixedCostPerMember = fixedCostTotal / partnership.members.length;
+
+    const aircraftIds = partnership.aircrafts.map(a => a.id);
+    
+    if (aircraftIds.length === 0 && fixedCostTotal === 0) continue;
+
+    const movements = await prisma.movement.findMany({
+      where: {
+        type: "FLIGHT",
+        date: {
+          gte: startOfMonth,
+          lt: endOfMonth,
+        },
+        flight: {
+          partnershipAircraftId: { in: aircraftIds }
+        }
+      },
+      include: {
+        flight: {
+          include: { partnershipAircraft: true }
+        }
+      }
+    });
+
+    for (const member of partnership.members) {
+      const userMovements = movements.filter(mov => mov.userId === member.userId);
+      let flightCost = 0;
+      let durationMinutes = 0;
+      
+      const aircraftDetails = new Map<string, { duration: number, cost: number }>();
+
+      for (const mov of userMovements) {
+        const f = mov.flight;
+        const pa = f?.partnershipAircraft;
+        if (!f || !pa) continue;
+        
+        durationMinutes += f.durationMinutes;
+        const hourlyCost = Number(pa.hourlyFuelCost) + Number(pa.hourlyMaintCost) + Number(pa.hourlyEngineFund);
+        const cost = (f.durationMinutes / 60) * hourlyCost;
+        flightCost += cost;
+
+        const current = aircraftDetails.get(pa.registration) || { duration: 0, cost: 0 };
+        current.duration += f.durationMinutes;
+        current.cost += cost;
+        aircraftDetails.set(pa.registration, current);
+      }
+
+      const totalCost = fixedCostPerMember + flightCost;
+
+      const email = buildMonthlyReportEmail({
+        monthName: startOfMonth.toLocaleString('it-IT', { month: 'long', year: 'numeric' }),
+        partnershipName: partnership.name,
+        fixedCostPerMember,
+        fixedCostTotal,
+        flightCost,
+        totalCost,
+        durationMinutes,
+        aircraftDetails: Array.from(aircraftDetails.entries()).map(([reg, data]) => ({
+            registration: reg,
+            durationMinutes: data.duration,
+            cost: data.cost
+        })),
+        memberCount: partnership.members.length
+      });
+
+      try {
+        await sendUserEmail({
+          userId: member.userId,
+          subject: email.subject,
+          text: email.text,
+          html: email.html,
+        });
+        console.log(`[daily-jobs] Inviato report mensile a ${member.userId} per società ${partnership.name}`);
+      } catch(e) {
+        console.error(`[daily-jobs] Errore invio report mensile a ${member.userId}`, e);
+      }
+    }
+  }
+
+  await prisma.dailyJobState.create({
+    data: {
+      key: jobKey,
+      lastRunDateKey: getRomeDateKey(now),
+      lastRunAt: now,
+    }
+  });
 }
 
 async function tickDailyJobs() {
