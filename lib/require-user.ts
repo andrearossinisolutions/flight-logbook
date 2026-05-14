@@ -10,7 +10,7 @@ export async function requireUser() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    include: { settings: true },
+    include: { settings: true, rentalAircrafts: true },
   });
 
   if (!user) {

@@ -27,6 +27,12 @@ type FlightFormProps = {
     hourlyMaintCost: number;
     hourlyEngineFund: number;
   }>;
+  rentalAircrafts?: Array<{
+    id: string;
+    registration: string;
+    type: string;
+    hourlyCost: number;
+  }>;
 };
 
 function buildInitialValues(
@@ -72,6 +78,7 @@ export default function FlightForm({
   initialValues,
   movementId,
   partnershipAircrafts = [],
+  rentalAircrafts = [],
 }: FlightFormProps) {
   const initial = buildInitialValues(initialValues);
 
@@ -156,6 +163,10 @@ export default function FlightForm({
   const isPartnershipAircraft = useMemo(() => {
     return partnershipAircrafts.find(a => a.registration === aircraftRegistration);
   }, [partnershipAircrafts, aircraftRegistration]);
+
+  const configuredRentalAircraft = useMemo(() => {
+    return rentalAircrafts.find(a => a.registration === aircraftRegistration);
+  }, [rentalAircrafts, aircraftRegistration]);
 
   const effectiveRentalRate = isPartnershipAircraft
     ? (isPartnershipAircraft.hourlyFuelCost + isPartnershipAircraft.hourlyMaintCost + isPartnershipAircraft.hourlyEngineFund)
@@ -260,11 +271,17 @@ export default function FlightForm({
                 list="partnershipAircraftsList"
                 value={aircraftRegistration}
                 onChange={(e) => {
-                  const reg = e.target.value;
+                  const reg = e.target.value.toUpperCase();
                   setAircraftRegistration(reg);
                   const pa = partnershipAircrafts.find(a => a.registration === reg);
                   if (pa) {
                     setAircraftType(pa.type);
+                  } else {
+                    const ra = rentalAircrafts.find(a => a.registration === reg);
+                    if (ra) {
+                      setAircraftType(ra.type);
+                      setRentalRate(String(ra.hourlyCost));
+                    }
                   }
                 }}
                 required
@@ -272,6 +289,9 @@ export default function FlightForm({
               <datalist id="partnershipAircraftsList">
                 {partnershipAircrafts.map(pa => (
                   <option key={pa.id} value={pa.registration}>{pa.type} (Società)</option>
+                ))}
+                {rentalAircrafts.map(ra => (
+                  <option key={ra.id} value={ra.registration}>{ra.type} (Noleggio Configurato)</option>
                 ))}
               </datalist>
             </div>
@@ -583,6 +603,7 @@ export default function FlightForm({
                 required
               />
               {isPartnershipAircraft && <span className="muted" style={{ fontSize: 12, marginTop: 4 }}>Tariffa calcolata dai costi orari della società.</span>}
+              {!isPartnershipAircraft && configuredRentalAircraft && <span className="muted" style={{ fontSize: 12, marginTop: 4 }}>Quota oraria precompilata in base all'aereo configurato.</span>}
             </div>
 
             <div className="field">

@@ -60,6 +60,13 @@ export default async function FlightPageContent(
     hourlyEngineFund: Number(a.hourlyEngineFund),
   }));
 
+  const rentalAircrafts = (user.rentalAircrafts || []).map(a => ({
+    id: a.id,
+    registration: a.registration,
+    type: a.type,
+    hourlyCost: Number(a.hourlyCost),
+  }));
+
   const currentBalance = movements
     .filter((m) => m.type !== "SERVICE" && !m.isDraft)
     .reduce((acc, item) => acc + Number(item.amount), 0);
@@ -198,17 +205,21 @@ export default async function FlightPageContent(
     .filter((m) => m.type === "FLIGHT" && m.flight)
     .sort((a, b) => b.date.getTime() - a.date.getTime())[0];
 
+  const initialRegistration = lastFlightMovement?.flight?.aircraftRegistration ?? "I-4150";
+  const matchedRental = rentalAircrafts.find(a => a.registration === initialRegistration);
+  const initialRentalRate = matchedRental ? Number(matchedRental.hourlyCost) : Number(settings?.rentalRatePerHour ?? 150);
+
   let title = "Nuovo volo";
   let subtitle =
     "Durata da orametro o inserimento manuale; costo calcolato automaticamente.";
   let initialValues: Partial<FlightFormValues> | undefined = {
-    rentalRateApplied: String(Number(settings?.rentalRatePerHour ?? 150)),
+    rentalRateApplied: String(initialRentalRate),
     instructorRateApplied: String(Number(settings?.instructorRatePerHour ?? 80)),
     takeoffPlace: settings?.defaultBase ?? "",
     isDraft: movementToEdit?.isDraft ?? false,
     inputMode: "HOBBS",
-    aircraftRegistration: lastFlightMovement?.flight?.aircraftRegistration ?? "I-4150",
-    aircraftType: lastFlightMovement?.flight?.aircraftType ?? "P92",
+    aircraftRegistration: initialRegistration,
+    aircraftType: matchedRental ? matchedRental.type : (lastFlightMovement?.flight?.aircraftType ?? "P92"),
   };
   let movementId: string | undefined = undefined;
 
@@ -258,6 +269,7 @@ export default async function FlightPageContent(
         dateBipoExam={settings?.dateBipoExam ?? null}
         initialValues={initialValues}
         partnershipAircrafts={partnershipAircrafts}
+        rentalAircrafts={rentalAircrafts}
       />
     </AppShell>
   );

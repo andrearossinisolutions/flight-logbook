@@ -26,6 +26,7 @@ model User {
   movements             Movement[]
   partnerships          PartnershipMember[]
   partnershipTransactns PartnershipTransaction[]
+  rentalAircrafts       RentalAircraft[]
   createdAt             DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
@@ -174,5 +175,19 @@ model PartnershipTransaction {
   
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
+}
+
+model RentalAircraft {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  registration String
+  type         String   @default("P92")
+  hourlyCost   Decimal  @default(150)
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, registration])
 }
 
