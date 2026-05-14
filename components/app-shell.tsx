@@ -1,7 +1,5 @@
-import Link from "next/link";
-import type { Route } from "next";
-import { LogoutButton } from "@/components/logout-button";
-import { version } from "../package.json";
+import React from "react";
+import { Navbar } from "@/components/navbar";
 
 export function AppShell({
   title,
@@ -13,28 +11,17 @@ export function AppShell({
   children: React.ReactNode;
 }) {
   return (
-    <main className="container">
-      <div className="between" style={{ marginBottom: 24 }}>
-        <div>
-          <div className="pill">Flight Logbook</div>
-          <div className="pill">v{version}</div>
-          <h1 style={{ marginBottom: 8 }}>{title}</h1>
-          {subtitle ? <p className="muted">{subtitle}</p> : null}
+    <>
+      <Navbar />
+      <main className="container" style={{ paddingTop: 8 }}>
+        <div className="between no-print" style={{ marginBottom: 24, alignItems: "flex-start" }}>
+          <div>
+            <h1 style={{ marginBottom: 8, marginTop: 0 }}>{title}</h1>
+            {subtitle ? <p className="muted" style={{ margin: 0 }}>{subtitle}</p> : null}
+          </div>
         </div>
-        <div className="row">
-          <Link className="btn secondary" href="/dashboard">
-            Dashboard
-          </Link>
-          <Link className="btn secondary" href={"/societa" as Route}>
-            Società
-          </Link>
-          <Link className="btn secondary" href="/settings">
-            Impostazioni
-          </Link>
-          <LogoutButton />
-        </div>
-      </div>
-      {children}
-    </main>
+        {children}
+      </main>
+    </>
   );
 }

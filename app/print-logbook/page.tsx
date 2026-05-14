@@ -7,6 +7,7 @@ import {
   minutesToHoursMinutes,
 } from "@/lib/utils";
 import { PrintButton } from "@/components/print-button";
+import { Navbar } from "@/components/navbar";
 
 export default async function PrintLogbookPage() {
   const user = await requireUser();
@@ -24,22 +25,20 @@ export default async function PrintLogbookPage() {
   });
 
   return (
-    <main className="container print-page">
-      <div className="between no-print" style={{ marginBottom: 24 }}>
-        <div>
-          <div className="pill">Flight Logbook</div>
-          <h1 style={{ marginBottom: 8 }}>Logbook stampabile</h1>
-          <p className="muted">
-            Elenco voli confermati con i dettagli operativi utili alla stampa.
-          </p>
+    <>
+      <Navbar />
+      <main className="container print-page" style={{ paddingTop: 8 }}>
+        <div className="between no-print" style={{ marginBottom: 24, alignItems: "flex-start" }}>
+          <div>
+            <h1 style={{ marginBottom: 8, marginTop: 0 }}>Logbook stampabile</h1>
+            <p className="muted" style={{ margin: 0 }}>
+              Elenco voli confermati con i dettagli operativi utili alla stampa.
+            </p>
+          </div>
+          <div className="row">
+            <PrintButton />
+          </div>
         </div>
-        <div className="row">
-          <Link className="btn secondary" href="/dashboard">
-            Dashboard
-          </Link>
-          <PrintButton />
-        </div>
-      </div>
 
       <div className="card print-card">
         <div className="between" style={{ marginBottom: 20 }}>
@@ -121,6 +120,7 @@ export default async function PrintLogbookPage() {
         </table>
       </div>
     </main>
+    </>
   );
 }
 
