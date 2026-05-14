@@ -49,7 +49,7 @@ export default async function SocietaPage() {
       <div className="grid grid-2">
         <div className="card">
           <h2 style={{ marginTop: 0 }}>Le tue Società</h2>
-          
+
           {memberships.length === 0 ? (
             <div className="muted">Non fai ancora parte di nessuna società.</div>
           ) : (
@@ -60,7 +60,7 @@ export default async function SocietaPage() {
                     <div>
                       <h3 style={{ margin: 0 }}>{m.partnership.name}</h3>
                       <div className="muted" style={{ fontSize: 14, marginTop: 4 }}>
-                        {m.partnership.members.length} soci · {m.partnership.aircrafts.length} aerei
+                        {m.partnership.members.length > 1 ? `${m.partnership.members.length} soci` : "1 socio"} · {m.partnership.aircrafts.length > 1 ? `${m.partnership.aircrafts.length} aerei` : "1 aereo"}
                       </div>
                     </div>
                     <Link href={`/societa/${m.partnershipId}` as Route} className="btn">
