@@ -245,6 +245,17 @@ export async function getMonthlyReport(partnershipId: string, year: number, mont
     }
   });
 
+  const memberExpenses = await prisma.partnershipTransaction.findMany({
+    where: {
+      partnershipId,
+      type: "MEMBER_EXPENSE",
+      date: {
+        gte: startOfMonth,
+        lt: endOfMonth,
+      }
+    }
+  });
+
   const memberReports = partnership.members.map(m => {
     const userMovements = movements.filter(mov => mov.userId === m.userId);
     let flightCost = 0;
@@ -260,12 +271,16 @@ export async function getMonthlyReport(partnershipId: string, year: number, mont
       flightCost += (f.durationMinutes / 60) * hourlyCost;
     }
 
+    const userExpenses = memberExpenses.filter(t => t.userId === m.userId);
+    const advancedExpense = userExpenses.reduce((acc, t) => acc + Number(t.amount), 0);
+
     return {
       userId: m.userId,
       fullName: m.user.fullName || m.user.email,
       fixedCost: fixedCostPerMember,
       flightCost,
-      totalCost: fixedCostPerMember + flightCost,
+      advancedExpense,
+      totalCost: fixedCostPerMember + flightCost - advancedExpense,
       durationMinutes,
       flightsCount: userMovements.length,
     };

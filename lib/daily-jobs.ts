@@ -515,6 +515,17 @@ async function runMonthlyReports(now: Date) {
       }
     });
 
+    const memberExpenses = await prisma.partnershipTransaction.findMany({
+      where: {
+        partnershipId: partnership.id,
+        type: "MEMBER_EXPENSE",
+        date: {
+          gte: startOfMonth,
+          lt: endOfMonth,
+        }
+      }
+    });
+
     for (const member of partnership.members) {
       const userMovements = movements.filter(mov => mov.userId === member.userId);
       let flightCost = 0;
@@ -538,7 +549,10 @@ async function runMonthlyReports(now: Date) {
         aircraftDetails.set(pa.registration, current);
       }
 
-      const totalCost = fixedCostPerMember + flightCost;
+      const userExpenses = memberExpenses.filter(t => t.userId === member.userId);
+      const advancedExpense = userExpenses.reduce((acc, t) => acc + Number(t.amount), 0);
+
+      const totalCost = fixedCostPerMember + flightCost - advancedExpense;
 
       const email = buildMonthlyReportEmail({
         monthName: startOfMonth.toLocaleString('it-IT', { month: 'long', year: 'numeric' }),
@@ -553,7 +567,8 @@ async function runMonthlyReports(now: Date) {
             durationMinutes: data.duration,
             cost: data.cost
         })),
-        memberCount: partnership.members.length
+        memberCount: partnership.members.length,
+        advancedExpense
       });
 
       try {

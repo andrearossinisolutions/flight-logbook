@@ -411,6 +411,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                     <th>Ore volate</th>
                     <th>Costo Orario Voli</th>
                     <th>Quota Fissa</th>
+                    <th>Spese Anticipate</th>
                     <th>Totale da versare</th>
                   </tr>
                 </thead>
@@ -425,7 +426,14 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                       <td>{formatMinutes(r.durationMinutes)}</td>
                       <td>€ {r.flightCost.toFixed(2)}</td>
                       <td>€ {r.fixedCost.toFixed(2)}</td>
-                      <td><strong style={{ fontSize: 18 }}>€ {r.totalCost.toFixed(2)}</strong></td>
+                      <td style={{ color: r.advancedExpense > 0 ? "var(--success)" : "inherit" }}>
+                        {r.advancedExpense > 0 ? `- € ${r.advancedExpense.toFixed(2)}` : "-"}
+                      </td>
+                      <td>
+                        <strong style={{ fontSize: 18, color: r.totalCost < 0 ? "var(--success)" : "inherit" }}>
+                          € {r.totalCost.toFixed(2)}
+                        </strong>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -19,8 +19,9 @@ export function buildMonthlyReportEmail(args: {
   durationMinutes: number;
   aircraftDetails: { registration: string, durationMinutes: number, cost: number }[];
   memberCount: number;
+  advancedExpense?: number;
 }) {
-  const { monthName, partnershipName, fixedCostPerMember, fixedCostTotal, flightCost, totalCost, durationMinutes, aircraftDetails, memberCount } = args;
+  const { monthName, partnershipName, fixedCostPerMember, fixedCostTotal, flightCost, totalCost, durationMinutes, aircraftDetails, memberCount, advancedExpense = 0 } = args;
 
   const subject = `Rendiconto Mensile ${partnershipName} - ${monthName}`;
 
@@ -39,7 +40,7 @@ Totale da versare: ${eur(totalCost)}
 Dettagli:
 - Quota fissa mensile: ${eur(fixedCostPerMember)} (Totale società: ${eur(fixedCostTotal)} diviso per ${memberCount} soci)
 - Costo totale voli: ${eur(flightCost)} per ${minutesToHoursMinutes(durationMinutes)} ore di volo
-
+${advancedExpense > 0 ? `- Spese anticipate pagate da te: -${eur(advancedExpense)}\n` : ""}
 Voli per aereo:
 ${aircraftText}
   `.trim();
@@ -87,24 +88,38 @@ ${aircraftText}
             </div>
           </div>
 
-          <div style="margin: 0 0 28px;">
-            <div style="font-size: 18px; font-weight: 800; color: #17324d; margin: 0 0 14px;">Dettaglio Voli</div>
-            <div style="padding: 16px; border: 1px solid #dbe5f0; border-radius: 16px;">
-              <div style="display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #edf3f8;">
-                <span style="color: #4c5f76;">Ore volate totali</span>
-                <strong style="color: #17324d;">${escapeHtml(minutesToHoursMinutes(durationMinutes))}</strong>
-              </div>
-              <div style="display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #edf3f8;">
-                <span style="color: #4c5f76;">Costo totale voli</span>
-                <strong style="color: #17324d;">${escapeHtml(eur(flightCost))}</strong>
-              </div>
-              
-              <div style="margin-top: 16px;">
-                <div style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: #5b718c; margin-bottom: 8px;">Dettaglio per aeromobile</div>
-                ${aircraftHtml || '<div style="font-size: 14px; color: #4c5f76;">Nessun volo registrato.</div>'}
+            <div style="margin: 0 0 28px;">
+              <div style="font-size: 18px; font-weight: 800; color: #17324d; margin: 0 0 14px;">Dettaglio Voli</div>
+              <div style="padding: 16px; border: 1px solid #dbe5f0; border-radius: 16px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #edf3f8;">
+                  <span style="color: #4c5f76;">Ore volate totali</span>
+                  <strong style="color: #17324d;">${escapeHtml(minutesToHoursMinutes(durationMinutes))}</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #edf3f8;">
+                  <span style="color: #4c5f76;">Costo totale voli</span>
+                  <strong style="color: #17324d;">${escapeHtml(eur(flightCost))}</strong>
+                </div>
+                
+                <div style="margin-top: 16px;">
+                  <div style="font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: #5b718c; margin-bottom: 8px;">Dettaglio per aeromobile</div>
+                  ${aircraftHtml || '<div style="font-size: 14px; color: #4c5f76;">Nessun volo registrato.</div>'}
+                </div>
               </div>
             </div>
-          </div>
+
+            ${advancedExpense > 0 ? `
+              <div style="margin: 0 0 28px;">
+                <div style="padding: 16px; border: 1px solid #dbe5f0; border-radius: 16px; background: #fdfefc;">
+                  <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #4c5f76;">Spese anticipate da te (Benzina / Altro)</span>
+                    <strong style="color: #16a34a;">-${escapeHtml(eur(advancedExpense))}</strong>
+                  </div>
+                  <div style="font-size: 13px; color: #5b718c; margin-top: 4px;">
+                    L'importo anticipato personalmente è stato scalato dal totale da versare di questo mese.
+                  </div>
+                </div>
+              </div>
+            ` : ""}
 
         </div>
       </div>
