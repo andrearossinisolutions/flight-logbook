@@ -718,12 +718,12 @@ export default function FlightForm({
             <div style={{ marginTop: 8 }}>
               {instructorMinutesNumber > 0 ? (
                 <>
-                  Il costo dell'aereo (<strong>€ {(totalCost - deductedAmount).toFixed(2)}</strong>) verrà rendicontato a fine mese.
+                  Il costo dell'aereo (<strong>€ {(totalCost - deductedAmount).toFixed(2)}</strong>) verrà rendicontato in società.
                   <br />
-                  Il costo dell'istruttore (<strong>€ {deductedAmount.toFixed(2)}</strong>) verrà sottratto dal tuo saldo personale.
+                  Il costo dell'istruttore (<strong>€ {deductedAmount.toFixed(2)}</strong>) verrà sottratto dal tuo saldo personale AeroClub.
                 </>
               ) : (
-                "Questo volo non ridurrà il tuo saldo ricariche personale. Il costo verrà rendicontato a fine mese."
+                "Questo volo non ridurrà il tuo saldo personale presso l'AeroClub. Il costo verrà rendicontato in società."
               )}
             </div>
           </div>

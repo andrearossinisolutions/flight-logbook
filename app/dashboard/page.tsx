@@ -79,7 +79,7 @@ export default async function DashboardPage() {
       (acc: number, item: MovementItem) =>
         acc + (item.flight?.instructorMinutes ?? 0),
       0
-  );
+    );
 
   const totalPostExamFlights = movements
     .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft && settings?.dateMonoExam != null && item.date > settings.dateMonoExam);
@@ -94,9 +94,9 @@ export default async function DashboardPage() {
   const totalPostExamPICMinutes = totalPostExamFlights
     .reduce(
       (acc: number, item: MovementItem) =>
-      acc + (settings?.dateMonoExam != null && item.date > settings.dateMonoExam ? ((item.flight?.durationMinutes ?? 0) - (item.flight?.instructorMinutes ?? 0)) : 0),
-    0
-  );
+        acc + (settings?.dateMonoExam != null && item.date > settings.dateMonoExam ? ((item.flight?.durationMinutes ?? 0) - (item.flight?.instructorMinutes ?? 0)) : 0),
+      0
+    );
 
   const totalPostExamInstructorMinutes = totalPostExamFlights
     .reduce(
@@ -198,7 +198,7 @@ export default async function DashboardPage() {
     >
       <DashboardWidgets>
         <div className="card">
-          <div className="muted">Saldo attuale</div>
+          <div className="muted">Saldo attuale (AeroClub)</div>
           <div className="big-number">{eur(saldo)}</div>
           <div className="muted" style={{ marginTop: 16 }}>
             Ore di volo disponibili
@@ -208,12 +208,12 @@ export default async function DashboardPage() {
             PIC:{" "}
             {saldo > 0
               ? minutesToHoursMinutes(
-                  (saldo /
-                    (settings?.rentalRatePerHour
-                      ? Number(settings.rentalRatePerHour)
-                      : 150)) *
-                    60
-                )
+                (saldo /
+                  (settings?.rentalRatePerHour
+                    ? Number(settings.rentalRatePerHour)
+                    : 150)) *
+                60
+              )
               : "0:00"}
           </div><br />
           <div className="inline-meta" style={{ marginTop: 4 }}>
@@ -221,20 +221,20 @@ export default async function DashboardPage() {
             Istruttore:{" "}
             {saldo > 0
               ? minutesToHoursMinutes(
-                  (saldo /
-                    ((settings?.rentalRatePerHour
-                      ? Number(settings.rentalRatePerHour)
-                      : 150) +
-                      (settings?.instructorRatePerHour
-                        ? Number(settings.instructorRatePerHour)
-                        : 80))) *
-                    60
-                )
+                (saldo /
+                  ((settings?.rentalRatePerHour
+                    ? Number(settings.rentalRatePerHour)
+                    : 150) +
+                    (settings?.instructorRatePerHour
+                      ? Number(settings.instructorRatePerHour)
+                      : 80))) *
+                60
+              )
               : "0:00"}
           </div>
         </div>
 
-        { lastFlight && <div className="card">
+        {lastFlight && <div className="card">
           <div className="muted">Ultimo volo</div>
           <div className="medium-number">{daysFromDate(lastFlight.date)}</div>
           <div className="inline-meta" style={{ marginTop: 24 }}>
@@ -249,9 +249,9 @@ export default async function DashboardPage() {
             {lastFlight.flight?.aircraftType ?? "P92"} ·{" "}
             {minutesToHoursMinutes(lastFlight.flight?.durationMinutes ?? 0)}
           </div>
-        </div> }
+        </div>}
 
-        { nextFlight && <div className="card">
+        {nextFlight && <div className="card">
           <div className="muted">Prossimo volo</div>
           <div className="medium-number">{daysToDate(nextFlight.date)}</div>
           <div className="inline-meta" style={{ marginTop: 24 }}>
@@ -266,9 +266,9 @@ export default async function DashboardPage() {
             {nextFlight.flight?.aircraftType ?? "P92"} ·{" "}
             {minutesToHoursMinutes(nextFlight.flight?.durationMinutes ?? 0)}
           </div>
-        </div> }
+        </div>}
 
-        { last6mFlights.length > 0 && <div className="card">
+        {last6mFlights.length > 0 && <div className="card">
           <div className="muted">Negli ultimi 6 mesi</div>
           <div className="medium-number">{last6mFlights.length} voli | {minutesToHoursMinutes(last6mMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
@@ -280,9 +280,9 @@ export default async function DashboardPage() {
             <ClockIcon />
             Istruttore: {minutesToHoursMinutes(last6mInstructorMinutes)}
           </div>
-        </div> }
+        </div>}
 
-        { settings?.dateMonoExam != null && <div className="card">
+        {settings?.dateMonoExam != null && <div className="card">
           <div className="muted">Da quando hai l'attestato</div>
           <div className="medium-number">{totalPostExamFlights.length} voli | {minutesToHoursMinutes(totalPostExamMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
@@ -294,7 +294,7 @@ export default async function DashboardPage() {
             <ClockIcon />
             Istruttore: {minutesToHoursMinutes(totalPostExamInstructorMinutes)}
           </div>
-        </div> }
+        </div>}
 
         <div className="card">
           <div className="muted">Dal primo giorno</div>
@@ -310,7 +310,7 @@ export default async function DashboardPage() {
           </div>
         </div>
 
-        { settings?.dateMedicalExam != null && <div className="card">
+        {settings?.dateMedicalExam != null && <div className="card">
           <div className="muted">Scadenza visita medica</div>
           <div className="big-number">{formatDateDisplay(medicalExamExpirationDate(settings.dateMedicalExam))}</div>
           <div style={{ marginTop: 8 }}>
@@ -320,7 +320,7 @@ export default async function DashboardPage() {
             <CalendarIcon />
             <span>Visita: {formatDateDisplay(settings.dateMedicalExam)}</span>
           </div>
-        </div> }
+        </div>}
 
         <div className="card">
           <div className="muted">Spese registrate</div>
@@ -381,12 +381,12 @@ export default async function DashboardPage() {
               return (
                 <tr key={item.id}>
                   <td>
-                    <div className={ "inline-meta" + (isFutureMovement ? " future-movement" : "")}>
+                    <div className={"inline-meta" + (isFutureMovement ? " future-movement" : "")}>
                       <CalendarIcon />
                       <span>{formatDateDisplay(item.date)}</span>
                     </div><br />
-                    { item.type === "FLIGHT" &&
-                      <div className={ "inline-meta" + (isFutureMovement ? " future-movement" : "")}>
+                    {item.type === "FLIGHT" &&
+                      <div className={"inline-meta" + (isFutureMovement ? " future-movement" : "")}>
                         <ClockIcon />
                         <span>{formatTimeDisplay(item.date)}</span>
                       </div>
@@ -411,15 +411,15 @@ export default async function DashboardPage() {
                             ? item.date < today
                               ? <span style={{ color: "#b91c1c" }}>Pagamento<br />da confermare</span>
                               : "Scadenza"
-                          : item.type === "TOPUP" && Number(item.amount) < 0
-                            ? "Rettifica saldo"
-                            : "Pagamento" }
+                            : item.type === "TOPUP" && Number(item.amount) < 0
+                              ? "Rettifica saldo"
+                              : "Pagamento"}
                       </span>
                     </div>
                   </td>
 
                   <td>
-                    { dashboardItem(item, movements, isFutureMovement) }
+                    {dashboardItem(item, movements, isFutureMovement)}
                   </td>
 
                   <td style={{ fontWeight: 700 }}>{eur(Number(item.amount))}</td>
@@ -478,9 +478,9 @@ function dashboardItem(item: any, movements: any[] = [], isFutureMovement = fals
     case "TOPUP":
       return (
         <div className="grid grid-2">
-          { item.type === "TOPUP" && Number(item.amount) < 0
-              ? <div className="muted" style={{ color: "#b91c1c" }}>Correzione saldo / addebito manuale</div>
-              : <div className="muted" style={{ color: "green" }}>Ricarica credito</div>
+          {item.type === "TOPUP" && Number(item.amount) < 0
+            ? <div className="muted" style={{ color: "#b91c1c" }}>Correzione saldo / addebito manuale</div>
+            : <div className="muted" style={{ color: "green" }}>Ricarica credito</div>
           }
 
           <div>
@@ -511,11 +511,11 @@ function dashboardItem(item: any, movements: any[] = [], isFutureMovement = fals
       return (
         <div className="grid grid-2">
           <div>
-            <div className={ "muted" + (isFutureMovement ? " future-movement" : "")}>
+            <div className={"muted" + (isFutureMovement ? " future-movement" : "")}>
               ✈️ {(item.flight?.aircraftRegistration ?? "I-4150") + " · "}
               🕒 {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
             </div>
-            { (item.flight?.takeoffPlace != null || item.flight?.arrivalPlace != null) &&
+            {(item.flight?.takeoffPlace != null || item.flight?.arrivalPlace != null) &&
               <div className={isFutureMovement ? "future-movement" : undefined}>
                 🛫 {item.flight?.takeoffPlace ?? "?"} · 🛬 {item.flight?.arrivalPlace ?? "?"}
               </div>
@@ -524,7 +524,7 @@ function dashboardItem(item: any, movements: any[] = [], isFutureMovement = fals
 
           <div>
             <span className={isFutureMovement ? "future-movement" : undefined}>
-              { item.isDraft ? "Bozza progressivo: " : "Progressivo: "}
+              {item.isDraft ? "Bozza progressivo: " : "Progressivo: "}
               🕒 {minutesToHoursMinutes(progressiveFlightMinutes) + " · "}
               💶 {eur(progressiveSaldo)}
             </span>
