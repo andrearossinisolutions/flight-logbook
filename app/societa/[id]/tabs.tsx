@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost } from "./actions";
+import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction } from "./actions";
 
 function formatMinutes(minutes: number) {
   const h = Math.floor(minutes / 60);
@@ -11,7 +11,7 @@ function formatMinutes(minutes: number) {
 
 export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
   const [activeTab, setActiveTab] = useState("AIRCRAFTS");
-  
+
   // Edit state
   const [editingAircraftId, setEditingAircraftId] = useState<string | null>(null);
   const [editingFixedCostId, setEditingFixedCostId] = useState<string | null>(null);
@@ -43,23 +43,29 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
   return (
     <div>
       <div className="row" style={{ marginBottom: 24, gap: 16 }}>
-        <button 
-          className={`btn ${activeTab === "AIRCRAFTS" ? "" : "secondary"}`} 
+        <button
+          className={`btn ${activeTab === "AIRCRAFTS" ? "" : "secondary"}`}
           onClick={() => setActiveTab("AIRCRAFTS")}
         >
           Aerei e Costi
         </button>
-        <button 
-          className={`btn ${activeTab === "MEMBERS" ? "" : "secondary"}`} 
+        <button
+          className={`btn ${activeTab === "MEMBERS" ? "" : "secondary"}`}
           onClick={() => setActiveTab("MEMBERS")}
         >
           Soci
         </button>
-        <button 
-          className={`btn ${activeTab === "REPORT" ? "" : "secondary"}`} 
+        <button
+          className={`btn ${activeTab === "REPORT" ? "" : "secondary"}`}
           onClick={() => setActiveTab("REPORT")}
         >
           Rendiconto Mensile
+        </button>
+        <button
+          className={`btn ${activeTab === "CASSA" ? "" : "secondary"}`}
+          onClick={() => setActiveTab("CASSA")}
+        >
+          Cassa
         </button>
       </div>
 
@@ -83,73 +89,73 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                   {partnership.aircrafts.map((a: any) => {
                     const isEditing = editingAircraftId === a.id;
                     return (
-                    <tr key={a.id}>
-                      {isEditing ? (
-                        <td colSpan={isAdmin ? 4 : 3}>
-                          <form action={async (fd) => {
-                            await updateAircraft(partnership.id, a.id, fd);
-                            setEditingAircraftId(null);
-                          }} className="grid grid-4" style={{ gap: 8, alignItems: "end" }}>
-                            <div>
-                              <label style={{ fontSize: 11 }}>Marche</label>
-                              <input className="input" name="registration" defaultValue={a.registration} required style={{ padding: "4px 8px" }} />
-                            </div>
-                            <div>
-                              <label style={{ fontSize: 11 }}>Tipo</label>
-                              <input className="input" name="type" defaultValue={a.type} required style={{ padding: "4px 8px" }} />
-                            </div>
-                            <div className="row" style={{ gridColumn: "span 2", gap: 8 }}>
+                      <tr key={a.id}>
+                        {isEditing ? (
+                          <td colSpan={isAdmin ? 4 : 3}>
+                            <form action={async (fd) => {
+                              await updateAircraft(partnership.id, a.id, fd);
+                              setEditingAircraftId(null);
+                            }} className="grid grid-4" style={{ gap: 8, alignItems: "end" }}>
                               <div>
-                                <label style={{ fontSize: 11 }}>Benzina</label>
-                                <input className="input" name="hourlyFuelCost" type="number" step="0.01" min="0" defaultValue={a.hourlyFuelCost} required style={{ padding: "4px 8px" }} />
+                                <label style={{ fontSize: 11 }}>Marche</label>
+                                <input className="input" name="registration" defaultValue={a.registration} required style={{ padding: "4px 8px" }} />
                               </div>
                               <div>
-                                <label style={{ fontSize: 11 }}>Manutenz.</label>
-                                <input className="input" name="hourlyMaintCost" type="number" step="0.01" min="0" defaultValue={a.hourlyMaintCost} required style={{ padding: "4px 8px" }} />
+                                <label style={{ fontSize: 11 }}>Tipo</label>
+                                <input className="input" name="type" defaultValue={a.type} required style={{ padding: "4px 8px" }} />
                               </div>
-                              <div>
-                                <label style={{ fontSize: 11 }}>Fondo</label>
-                                <input className="input" name="hourlyEngineFund" type="number" step="0.01" min="0" defaultValue={a.hourlyEngineFund} required style={{ padding: "4px 8px" }} />
+                              <div className="row" style={{ gridColumn: "span 2", gap: 8 }}>
+                                <div>
+                                  <label style={{ fontSize: 11 }}>Benzina</label>
+                                  <input className="input" name="hourlyFuelCost" type="number" step="0.01" min="0" defaultValue={a.hourlyFuelCost} required style={{ padding: "4px 8px" }} />
+                                </div>
+                                <div>
+                                  <label style={{ fontSize: 11 }}>Manutenz.</label>
+                                  <input className="input" name="hourlyMaintCost" type="number" step="0.01" min="0" defaultValue={a.hourlyMaintCost} required style={{ padding: "4px 8px" }} />
+                                </div>
+                                <div>
+                                  <label style={{ fontSize: 11 }}>Fondo</label>
+                                  <input className="input" name="hourlyEngineFund" type="number" step="0.01" min="0" defaultValue={a.hourlyEngineFund} required style={{ padding: "4px 8px" }} />
+                                </div>
+                                <div className="row" style={{ gap: 4 }}>
+                                  <button className="btn" type="submit" style={{ padding: "4px 12px" }}>Salva</button>
+                                  <button className="btn secondary" type="button" onClick={() => setEditingAircraftId(null)} style={{ padding: "4px 12px" }}>Annulla</button>
+                                </div>
                               </div>
-                              <div className="row" style={{ gap: 4 }}>
-                                <button className="btn" type="submit" style={{ padding: "4px 12px" }}>Salva</button>
-                                <button className="btn secondary" type="button" onClick={() => setEditingAircraftId(null)} style={{ padding: "4px 12px" }}>Annulla</button>
-                              </div>
-                            </div>
-                          </form>
-                        </td>
-                      ) : (
-                        <>
-                          <td><strong>{a.registration}</strong></td>
-                          <td>{a.type}</td>
-                          <td>€ {(a.hourlyFuelCost + a.hourlyMaintCost + a.hourlyEngineFund).toFixed(2)} / h</td>
-                          {isAdmin && (
-                            <td>
-                              <div className="row" style={{ gap: 8 }}>
-                                <button 
-                                  className="btn secondary" 
-                                  style={{ padding: "4px 8px", fontSize: 12 }}
-                                  onClick={() => setEditingAircraftId(a.id)}
-                                >
-                                  Modifica
-                                </button>
-                                <button 
-                                  className="btn secondary" 
-                                  style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
-                                  onClick={() => {
-                                    if (confirm(`Sei sicuro di voler eliminare l'aereo ${a.registration}?`)) {
-                                      deleteAircraft(partnership.id, a.id);
-                                    }
-                                  }}
-                                >
-                                  Elimina
-                                </button>
-                              </div>
-                            </td>
-                          )}
-                        </>
-                      )}
-                    </tr>
+                            </form>
+                          </td>
+                        ) : (
+                          <>
+                            <td><strong>{a.registration}</strong></td>
+                            <td>{a.type}</td>
+                            <td>€ {(a.hourlyFuelCost + a.hourlyMaintCost + a.hourlyEngineFund).toFixed(2)} / h</td>
+                            {isAdmin && (
+                              <td>
+                                <div className="row" style={{ gap: 8 }}>
+                                  <button
+                                    className="btn secondary"
+                                    style={{ padding: "4px 8px", fontSize: 12 }}
+                                    onClick={() => setEditingAircraftId(a.id)}
+                                  >
+                                    Modifica
+                                  </button>
+                                  <button
+                                    className="btn secondary"
+                                    style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
+                                    onClick={() => {
+                                      if (confirm(`Sei sicuro di voler eliminare l'aereo ${a.registration}?`)) {
+                                        deleteAircraft(partnership.id, a.id);
+                                      }
+                                    }}
+                                  >
+                                    Elimina
+                                  </button>
+                                </div>
+                              </td>
+                            )}
+                          </>
+                        )}
+                      </tr>
                     );
                   })}
                 </tbody>
@@ -207,57 +213,57 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                   {partnership.fixedCosts.map((c: any) => {
                     const isEditing = editingFixedCostId === c.id;
                     return (
-                    <tr key={c.id}>
-                      {isEditing ? (
-                        <td colSpan={isAdmin ? 3 : 2}>
-                          <form action={async (fd) => {
-                            await updateFixedCost(partnership.id, c.id, fd);
-                            setEditingFixedCostId(null);
-                          }} className="row" style={{ gap: 8 }}>
-                            <input className="input" name="description" defaultValue={c.description} required style={{ padding: "4px 8px", flex: 1 }} />
-                            <select className="select" name="period" defaultValue={c.period} style={{ padding: "4px 8px", width: 120 }}>
-                              <option value="MONTHLY">Mensile</option>
-                              <option value="YEARLY">Annuale</option>
-                            </select>
-                            <input className="input" name="amount" type="number" step="0.01" min="0" defaultValue={c.amount} required style={{ padding: "4px 8px", width: 100 }} />
-                            <button className="btn" type="submit" style={{ padding: "4px 12px" }}>Salva</button>
-                            <button className="btn secondary" type="button" onClick={() => setEditingFixedCostId(null)} style={{ padding: "4px 12px" }}>Annulla</button>
-                          </form>
-                        </td>
-                      ) : (
-                        <>
-                          <td>{c.description}</td>
-                          <td>
-                            € {c.period === "YEARLY" ? (c.amount / 12).toFixed(2) : c.amount.toFixed(2)}
-                            {c.period === "YEARLY" && <span className="muted" style={{ fontSize: 12, marginLeft: 4 }}>(da € {c.amount.toFixed(2)}/anno)</span>}
+                      <tr key={c.id}>
+                        {isEditing ? (
+                          <td colSpan={isAdmin ? 3 : 2}>
+                            <form action={async (fd) => {
+                              await updateFixedCost(partnership.id, c.id, fd);
+                              setEditingFixedCostId(null);
+                            }} className="row" style={{ gap: 8 }}>
+                              <input className="input" name="description" defaultValue={c.description} required style={{ padding: "4px 8px", flex: 1 }} />
+                              <select className="select" name="period" defaultValue={c.period} style={{ padding: "4px 8px", width: 120 }}>
+                                <option value="MONTHLY">Mensile</option>
+                                <option value="YEARLY">Annuale</option>
+                              </select>
+                              <input className="input" name="amount" type="number" step="0.01" min="0" defaultValue={c.amount} required style={{ padding: "4px 8px", width: 100 }} />
+                              <button className="btn" type="submit" style={{ padding: "4px 12px" }}>Salva</button>
+                              <button className="btn secondary" type="button" onClick={() => setEditingFixedCostId(null)} style={{ padding: "4px 12px" }}>Annulla</button>
+                            </form>
                           </td>
-                          {isAdmin && (
+                        ) : (
+                          <>
+                            <td>{c.description}</td>
                             <td>
-                              <div className="row" style={{ gap: 8 }}>
-                                <button 
-                                  className="btn secondary" 
-                                  style={{ padding: "4px 8px", fontSize: 12 }}
-                                  onClick={() => setEditingFixedCostId(c.id)}
-                                >
-                                  Modifica
-                                </button>
-                                <button 
-                                  className="btn secondary" 
-                                  style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
-                                  onClick={() => {
-                                    if (confirm(`Sei sicuro di voler eliminare il costo fisso "${c.description}"?`)) {
-                                      deleteFixedCost(partnership.id, c.id);
-                                    }
-                                  }}
-                                >
-                                  Elimina
-                                </button>
-                              </div>
+                              € {c.period === "YEARLY" ? (c.amount / 12).toFixed(2) : c.amount.toFixed(2)}
+                              {c.period === "YEARLY" && <span className="muted" style={{ fontSize: 12, marginLeft: 4 }}>(da € {c.amount.toFixed(2)}/anno)</span>}
                             </td>
-                          )}
-                        </>
-                      )}
-                    </tr>
+                            {isAdmin && (
+                              <td>
+                                <div className="row" style={{ gap: 8 }}>
+                                  <button
+                                    className="btn secondary"
+                                    style={{ padding: "4px 8px", fontSize: 12 }}
+                                    onClick={() => setEditingFixedCostId(c.id)}
+                                  >
+                                    Modifica
+                                  </button>
+                                  <button
+                                    className="btn secondary"
+                                    style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
+                                    onClick={() => {
+                                      if (confirm(`Sei sicuro di voler eliminare il costo fisso "${c.description}"?`)) {
+                                        deleteFixedCost(partnership.id, c.id);
+                                      }
+                                    }}
+                                  >
+                                    Elimina
+                                  </button>
+                                </div>
+                              </td>
+                            )}
+                          </>
+                        )}
+                      </tr>
                     );
                   })}
                 </tbody>
@@ -324,8 +330,8 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                     {isAdmin && (
                       <td>
                         {m.user.id !== currentUserId && (
-                          <button 
-                            className="btn secondary" 
+                          <button
+                            className="btn secondary"
                             style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
                             onClick={() => {
                               if (confirm(`Sei sicuro di voler rimuovere l'utente ${m.user.email}?`)) {
@@ -367,10 +373,10 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
               <h2 style={{ marginTop: 0 }}>Rendiconto Mensile</h2>
               <div className="muted">Contributo per costi fissi e ore volate.</div>
             </div>
-            
+
             <div className="row">
               <select className="select" value={reportMonth} onChange={e => setReportMonth(Number(e.target.value))}>
-                {Array.from({length: 12}).map((_, i) => (
+                {Array.from({ length: 12 }).map((_, i) => (
                   <option key={i} value={i}>{new Date(0, i).toLocaleString('it-IT', { month: 'long' })}</option>
                 ))}
               </select>
@@ -430,6 +436,133 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
           )}
         </div>
       )}
+
+      {activeTab === "CASSA" && (() => {
+        const totalIncome = partnership.transactions.filter((t: any) => t.type === "INCOME").reduce((acc: number, t: any) => acc + t.amount, 0);
+        const totalExpense = partnership.transactions.filter((t: any) => t.type === "EXPENSE" || t.type === "MEMBER_EXPENSE").reduce((acc: number, t: any) => acc + t.amount, 0);
+        const balance = totalIncome - totalExpense;
+
+        return (
+          <div className="card">
+            <h2 style={{ marginTop: 0 }}>Cassa Società</h2>
+            <div className="grid grid-3" style={{ marginBottom: 24 }}>
+              <div className="card" style={{ background: "var(--bg-secondary)" }}>
+                <div className="muted">Totale Entrate</div>
+                <div className="big-number" style={{ color: "var(--success, #16a34a)" }}>€ {totalIncome.toFixed(2)}</div>
+              </div>
+              <div className="card" style={{ background: "var(--bg-secondary)" }}>
+                <div className="muted">Totale Uscite</div>
+                <div className="big-number" style={{ color: "var(--danger, #dc2626)" }}>€ {totalExpense.toFixed(2)}</div>
+              </div>
+              <div className="card" style={{ background: "var(--bg-secondary)", border: balance < 0 ? "2px solid var(--danger)" : "2px solid var(--success)" }}>
+                <div className="muted">Saldo Cassa</div>
+                <div className="big-number">€ {balance.toFixed(2)}</div>
+              </div>
+            </div>
+
+            <h3 style={{ marginTop: 24 }}>Riepilogo Crediti Versati / Anticipati dai Soci</h3>
+            <div className="grid grid-3" style={{ marginBottom: 24 }}>
+              {partnership.members.map((m: any) => {
+                const memberVersamenti = partnership.transactions.filter((t: any) => t.userId === m.user?.id && t.type === "INCOME").reduce((acc: number, t: any) => acc + t.amount, 0);
+                const memberAnticipi = partnership.transactions.filter((t: any) => t.userId === m.user?.id && t.type === "MEMBER_EXPENSE").reduce((acc: number, t: any) => acc + t.amount, 0);
+                const totalCredit = memberVersamenti + memberAnticipi;
+                return (
+                  <div key={m.user?.id} className="card" style={{ padding: 12, background: "var(--bg-secondary)" }}>
+                    <div className="muted" style={{ fontSize: 12 }}>{m.user?.fullName || m.user?.email}</div>
+                    <div style={{ fontSize: 16, fontWeight: "bold", marginTop: 4, color: totalCredit > 0 ? "var(--success)" : "inherit" }}>
+                      Credito Totale: € {totalCredit.toFixed(2)}
+                    </div>
+                    <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
+                      Ricariche: € {memberVersamenti.toFixed(2)} | Anticipi: € {memberAnticipi.toFixed(2)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ marginBottom: 24, padding: 16, background: "var(--bg-secondary)", borderRadius: 8 }}>
+              <h3 style={{ marginTop: 0 }}>Nuova Transazione</h3>
+              <form action={addTransaction.bind(null, partnership.id)} className="grid grid-5" style={{ gap: 8, alignItems: "end" }}>
+                <div>
+                  <label style={{ fontSize: 12 }}>Data</label>
+                  <input className="input" type="date" name="date" required defaultValue={new Date().toISOString().split('T')[0]} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12 }}>Tipo</label>
+                  <select className="select" name="type">
+                    <option value="INCOME">Ricarica / Versamento</option>
+                    <option value="MEMBER_EXPENSE">Spesa anticipata (Benzina / Altro)</option>
+                    {isAdmin && <option value="EXPENSE">Uscita Cassa Società</option>}
+                  </select>
+                </div>
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ fontSize: 12 }}>Descrizione</label>
+                  <input className="input" name="description" required placeholder="Es. Quota mese corrente..." />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12 }}>Importo (€)</label>
+                  <input className="input" name="amount" type="number" step="0.01" min="0.01" required />
+                </div>
+                <button className="btn" style={{ gridColumn: "span 5" }}>Aggiungi Transazione</button>
+              </form>
+            </div>
+
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Utente / Tipo</th>
+                  <th>Descrizione</th>
+                  <th>Entrata</th>
+                  <th>Uscita</th>
+                  {isAdmin && <th>Azioni</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {partnership.transactions.map((t: any) => (
+                  <tr key={t.id}>
+                    <td>{new Date(t.date).toLocaleDateString("it-IT")}</td>
+                    <td>
+                      {t.type === "INCOME" ? (
+                        <span style={{ color: "var(--success)" }}>Ricarica da: {t.user?.fullName || t.user?.email || "Utente sconosciuto"}</span>
+                      ) : t.type === "MEMBER_EXPENSE" ? (
+                        <span style={{ color: "var(--warning, #d97706)" }}>Anticipo da: {t.user?.fullName || t.user?.email || "Utente sconosciuto"}</span>
+                      ) : (
+                        <span style={{ color: "var(--danger)" }}>Uscita Cassa Società</span>
+                      )}
+                    </td>
+                    <td>{t.description}</td>
+                    <td>{t.type === "INCOME" ? `€ ${t.amount.toFixed(2)}` : "-"}</td>
+                    <td>{t.type === "EXPENSE" || t.type === "MEMBER_EXPENSE" ? `€ ${t.amount.toFixed(2)}` : "-"}</td>
+                    {isAdmin && (
+                      <td>
+                        <button
+                          className="btn secondary"
+                          style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
+                          onClick={() => {
+                            if (confirm(`Eliminare la transazione "${t.description}"?`)) {
+                              deleteTransaction(partnership.id, t.id);
+                            }
+                          }}
+                        >
+                          Elimina
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+                {partnership.transactions.length === 0 && (
+                  <tr>
+                    <td colSpan={isAdmin ? 6 : 5} style={{ textAlign: "center", padding: 24 }} className="muted">
+                      Nessuna transazione registrata.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
     </div>
   );
 }

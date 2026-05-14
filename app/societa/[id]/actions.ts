@@ -277,3 +277,62 @@ export async function getMonthlyReport(partnershipId: string, year: number, mont
     reports: memberReports
   };
 }
+
+export async function addTransaction(partnershipId: string, formData: FormData) {
+  const user = await requireUser();
+  const description = String(formData.get("description") || "").trim();
+  const amount = Number(formData.get("amount") || 0);
+  const type = String(formData.get("type") || "INCOME");
+  const dateRaw = String(formData.get("date") || "");
+
+  if (!description || amount <= 0 || !dateRaw) return;
+
+  const partnership = await prisma.partnership.findUnique({
+    where: { id: partnershipId },
+    include: { members: true },
+  });
+
+  if (!partnership) return;
+
+  const member = partnership.members.find(m => m.userId === user.id);
+  if (!member) return;
+
+  // Only admins can add expenses
+  if (type === "EXPENSE" && member.role !== "ADMIN") return;
+
+  await prisma.partnershipTransaction.create({
+    data: {
+      partnershipId,
+      userId: (type === "INCOME" || type === "MEMBER_EXPENSE") ? user.id : null,
+      amount,
+      type,
+      description,
+      date: new Date(dateRaw),
+    }
+  });
+
+  revalidatePath(`/societa/${partnershipId}`);
+}
+
+export async function deleteTransaction(partnershipId: string, transactionId: string) {
+  const user = await requireUser();
+  
+  const partnership = await prisma.partnership.findUnique({
+    where: { id: partnershipId },
+    include: { members: true },
+  });
+
+  if (!partnership) return;
+
+  const isAdmin = partnership.members.find(m => m.userId === user.id)?.role === "ADMIN";
+  if (!isAdmin) return; // Only admins can delete transactions
+
+  await prisma.partnershipTransaction.deleteMany({
+    where: {
+      id: transactionId,
+      partnershipId
+    }
+  });
+
+  revalidatePath(`/societa/${partnershipId}`);
+}

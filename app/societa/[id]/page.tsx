@@ -21,6 +21,10 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
       },
       aircrafts: true,
       fixedCosts: true,
+      transactions: {
+        include: { user: true },
+        orderBy: { date: 'desc' }
+      }
     }
   });
 
@@ -51,6 +55,12 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
     fixedCosts: partnership.fixedCosts.map(c => ({
       ...c,
       amount: Number(c.amount),
+    })),
+    transactions: partnership.transactions.map(t => ({
+      ...t,
+      amount: Number(t.amount),
+      date: t.date.toISOString(),
+      user: t.user ? { fullName: t.user.fullName, email: t.user.email } : null,
     }))
   };
 

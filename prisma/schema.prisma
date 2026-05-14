@@ -23,9 +23,10 @@ model User {
   passwordHash String
   fullName     String?
   settings     Settings?
-  movements    Movement[]
-  partnerships PartnershipMember[]
-  createdAt    DateTime   @default(now())
+  movements             Movement[]
+  partnerships          PartnershipMember[]
+  partnershipTransactns PartnershipTransaction[]
+  createdAt             DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
 
@@ -111,9 +112,10 @@ model Partnership {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  members     PartnershipMember[]
-  aircrafts   PartnershipAircraft[]
-  fixedCosts  PartnershipFixedCost[]
+  members      PartnershipMember[]
+  aircrafts    PartnershipAircraft[]
+  fixedCosts   PartnershipFixedCost[]
+  transactions PartnershipTransaction[]
 }
 
 model PartnershipMember {
@@ -154,6 +156,21 @@ model PartnershipFixedCost {
   description    String
   amount         Decimal
   period         String      @default("MONTHLY")
+  
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+model PartnershipTransaction {
+  id             String      @id @default(cuid())
+  partnershipId  String
+  partnership    Partnership @relation(fields: [partnershipId], references: [id], onDelete: Cascade)
+  userId         String?
+  user           User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  amount         Decimal
+  type           String      // "INCOME" (versamento soci) o "EXPENSE" (spese società)
+  description    String
+  date           DateTime    @default(now())
   
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
