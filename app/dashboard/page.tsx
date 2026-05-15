@@ -21,6 +21,10 @@ export default async function DashboardPage() {
   const user = await requireUser();
   const settings = user.settings;
 
+  if (!settings?.onboardingCompleted) {
+    redirect("/onboarding");
+  }
+
   const movements = await prisma.movement.findMany({
     where: { userId: user.id },
     include: { flight: true },

@@ -186,3 +186,20 @@ export function LogOutIcon(props: IconProps) {
     </BaseIcon>
   );
 }
+
+export function ArrowRightIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M5 12h14" />
+      <path d="m12 5 7 7-7 7" />
+    </BaseIcon>
+  );
+}
+
+export function CheckIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <polyline points="20 6 9 17 4 12" />
+    </BaseIcon>
+  );
+}

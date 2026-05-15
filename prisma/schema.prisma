@@ -44,6 +44,7 @@ model Settings {
   dateBipoExam          DateTime?
   dateFoniaExam         DateTime?
   dateAdvanced          DateTime?
+  onboardingCompleted   Boolean  @default(false)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 }
