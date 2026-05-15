@@ -497,3 +497,106 @@ textarea {
 .onboarding-card:hover .onboarding-card-button {
   background: #0369a1 !important;
 }
+
+/* Landing Page */
+.landing-page {
+  padding-top: 60px;
+  padding-bottom: 120px;
+  background: radial-gradient(circle at 50% -20%, #f0f9ff 0%, #ffffff 50%);
+  min-height: 100vh;
+}
+.hero-section {
+  text-align: center;
+  padding: 80px 0;
+}
+.hero-pill {
+  background: #e0f2fe;
+  color: #0369a1;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+.hero-title {
+  font-size: 4rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  margin-bottom: 24px;
+  line-height: 1.1;
+}
+.text-gradient {
+  background: linear-gradient(135deg, #0284c7 0%, #0ea5e9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.hero-subtitle {
+  font-size: 1.25rem;
+  color: #475569;
+  max-width: 700px;
+  margin: 0 auto 40px;
+  line-height: 1.6;
+}
+.hero-actions {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+.btn-glow {
+  box-shadow: 0 0 20px rgba(2, 132, 199, 0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.btn-glow:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 25px rgba(2, 132, 199, 0.4);
+}
+
+.features-section {
+  padding: 80px 0;
+}
+.feature-card {
+  background: white;
+  padding: 40px;
+  border-radius: 24px;
+  border: 1px solid #f1f5f9;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+.feature-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  border-color: #e2e8f0;
+}
+.feature-icon {
+  width: 56px;
+  height: 56px;
+  background: #f0f9ff;
+  color: #0284c7;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+}
+.feature-card h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.feature-card p {
+  color: #64748b;
+  line-height: 1.5;
+}
+
+.cta-footer {
+  margin-top: 80px;
+}
+.glass-dark {
+  background: #0f172a;
+  border: 1px solid #1e293b;
+  padding: 48px;
+  border-radius: 32px;
+}
+
+@media (max-width: 768px) {
+  .hero-title { font-size: 2.5rem; }
+  .hero-actions { flex-direction: column; }
+  .stack-mobile { flex-direction: column; gap: 24px; text-align: center; }
+}
