@@ -15,6 +15,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
   // Edit state
   const [editingAircraftId, setEditingAircraftId] = useState<string | null>(null);
   const [editingFixedCostId, setEditingFixedCostId] = useState<string | null>(null);
+  const [roundingTarget, setRoundingTarget] = useState("");
 
   // Report state
   const [reportMonth, setReportMonth] = useState(new Date().getMonth());
@@ -277,6 +278,42 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                   </tr>
                 </tfoot>
               </table>
+            )}
+
+            {isAdmin && (
+              <div style={{ marginTop: 16, display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
+                <span className="muted" style={{ fontSize: 13 }}>Arrotonda totale a:</span>
+                <input 
+                  type="number" 
+                  step="0.01" 
+                  className="input" 
+                  style={{ width: 100, padding: "4px 8px" }} 
+                  placeholder="Es. 270"
+                  value={roundingTarget}
+                  onChange={(e) => setRoundingTarget(e.target.value)}
+                />
+                <button 
+                  className="btn secondary" 
+                  style={{ padding: "4px 12px", fontSize: 13 }}
+                  onClick={async () => {
+                    const currentTotal = partnership.fixedCosts.reduce((acc: number, c: any) => acc + (c.period === 'YEARLY' ? Number(c.amount) / 12 : Number(c.amount)), 0);
+                    const target = parseFloat(roundingTarget);
+                    if (isNaN(target) || target <= currentTotal) {
+                      alert("Inserisci un importo superiore al totale attuale.");
+                      return;
+                    }
+                    const diff = target - currentTotal;
+                    const fd = new FormData();
+                    fd.append("description", "Arrotondamento");
+                    fd.append("amount", diff.toFixed(2));
+                    fd.append("period", "MONTHLY");
+                    await addFixedCost(partnership.id, fd);
+                    setRoundingTarget("");
+                  }}
+                >
+                  Aggiungi
+                </button>
+              </div>
             )}
 
             {isAdmin && (
