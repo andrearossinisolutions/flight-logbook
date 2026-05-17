@@ -1,7 +1,7 @@
 {
   "name": "flight-logbook-starter",
-  "version": "0.7.0",
-  "private": true,
+  "version": "1.0.0",
+  "private": false,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
