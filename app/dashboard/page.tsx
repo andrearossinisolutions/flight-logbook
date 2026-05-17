@@ -199,6 +199,7 @@ export default async function DashboardPage() {
     <AppShell
       title={`Ciao${user.fullName ? `, ${user.fullName}` : ""}`}
       subtitle="Saldo, movimenti e accesso rapido a inserimento volo, ricarica e settings."
+      className="dashboard-container"
     >
       <DashboardWidgets>
         <div className="card">
@@ -343,7 +344,7 @@ export default async function DashboardPage() {
         </div>
       </DashboardWidgets>
 
-      <div className="between" style={{ marginBottom: 16 }}>
+      <div className="between dashboard-registry-header" style={{ marginBottom: 16 }}>
         <h2 style={{ margin: 0 }}>Registro movimenti</h2>
         <div className="row">
           <Link className="btn" href="/new-flight">
@@ -358,7 +359,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="card" style={{ overflowX: "auto" }}>
+      <div className="card dashboard-registry-table" style={{ overflowX: "auto" }}>
         <table className="table">
           <thead>
             <tr>

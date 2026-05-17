@@ -600,3 +600,80 @@ textarea {
   .hero-actions { flex-direction: column; }
   .stack-mobile { flex-direction: column; gap: 24px; text-align: center; }
 }
+
+/* ==========================================
+   PREMIUM PAGE & DASHBOARD ENTRANCE ANIMATIONS
+   ========================================== */
+
+/* Keyframe for fading and sliding up elements */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Keyframe for sliding navbar down */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Navbar slide down animation */
+.navbar-container {
+  animation: slideDown 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Header animation for AppShell */
+.app-shell-header {
+  animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+/* General page content fade-in (applied on non-dashboard pages) */
+:not(.dashboard-container) > .app-shell-content {
+  animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+  animation-delay: 100ms;
+}
+
+/* Specific Dashboard Staggering */
+.dashboard-container .dashboard-widget-item {
+  animation: fadeInUp 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+}
+
+/* Stagger delays for up to 8 dashboard widgets */
+.dashboard-container .dashboard-widget-item:nth-child(1) { animation-delay: 120ms; }
+.dashboard-container .dashboard-widget-item:nth-child(2) { animation-delay: 180ms; }
+.dashboard-container .dashboard-widget-item:nth-child(3) { animation-delay: 240ms; }
+.dashboard-container .dashboard-widget-item:nth-child(4) { animation-delay: 300ms; }
+.dashboard-container .dashboard-widget-item:nth-child(5) { animation-delay: 360ms; }
+.dashboard-container .dashboard-widget-item:nth-child(6) { animation-delay: 420ms; }
+.dashboard-container .dashboard-widget-item:nth-child(7) { animation-delay: 480ms; }
+.dashboard-container .dashboard-widget-item:nth-child(8) { animation-delay: 540ms; }
+
+/* Dashboard Registry Table Section Header Stagger */
+.dashboard-container .dashboard-registry-header {
+  animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+  animation-delay: 350ms;
+}
+
+/* Dashboard Registry Table Card Stagger */
+.dashboard-container .dashboard-registry-table {
+  animation: fadeInUp 0.75s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+  animation-delay: 420ms;
+}
+
