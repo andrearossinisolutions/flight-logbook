@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction } from "./actions";
+import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership } from "./actions";
 
 function formatMinutes(minutes: number) {
   const h = Math.floor(minutes / 60);
@@ -68,6 +68,14 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
         >
           Cassa
         </button>
+        {isAdmin && (
+          <button
+            className={`btn ${activeTab === "SETTINGS" ? "" : "secondary"}`}
+            onClick={() => setActiveTab("SETTINGS")}
+          >
+            Impostazioni
+          </button>
+        )}
       </div>
 
       {activeTab === "AIRCRAFTS" && (
@@ -283,17 +291,17 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
             {isAdmin && (
               <div style={{ marginTop: 16, display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
                 <span className="muted" style={{ fontSize: 13 }}>Arrotonda totale a:</span>
-                <input 
-                  type="number" 
-                  step="0.01" 
-                  className="input" 
-                  style={{ width: 100, padding: "4px 8px" }} 
+                <input
+                  type="number"
+                  step="0.01"
+                  className="input"
+                  style={{ width: 100, padding: "4px 8px" }}
                   placeholder="Es. 270"
                   value={roundingTarget}
                   onChange={(e) => setRoundingTarget(e.target.value)}
                 />
-                <button 
-                  className="btn secondary" 
+                <button
+                  className="btn secondary"
                   style={{ padding: "4px 12px", fontSize: 13 }}
                   onClick={async () => {
                     const currentTotal = partnership.fixedCosts.reduce((acc: number, c: any) => acc + (c.period === 'YEARLY' ? Number(c.amount) / 12 : Number(c.amount)), 0);
@@ -608,6 +616,81 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
           </div>
         );
       })()}
+
+      {activeTab === "SETTINGS" && isAdmin && (
+        <div className="grid grid-2" style={{ alignItems: "flex-start" }}>
+          {/* Card Cambio Nome */}
+          <div className="card">
+            <h2 style={{ marginTop: 0, marginBottom: 8 }}>Impostazioni Società</h2>
+            <p className="muted" style={{ fontSize: "0.9rem", marginTop: 0, marginBottom: 16 }}>
+              Modifica i dettagli principali della tua società di volo.
+            </p>
+
+            <form action={async (fd) => {
+              await updatePartnershipName(partnership.id, fd);
+            }} className="grid">
+              <div className="field">
+                <label htmlFor="name" style={{ fontSize: "0.85rem" }}>Nome della Società</label>
+                <input
+                  className="input"
+                  id="name"
+                  name="name"
+                  required
+                  defaultValue={partnership.name}
+                  placeholder="Es. Aero Club Milano"
+                />
+              </div>
+              <button type="submit" className="btn" style={{ marginTop: 4 }}>
+                Salva modifiche
+              </button>
+            </form>
+          </div>
+
+          {/* Card Zona Pericolo/Destruttiva */}
+          <div className="card" style={{ borderColor: "var(--danger)" }}>
+            <div
+              style={{
+                background: "rgba(239, 68, 68, 0.05)",
+                border: "1px solid var(--danger)",
+                color: "var(--danger)",
+                padding: "12px 16px",
+                borderRadius: 12,
+                fontSize: "0.9rem",
+                marginBottom: 20,
+                lineHeight: 1.5,
+              }}
+            >
+              <strong>Attenzione:</strong> L'eliminazione della società è un'azione irreversibile.
+              Verranno eliminati permanentemente tutti i dati della società inclusi:
+              <ul style={{ margin: "8px 0 0 20px", padding: 0 }}>
+                <li>L'associazione dei soci (non i loro account)</li>
+                <li>Tutti gli aerei registrati per questa società</li>
+                <li>Tutti i costi fissi e i relativi report</li>
+                <li>Tutte le transazioni di cassa della società</li>
+              </ul>
+              I voli registrati dai singoli soci rimarranno nel loro registro personale,
+              ma non faranno più riferimento a questa società.
+            </div>
+
+            <button
+              type="button"
+              className="btn"
+              style={{ background: "var(--danger)", borderColor: "var(--danger)", color: "white" }}
+              onClick={async () => {
+                const confirm1 = confirm("Sei sicuro di voler eliminare definitivamente questa società?");
+                if (!confirm1) return;
+
+                const confirm2 = confirm("Questa azione NON può essere annullata. Confermi l'eliminazione?");
+                if (!confirm2) return;
+
+                await deletePartnership(partnership.id);
+              }}
+            >
+              Elimina società
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

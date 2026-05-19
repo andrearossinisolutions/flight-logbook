@@ -3,6 +3,8 @@
 import { requireUser } from "@/lib/require-user";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
+import type { Route } from "next";
 
 export async function addAircraft(partnershipId: string, formData: FormData) {
   const user = await requireUser();
@@ -350,4 +352,42 @@ export async function deleteTransaction(partnershipId: string, transactionId: st
   });
 
   revalidatePath(`/societa/${partnershipId}`);
+}
+
+export async function updatePartnershipName(partnershipId: string, formData: FormData) {
+  const user = await requireUser();
+  const name = String(formData.get("name") || "").trim();
+
+  if (!name) return;
+
+  const membership = await prisma.partnershipMember.findUnique({
+    where: { partnershipId_userId: { partnershipId, userId: user.id } }
+  });
+
+  if (membership?.role !== "ADMIN") return;
+
+  await prisma.partnership.update({
+    where: { id: partnershipId },
+    data: { name }
+  });
+
+  revalidatePath(`/societa/${partnershipId}`);
+  revalidatePath("/societa");
+}
+
+export async function deletePartnership(partnershipId: string) {
+  const user = await requireUser();
+
+  const membership = await prisma.partnershipMember.findUnique({
+    where: { partnershipId_userId: { partnershipId, userId: user.id } }
+  });
+
+  if (membership?.role !== "ADMIN") return;
+
+  await prisma.partnership.delete({
+    where: { id: partnershipId }
+  });
+
+  revalidatePath("/societa");
+  redirect("/societa" as Route);
 }
