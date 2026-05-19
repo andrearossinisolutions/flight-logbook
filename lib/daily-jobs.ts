@@ -36,6 +36,16 @@ type PaymentMovement = Prisma.MovementGetPayload<{
   };
 }>;
 
+type ReminderMovement = Prisma.MovementGetPayload<{
+  select: {
+    id: true;
+    userId: true;
+    type: true;
+    date: true;
+    notes: true;
+  };
+}>;
+
 declare global {
   var __dailyJobsSchedulerState: DailyJobsSchedulerState | undefined;
 }
@@ -158,11 +168,19 @@ function paymentTypeLabel(item: PaymentMovement) {
 function buildDailyDigestEmail(args: {
   tomorrowFlights: FlightMovement[];
   duePayments: PaymentMovement[];
+  todayReminders: ReminderMovement[];
 }) {
-  const { tomorrowFlights, duePayments } = args;
+  const { tomorrowFlights, duePayments, todayReminders } = args;
   const totalPaymentsAmount = duePayments.reduce((sum, item) => sum + Math.abs(Number(item.amount)), 0);
 
   const subjectParts = [];
+  if (todayReminders.length > 0) {
+    subjectParts.push(
+      todayReminders.length === 1
+        ? "1 promemoria oggi"
+        : `${todayReminders.length} promemoria oggi`
+    );
+  }
   if (tomorrowFlights.length > 0) {
     subjectParts.push(
       tomorrowFlights.length === 1
@@ -179,6 +197,17 @@ function buildDailyDigestEmail(args: {
   }
 
   const subject = `Flight Logbook · ${subjectParts.join(" · ")}`;
+
+  const reminderText = todayReminders.length > 0
+    ? [
+        "Promemoria di oggi:",
+        ...todayReminders.map((item, index) => {
+          const hasTime = item.date.getHours() !== 0 || item.date.getMinutes() !== 0;
+          const timeStr = hasTime ? ` alle ${formatTimeDisplay(item.date)}` : "";
+          return `${index + 1}. Promemoria${timeStr}: ${item.notes}`;
+        }),
+      ].join("\n")
+    : null;
 
   const flightText = tomorrowFlights.length > 0
     ? [
@@ -210,6 +239,7 @@ function buildDailyDigestEmail(args: {
 
   const text = [
     "Promemoria giornaliero Flight Logbook",
+    reminderText,
     flightText,
     paymentText,
   ]
@@ -225,12 +255,43 @@ function buildDailyDigestEmail(args: {
         Flight Logbook
       </div>
       <div style="font-size: 15px; line-height: 1.6; opacity: 0.92;">
+        ${todayReminders.length > 0 ? `Hai <strong>${todayReminders.length}</strong> ${todayReminders.length === 1 ? "promemoria per oggi" : "promemoria per oggi"}` : ""}
+        ${todayReminders.length > 0 && (tomorrowFlights.length > 0 || duePayments.length > 0) ? "<br />" : ""}
         ${tomorrowFlights.length > 0 ? `Hai <strong>${tomorrowFlights.length}</strong> ${tomorrowFlights.length === 1 ? "volo pianificato per domani" : "voli pianificati per domani"}` : "Nessun volo pianificato per domani"}
-        ${tomorrowFlights.length > 0 && duePayments.length > 0 ? "<br />" : ""}
+        ${(tomorrowFlights.length > 0 || todayReminders.length > 0) && duePayments.length > 0 ? "<br />" : ""}
         ${duePayments.length > 0 ? `Hai <strong>${duePayments.length}</strong> ${duePayments.length === 1 ? "pagamento in scadenza oggi" : "pagamenti in scadenza oggi"}` : ""}
       </div>
     </div>
   `;
+
+  const remindersHtml = todayReminders.length > 0
+    ? `
+      <div style="margin: 0 0 28px;">
+        <div style="font-size: 20px; font-weight: 800; color: #0284c7; margin: 0 0 14px;">Promemoria di oggi</div>
+        ${todayReminders
+          .map((item) => {
+            const hasTime = item.date.getHours() !== 0 || item.date.getMinutes() !== 0;
+            const timeStr = hasTime ? ` alle ${formatTimeDisplay(item.date)}` : "";
+
+            return `
+              <div style="margin: 0 0 14px; padding: 18px; border: 1px solid #bae6fd; border-radius: 20px; background: #f0f9ff;">
+                <div style="display: flex; justify-content: space-between; gap: 12px; align-items: flex-start;">
+                  <div>
+                    <div style="font-size: 17px; font-weight: 800; color: #0369a1; margin-bottom: 6px;">
+                      🔔 Promemoria${escapeHtml(timeStr)}
+                    </div>
+                    <div style="font-size: 14px; line-height: 1.5; color: #0f172a;">
+                      ${escapeHtml(item.notes ?? "")}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `;
+          })
+          .join("")}
+      </div>
+    `
+    : "";
 
   const flightHtml = tomorrowFlights.length > 0
     ? `
@@ -342,6 +403,7 @@ function buildDailyDigestEmail(args: {
             per aiutarti a tenere sotto controllo pianificazioni e scadenze della giornata.
           </div>
 
+          ${remindersHtml}
           ${flightHtml}
           ${paymentsHtml}
         </div>
@@ -387,7 +449,7 @@ export async function runDailyChecksAndActions(now = new Date()) {
   const todayRange = getRomeDayRange(now, 0);
   const tomorrowRange = getRomeDayRange(now, 1);
 
-  const [tomorrowFlights, duePayments] = await Promise.all([
+  const [tomorrowFlights, duePayments, todayReminders] = await Promise.all([
     prisma.movement.findMany({
       where: {
         type: MovementType.FLIGHT,
@@ -420,29 +482,53 @@ export async function runDailyChecksAndActions(now = new Date()) {
       },
       orderBy: [{ userId: "asc" }, { date: "asc" }, { createdAt: "asc" }],
     }),
+    prisma.movement.findMany({
+      where: {
+        type: MovementType.REMINDER,
+        date: {
+          gte: todayRange.start,
+          lt: todayRange.end,
+        },
+      },
+      select: {
+        id: true,
+        userId: true,
+        type: true,
+        date: true,
+        notes: true,
+      },
+      orderBy: [{ userId: "asc" }, { date: "asc" }, { createdAt: "asc" }],
+    }),
   ]);
 
   const userIds = new Set([
     ...tomorrowFlights.map((item) => item.userId),
     ...duePayments.map((item) => item.userId),
+    ...todayReminders.map((item) => item.userId),
   ]);
 
   if (userIds.size === 0) {
-    console.log("[daily-jobs] Nessun volo di domani o pagamento di oggi da notificare");
+    console.log("[daily-jobs] Nessun volo domani, pagamento oggi o promemoria oggi da notificare");
     return;
   }
 
   for (const userId of userIds) {
     const userTomorrowFlights = tomorrowFlights.filter((item) => item.userId === userId);
     const userDuePayments = duePayments.filter((item) => item.userId === userId);
+    const userTodayReminders = todayReminders.filter((item) => item.userId === userId);
 
-    if (userTomorrowFlights.length === 0 && userDuePayments.length === 0) {
+    if (
+      userTomorrowFlights.length === 0 &&
+      userDuePayments.length === 0 &&
+      userTodayReminders.length === 0
+    ) {
       continue;
     }
 
     const email = buildDailyDigestEmail({
       tomorrowFlights: userTomorrowFlights,
       duePayments: userDuePayments,
+      todayReminders: userTodayReminders,
     });
 
     try {
@@ -454,7 +540,7 @@ export async function runDailyChecksAndActions(now = new Date()) {
       });
 
       console.log(
-        `[daily-jobs] Email inviata a ${userId}: ${userTomorrowFlights.length} voli domani, ${userDuePayments.length} pagamenti oggi`,
+        `[daily-jobs] Email inviata a ${userId}: ${userTomorrowFlights.length} voli domani, ${userDuePayments.length} pagamenti oggi, ${userTodayReminders.length} promemoria oggi`,
       );
     } catch (error) {
       console.error(`[daily-jobs] Errore invio email per utente ${userId}`, error);

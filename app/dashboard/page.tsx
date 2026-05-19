@@ -360,7 +360,7 @@ export default async function DashboardPage() {
                       <CalendarIcon />
                       <span>{formatDateDisplay(item.date)}</span>
                     </div><br />
-                    {item.type === "FLIGHT" &&
+                    {((item.type === "FLIGHT") || (item.type === "REMINDER" && (item.date.getHours() !== 0 || item.date.getMinutes() !== 0))) &&
                       <div className={"inline-meta" + (isFutureMovement ? " future-movement" : "")}>
                         🕒 <span>{formatTimeDisplay(item.date)}</span>
                       </div>
@@ -371,6 +371,8 @@ export default async function DashboardPage() {
                     <div className="inline-meta">
                       {item.type === "FLIGHT" ? (
                         <AirplaneIcon />
+                      ) : item.type === "REMINDER" ? (
+                        <span style={{ fontSize: "16px", display: "inline-block", lineHeight: 1 }}>🔔</span>
                       ) : (
                         <MoneyBillIcon />
                       )}
@@ -381,13 +383,15 @@ export default async function DashboardPage() {
                               ? <span style={{ color: "#b91c1c" }}>Pianificazione<br />da confermare</span>
                               : "Pianificazione"
                             : flightType(item.flight)
-                          : item.isDraft
-                            ? item.date < today
-                              ? <span style={{ color: "#b91c1c" }}>Pagamento<br />da confermare</span>
-                              : "Scadenza"
-                            : item.type === "TOPUP" && Number(item.amount) < 0
-                              ? "Rettifica saldo"
-                              : "Pagamento"}
+                          : item.type === "REMINDER"
+                            ? "Promemoria"
+                            : item.isDraft
+                              ? item.date < today
+                                ? <span style={{ color: "#b91c1c" }}>Pagamento<br />da confermare</span>
+                                : "Scadenza"
+                              : item.type === "TOPUP" && Number(item.amount) < 0
+                                ? "Rettifica saldo"
+                                : "Pagamento"}
                       </span>
                     </div>
                   </td>
@@ -396,11 +400,13 @@ export default async function DashboardPage() {
                     {dashboardItem(item, movements, isFutureMovement)}
                   </td>
 
-                  <td style={{ fontWeight: 700 }}>{eur(Number(item.amount))}</td>
+                  <td style={{ fontWeight: 700 }}>
+                    {item.type === "REMINDER" ? "—" : eur(Number(item.amount))}
+                  </td>
 
                   <td>
                     <div className="row" style={{ gap: 8, flexWrap: "nowrap", whiteSpace: "nowrap" }}>
-                      {item.isDraft && item.date >= today ? (
+                      {((item.isDraft && item.date >= today) || (item.type === "REMINDER" && item.date >= today)) ? (
                         <a
                           className="btn secondary icon-btn"
                           href={buildCalendarLink(item)}
@@ -415,7 +421,7 @@ export default async function DashboardPage() {
 
                       <Link
                         className="btn secondary icon-btn"
-                        href={item.type === "FLIGHT" ? `/edit-flight/${item.id}` : `/edit-payment/${item.id}`}
+                        href={item.type === "FLIGHT" ? `/edit-flight/${item.id}` : item.type === "REMINDER" ? `/edit-reminder/${item.id}` : `/edit-payment/${item.id}`}
                         aria-label="Modifica"
                         title="Modifica"
                       >
@@ -507,6 +513,21 @@ function dashboardItem(item: any, movements: any[] = [], isFutureMovement = fals
           {item.notes ? <div className={isFutureMovement ? "future-movement" : undefined}>Note: <i>{item.notes}</i></div> : null}
         </div>
       )
+    case "REMINDER":
+      const hasTimeReminder = item.date.getHours() !== 0 || item.date.getMinutes() !== 0;
+      return (
+        <div className="grid grid-2">
+          <div>
+            <div className={"muted" + (isFutureMovement ? " future-movement" : "")} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+              <span>Descrizione</span>
+              {hasTimeReminder && <span className="pill" style={{ background: "rgba(2, 132, 199, 0.1)", color: "#0284c7", fontSize: "0.75rem", padding: "2px 6px" }}>🕒 {formatTimeDisplay(item.date)}</span>}
+            </div>
+            <div className={isFutureMovement ? "future-movement" : undefined} style={{ marginTop: 4 }}>
+              {item.notes}
+            </div>
+          </div>
+        </div>
+      )
   }
 }
 
@@ -522,6 +543,10 @@ function flightType(flight: any) {
 }
 
 function buildCalendarLink(item: any) {
+  if (item.type === "REMINDER") {
+    return buildReminderCalendarLink(item);
+  }
+
   if (item.type !== "FLIGHT") {
     return buildPaymentCalendarLink(item);
   }
@@ -543,6 +568,35 @@ function buildCalendarLink(item: any) {
     action: "TEMPLATE",
     text: title,
     dates: `${formatCalendarDateTime(start)}/${formatCalendarDateTime(end)}`,
+    details,
+  });
+
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function buildReminderCalendarLink(item: any) {
+  const start = new Date(item.date);
+  const hasTime = start.getHours() !== 0 || start.getMinutes() !== 0;
+
+  let dates: string;
+  if (hasTime) {
+    const end = new Date(start.getTime() + 30 * 60 * 1000); // 30 mins
+    dates = `${formatCalendarDateTime(start)}/${formatCalendarDateTime(end)}`;
+  } else {
+    const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
+    dates = `${formatCalendarDate(start)}/${formatCalendarDate(end)}`;
+  }
+
+  const title = item.notes && item.notes.length > 50
+    ? `🔔 Promemoria: ${item.notes.substring(0, 47)}...`
+    : `🔔 Promemoria: ${item.notes || ""}`;
+
+  const details = item.notes || "";
+
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates,
     details,
   });
 

@@ -53,6 +53,14 @@ export function DashboardRegistryActions() {
               <span className="dropdown-item-icon">💶</span>
               <span className="dropdown-item-text">Aggiungi pagamento</span>
             </Link>
+            <Link
+              href="/new-reminder"
+              className="dropdown-item"
+              onClick={() => setIsOpen(false)}
+            >
+              <span className="dropdown-item-icon">🔔</span>
+              <span className="dropdown-item-text">Aggiungi promemoria</span>
+            </Link>
           </div>
         )}
       </div>
