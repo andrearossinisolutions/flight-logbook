@@ -24,7 +24,8 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
       transactions: {
         include: { user: true },
         orderBy: { date: 'desc' }
-      }
+      },
+      invitations: true
     }
   });
 
@@ -61,6 +62,11 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
       amount: Number(t.amount),
       date: t.date.toISOString(),
       user: t.user ? { fullName: t.user.fullName, email: t.user.email } : null,
+    })),
+    invitations: (partnership.invitations || []).map(i => ({
+      ...i,
+      createdAt: i.createdAt.toISOString(),
+      updatedAt: i.updatedAt.toISOString(),
     }))
   };
 

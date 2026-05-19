@@ -36,6 +36,38 @@ export async function POST(request: Request) {
     },
   });
 
+  // Verifica se ci sono inviti pendenti per questa email
+  const invitations = await prisma.partnershipInvitation.findMany({
+    where: { email: email.trim().toLowerCase() }
+  });
+
+  if (invitations.length > 0) {
+    for (const invite of invitations) {
+      // Verifichiamo prima che non sia già stato aggiunto (per sicurezza)
+      const existingMember = await prisma.partnershipMember.findUnique({
+        where: {
+          partnershipId_userId: {
+            partnershipId: invite.partnershipId,
+            userId: user.id
+          }
+        }
+      });
+      if (!existingMember) {
+        await prisma.partnershipMember.create({
+          data: {
+            partnershipId: invite.partnershipId,
+            userId: user.id,
+            role: invite.role
+          }
+        });
+      }
+    }
+
+    await prisma.partnershipInvitation.deleteMany({
+      where: { email: email.trim().toLowerCase() }
+    });
+  }
+
   const token = await createSession({ userId: user.id, email: user.email });
   await setSessionCookie(token);
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership } from "./actions";
+import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation } from "./actions";
 
 function formatMinutes(minutes: number) {
   const h = Math.floor(minutes / 60);
@@ -391,6 +391,28 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                     )}
                   </tr>
                 ))}
+                {partnership.invitations && partnership.invitations.map((inv: any) => (
+                  <tr key={inv.id} style={{ opacity: 0.75 }}>
+                    <td><span className="muted" style={{ fontStyle: "italic" }}>Invito in attesa</span></td>
+                    <td>{inv.email}</td>
+                    <td>Socio (in attesa)</td>
+                    {isAdmin && (
+                      <td>
+                        <button
+                          className="btn secondary"
+                          style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
+                          onClick={async () => {
+                            if (confirm(`Sei sicuro di voler annullare l'invito per ${inv.email}?`)) {
+                              await cancelInvitation(partnership.id, inv.id);
+                            }
+                          }}
+                        >
+                          Annulla
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -398,7 +420,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
           {isAdmin && (
             <div className="card">
               <h2 style={{ marginTop: 0 }}>Aggiungi Socio</h2>
-              <p className="muted">L'utente deve essere già registrato all'app con questa email.</p>
+              <p className="muted">Se l'utente non è registrato, riceverà un invito email per creare un account.</p>
               <form action={addMember.bind(null, partnership.id)} className="grid">
                 <div className="field">
                   <label>Email utente</label>

@@ -78,3 +78,36 @@ export async function sendUserEmail({ userId, subject, html, text, to }: SendUse
     text,
   });
 }
+
+type SendEmailInput = {
+  to: string;
+  subject: string;
+  html: string;
+  text?: string;
+};
+
+export async function sendEmail({ to, subject, html, text }: SendEmailInput) {
+  const config = getMailConfig();
+
+  const transporter = nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_SECURE,
+    auth: {
+      user: config.authUser,
+      pass: config.authPassword,
+    },
+  });
+
+  return transporter.sendMail({
+    from: {
+      name: config.fromName,
+      address: config.fromEmail,
+    },
+    to,
+    subject,
+    html,
+    text,
+  });
+}
+

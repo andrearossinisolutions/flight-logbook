@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { Route } from "next";
+import { sendEmail } from "@/lib/mail";
 
 export async function addAircraft(partnershipId: string, formData: FormData) {
   const user = await requireUser();
@@ -77,16 +78,96 @@ export async function addMember(partnershipId: string, formData: FormData) {
 
   const userToAdd = await prisma.user.findUnique({ where: { email } });
   if (!userToAdd) {
-    throw new Error("Utente non trovato");
-  }
+    // L'utente non esiste: procediamo con l'invito.
+    const existingInvitation = await prisma.partnershipInvitation.findUnique({
+      where: {
+        partnershipId_email: {
+          partnershipId,
+          email: email.toLowerCase()
+        }
+      }
+    });
 
-  await prisma.partnershipMember.create({
-    data: {
-      partnershipId,
-      userId: userToAdd.id,
-      role: "MEMBER"
+    if (existingInvitation) {
+      throw new Error("Un invito per questa email è già in attesa.");
     }
-  });
+
+    // Creiamo l'invito nel database
+    await prisma.partnershipInvitation.create({
+      data: {
+        partnershipId,
+        email: email.toLowerCase(),
+        role: "MEMBER"
+      }
+    });
+
+    // Recuperiamo il nome della società per l'email
+    const partnership = await prisma.partnership.findUnique({
+      where: { id: partnershipId }
+    });
+
+    const societyName = partnership?.name || "Società di volo";
+
+    // Prepariamo l'email
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const registerUrl = `${appUrl}/register`;
+
+    try {
+      await sendEmail({
+        to: email,
+        subject: `Invito a far parte di ${societyName} su Flight Logbook`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+            <h2 style="color: #0f172a; margin-top: 0;">Sei stato invitato!</h2>
+            <p style="color: #334155; font-size: 16px; line-height: 1.5;">
+              L'amministratore della società di volo <strong>${societyName}</strong> ti ha invitato a far parte del gruppo su Flight Logbook.
+            </p>
+            <p style="color: #334155; font-size: 16px; line-height: 1.5;">
+              Con Flight Logbook potrai registrare i tuoi voli, consultare il rendiconto mensile dei costi fissi e orari, e gestire la cassa comune.
+            </p>
+            <div style="margin: 30px 0; text-align: center;">
+              <a href="${registerUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
+                Crea il tuo Account
+              </a>
+            </div>
+            <p style="color: #64748b; font-size: 14px; line-height: 1.5;">
+              <strong>Nota importante:</strong> Assicurati di registrarti utilizzando questa stessa email: <strong>${email}</strong>.<br />
+              Una volta completata la registrazione, verrai automaticamente associato alla società.
+            </p>
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 24px 0;" />
+            <p style="color: #94a3b8; font-size: 12px; text-align: center; margin: 0;">
+              Questo è un messaggio automatico da Flight Logbook. Se ritieni sia un errore, puoi ignorare questa email.
+            </p>
+          </div>
+        `,
+        text: `Sei stato invitato a far parte della società di volo ${societyName} su Flight Logbook.\n\nPer partecipare, crea il tuo account usando questa email (${email}) al quale puoi registrarti qui: ${registerUrl}`
+      });
+    } catch (mailError) {
+      console.error("Errore durante l'invio dell'email di invito:", mailError);
+    }
+  } else {
+    // L'utente esiste già: lo associamo direttamente
+    const existingMember = await prisma.partnershipMember.findUnique({
+      where: {
+        partnershipId_userId: {
+          partnershipId,
+          userId: userToAdd.id
+        }
+      }
+    });
+
+    if (existingMember) {
+      throw new Error("L'utente fa già parte di questa società.");
+    }
+
+    await prisma.partnershipMember.create({
+      data: {
+        partnershipId,
+        userId: userToAdd.id,
+        role: "MEMBER"
+      }
+    });
+  }
 
   revalidatePath(`/societa/${partnershipId}`);
 }
@@ -390,4 +471,23 @@ export async function deletePartnership(partnershipId: string) {
 
   revalidatePath("/societa");
   redirect("/societa" as Route);
+}
+
+export async function cancelInvitation(partnershipId: string, invitationId: string) {
+  const user = await requireUser();
+
+  const membership = await prisma.partnershipMember.findUnique({
+    where: { partnershipId_userId: { partnershipId, userId: user.id } }
+  });
+
+  if (membership?.role !== "ADMIN") return;
+
+  await prisma.partnershipInvitation.deleteMany({
+    where: {
+      id: invitationId,
+      partnershipId
+    }
+  });
+
+  revalidatePath(`/societa/${partnershipId}`);
 }
