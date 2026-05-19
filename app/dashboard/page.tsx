@@ -5,6 +5,8 @@ import { revalidatePath } from "next/cache";
 import { AppShell } from "@/components/app-shell";
 import { DashboardWidgets } from "@/components/dashboard-widgets";
 import { DeleteMovementButton } from "@/components/delete-movement-button";
+import { DashboardRegistryActions } from "@/components/dashboard-registry-actions";
+
 import {
   AirplaneIcon,
   CalendarIcon,
@@ -324,17 +326,7 @@ export default async function DashboardPage() {
 
       <div className="between dashboard-registry-header" style={{ marginBottom: 16 }}>
         <h2 style={{ margin: 0 }}>Registro movimenti</h2>
-        <div className="row">
-          <Link className="btn" href="/new-flight">
-            Nuovo volo
-          </Link>
-          <Link className="btn secondary" href="/new-payment">
-            Nuovo pagamento
-          </Link>
-          <Link className="btn secondary" href={"/print-logbook" as Route}>
-            Stampa logbook
-          </Link>
-        </div>
+        <DashboardRegistryActions />
       </div>
 
       <div className="card dashboard-registry-table" style={{ overflowX: "auto" }}>
