@@ -519,7 +519,7 @@ function dashboardItem(item: any, movements: any[] = [], isFutureMovement = fals
           <div>
             <span className={isFutureMovement ? "future-movement" : undefined}>
               {item.isDraft ? "Bozza progressivo: " : "Progressivo: "}
-              🕒 {minutesToHoursMinutes(progressiveFlightMinutes) + " · "}
+              ⌛️ {minutesToHoursMinutes(progressiveFlightMinutes) + " · "}
               💶 {eur(progressiveSaldo)}
             </span>
           </div>
