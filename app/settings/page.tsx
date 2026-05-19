@@ -1,42 +1,77 @@
 import { AppShell } from "@/components/app-shell";
 import { requireUser } from "@/lib/require-user";
-import { eur, formatDateInput } from "@/lib/utils";
+import { formatDateInput } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
-import { AirplaneIcon, TrashIcon } from "@/components/icons";
+import RentalAircraftsManager from "@/components/rental-aircrafts-manager";
 
 export default async function SettingsPage() {
   const user = await requireUser();
   const settings = user.settings;
-  const rentalAircrafts = user.rentalAircrafts || [];
+  const rentalAircrafts = (user.rentalAircrafts || []).map((a) => ({
+    id: a.id,
+    userId: a.userId,
+    registration: a.registration,
+    type: a.type,
+    hourlyCost: Number(a.hourlyCost),
+  }));
 
-  async function addRentalAircraft(formData: FormData) {
+  async function saveRentalAircraft(formData: FormData) {
     "use server";
     const user = await requireUser();
+    const id = formData.get("id") ? String(formData.get("id")) : null;
     const registration = String(formData.get("registration") || "").trim().toUpperCase();
     const type = String(formData.get("type") || "").trim() || "P92";
     const hourlyCost = Number(formData.get("hourlyCost") || 150);
 
     if (!registration) return;
 
-    await prisma.rentalAircraft.upsert({
-      where: {
-        userId_registration: {
+    if (id) {
+      const existing = await prisma.rentalAircraft.findFirst({
+        where: {
           userId: user.id,
           registration,
+          NOT: {
+            id,
+          },
         },
-      },
-      update: {
-        type,
-        hourlyCost,
-      },
-      create: {
-        userId: user.id,
-        registration,
-        type,
-        hourlyCost,
-      },
-    });
+      });
+
+      if (existing) {
+        throw new Error("Esiste già un aereo a noleggio con queste marche.");
+      }
+
+      await prisma.rentalAircraft.update({
+        where: {
+          id,
+          userId: user.id,
+        },
+        data: {
+          registration,
+          type,
+          hourlyCost,
+        },
+      });
+    } else {
+      await prisma.rentalAircraft.upsert({
+        where: {
+          userId_registration: {
+            userId: user.id,
+            registration,
+          },
+        },
+        update: {
+          type,
+          hourlyCost,
+        },
+        create: {
+          userId: user.id,
+          registration,
+          type,
+          hourlyCost,
+        },
+      });
+    }
 
     revalidatePath("/settings");
   }
@@ -65,110 +100,11 @@ export default async function SettingsPage() {
     >
       <div className="grid grid-2" style={{ alignItems: "flex-start" }}>
         {/* Sezione Aerei a Noleggio Personali */}
-        <div className="grid">
-          <div className="card">
-            <h2 style={{ marginTop: 0, marginBottom: 8 }}>I tuoi Aerei a Noleggio</h2>
-            <p className="muted" style={{ fontSize: "0.9rem", marginTop: 0, marginBottom: 16 }}>
-              Aggiungi gli aerei che noleggi (non in società) per applicare in automatico la loro specifica quota oraria.
-            </p>
-
-            {rentalAircrafts.length === 0 ? (
-              <div className="muted" style={{ fontSize: "0.92rem", marginBottom: 16 }}>
-                Nessun aereo configurato. Verrà usata la tariffa di fallback predefinita.
-              </div>
-            ) : (
-              <div className="grid" style={{ gap: 12, marginBottom: 20 }}>
-                {rentalAircrafts.map((a) => (
-                  <div
-                    key={a.id}
-                    className="between"
-                    style={{
-                      background: "rgba(246, 248, 251, 0.8)",
-                      padding: "10px 14px",
-                      borderRadius: 14,
-                      border: "1px solid var(--border)",
-                    }}
-                  >
-                    <div className="row" style={{ gap: 10 }}>
-                      <div
-                        style={{
-                          background: "white",
-                          padding: 6,
-                          borderRadius: 10,
-                          display: "flex",
-                          boxShadow: "0 2px 4px rgba(0,0,0,0.04)",
-                        }}
-                      >
-                        <AirplaneIcon size={16} />
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>
-                          {a.registration}
-                        </div>
-                        <div className="muted" style={{ fontSize: "0.8rem" }}>
-                          {a.type} · {eur(Number(a.hourlyCost))}/h
-                        </div>
-                      </div>
-                    </div>
-
-                    <form action={deleteRentalAircraft}>
-                      <input type="hidden" name="id" value={a.id} />
-                      <button
-                        type="submit"
-                        className="btn secondary icon-btn"
-                        style={{ width: 34, height: 34, borderColor: "transparent", color: "var(--danger)" }}
-                        title="Elimina aereo"
-                      >
-                        <TrashIcon size={16} />
-                      </button>
-                    </form>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <h3 style={{ fontSize: "1rem", marginTop: 0, marginBottom: 12 }}>Aggiungi aereo</h3>
-            <form action={addRentalAircraft} className="grid">
-              <div className="grid grid-2">
-                <div className="field">
-                  <label htmlFor="registration" style={{ fontSize: "0.85rem" }}>Marche</label>
-                  <input
-                    className="input"
-                    id="registration"
-                    name="registration"
-                    required
-                    placeholder="Es. I-4150"
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="type" style={{ fontSize: "0.85rem" }}>Modello</label>
-                  <input
-                    className="input"
-                    id="type"
-                    name="type"
-                    placeholder="Es. P92"
-                  />
-                </div>
-              </div>
-              <div className="field">
-                <label htmlFor="hourlyCost" style={{ fontSize: "0.85rem" }}>Quota oraria noleggio (€/h)</label>
-                <input
-                  className="input"
-                  id="hourlyCost"
-                  name="hourlyCost"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  defaultValue={150}
-                  required
-                />
-              </div>
-              <button type="submit" className="btn" style={{ marginTop: 4 }}>
-                Salva aereo
-              </button>
-            </form>
-          </div>
-        </div>
+        <RentalAircraftsManager
+          rentalAircrafts={rentalAircrafts}
+          onSave={saveRentalAircraft}
+          onDelete={deleteRentalAircraft}
+        />
 
         {/* Impostazioni Generali Fallback */}
         <div className="card">
