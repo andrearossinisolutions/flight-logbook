@@ -43,39 +43,51 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
 
   return (
     <div>
-      <div className="row" style={{ marginBottom: 24, gap: 16 }}>
-        <button
-          className={`btn ${activeTab === "AIRCRAFTS" ? "" : "secondary"}`}
-          onClick={() => setActiveTab("AIRCRAFTS")}
-        >
-          Aerei e Costi
-        </button>
-        <button
-          className={`btn ${activeTab === "MEMBERS" ? "" : "secondary"}`}
-          onClick={() => setActiveTab("MEMBERS")}
-        >
-          Soci
-        </button>
-        <button
-          className={`btn ${activeTab === "REPORT" ? "" : "secondary"}`}
-          onClick={() => setActiveTab("REPORT")}
-        >
-          Rendiconto Mensile
-        </button>
-        <button
-          className={`btn ${activeTab === "CASSA" ? "" : "secondary"}`}
-          onClick={() => setActiveTab("CASSA")}
-        >
-          Cassa
-        </button>
-        {isAdmin && (
+      <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 24 }}>
+        <div className="navbar-tabs" style={{ display: "flex", flexWrap: "wrap", width: "fit-content" }}>
           <button
-            className={`btn ${activeTab === "SETTINGS" ? "" : "secondary"}`}
-            onClick={() => setActiveTab("SETTINGS")}
+            type="button"
+            className={`navbar-tab ${activeTab === "AIRCRAFTS" ? "active" : ""}`}
+            style={{ border: "none", cursor: "pointer", background: activeTab === "AIRCRAFTS" ? "white" : "transparent" }}
+            onClick={() => setActiveTab("AIRCRAFTS")}
           >
-            Impostazioni
+            Aerei e Costi
           </button>
-        )}
+          <button
+            type="button"
+            className={`navbar-tab ${activeTab === "MEMBERS" ? "active" : ""}`}
+            style={{ border: "none", cursor: "pointer", background: activeTab === "MEMBERS" ? "white" : "transparent" }}
+            onClick={() => setActiveTab("MEMBERS")}
+          >
+            Soci
+          </button>
+          <button
+            type="button"
+            className={`navbar-tab ${activeTab === "REPORT" ? "active" : ""}`}
+            style={{ border: "none", cursor: "pointer", background: activeTab === "REPORT" ? "white" : "transparent" }}
+            onClick={() => setActiveTab("REPORT")}
+          >
+            Rendiconto Mensile
+          </button>
+          <button
+            type="button"
+            className={`navbar-tab ${activeTab === "CASSA" ? "active" : ""}`}
+            style={{ border: "none", cursor: "pointer", background: activeTab === "CASSA" ? "white" : "transparent" }}
+            onClick={() => setActiveTab("CASSA")}
+          >
+            Cassa
+          </button>
+          {isAdmin && (
+            <button
+              type="button"
+              className={`navbar-tab ${activeTab === "SETTINGS" ? "active" : ""}`}
+              style={{ border: "none", cursor: "pointer", background: activeTab === "SETTINGS" ? "white" : "transparent" }}
+              onClick={() => setActiveTab("SETTINGS")}
+            >
+              Impostazioni
+            </button>
+          )}
+        </div>
       </div>
 
       {activeTab === "AIRCRAFTS" && (
