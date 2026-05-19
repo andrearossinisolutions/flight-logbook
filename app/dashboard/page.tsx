@@ -282,18 +282,6 @@ export default async function DashboardPage() {
           </div>
         </div>}
 
-        {settings?.dateMonoExam != null && <div className="card">
-          <div className="muted">Da quando hai l'attestato</div>
-          <div className="medium-number">{totalPostExamFlights.length} voli | {minutesToHoursMinutes(totalPostExamMinutes)}</div>
-          <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
-          <div className="inline-meta" style={{ marginTop: 8 }}>
-            ⌛️ PIC: {minutesToHoursMinutes(totalPostExamPICMinutes)}
-          </div><br />
-          <div className="inline-meta" style={{ marginTop: 4 }}>
-            ⌛️ Istruttore: {minutesToHoursMinutes(totalPostExamInstructorMinutes)}
-          </div>
-        </div>}
-
         <div className="card">
           <div className="muted">Dal primo giorno</div>
           <div className="medium-number">{totalFlights.length} voli | {minutesToHoursMinutes(totalFlightMinutes)}</div>
