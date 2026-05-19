@@ -59,25 +59,6 @@ export function CalendarPlusIcon(props: IconProps) {
   );
 }
 
-export function ClockIcon(props: IconProps) {
-  const { size = 16, style, ...rest } = props as EmojiIconProps;
-
-  return (
-    <span
-      aria-hidden="true"
-      style={{
-        fontSize: size,
-        lineHeight: 1,
-        display: "inline-block",
-        ...(style as CSSProperties | undefined),
-      } as CSSProperties}
-      {...rest}
-    >
-      🕒
-    </span>
-  );
-}
-
 export function AirplaneIcon(props: IconProps) {
   const { size = 16, style, ...rest } = props as EmojiIconProps;
 

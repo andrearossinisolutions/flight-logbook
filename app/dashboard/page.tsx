@@ -9,7 +9,6 @@ import {
   AirplaneIcon,
   CalendarIcon,
   CalendarPlusIcon,
-  ClockIcon,
   MoneyBillIcon,
   PencilIcon,
 } from "@/components/icons";
@@ -209,8 +208,7 @@ export default async function DashboardPage() {
             Ore di volo disponibili
           </div>
           <div className="inline-meta" style={{ marginTop: 8 }}>
-            <ClockIcon />
-            PIC:{" "}
+            ⌛️ PIC:{" "}
             {saldo > 0
               ? minutesToHoursMinutes(
                 (saldo /
@@ -222,8 +220,7 @@ export default async function DashboardPage() {
               : "0:00"}
           </div><br />
           <div className="inline-meta" style={{ marginTop: 4 }}>
-            <ClockIcon />
-            Istruttore:{" "}
+            ⌛️ Istruttore:{" "}
             {saldo > 0
               ? minutesToHoursMinutes(
                 (saldo /
@@ -278,12 +275,10 @@ export default async function DashboardPage() {
           <div className="medium-number">{last6mFlights.length} voli | {minutesToHoursMinutes(last6mMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
           <div className="inline-meta" style={{ marginTop: 8 }}>
-            <ClockIcon />
-            PIC: {minutesToHoursMinutes(last6mPICMinutes)}
+            ⌛️ PIC: {minutesToHoursMinutes(last6mPICMinutes)}
           </div><br />
           <div className="inline-meta" style={{ marginTop: 4 }}>
-            <ClockIcon />
-            Istruttore: {minutesToHoursMinutes(last6mInstructorMinutes)}
+            ⌛️ Istruttore: {minutesToHoursMinutes(last6mInstructorMinutes)}
           </div>
         </div>}
 
@@ -292,12 +287,10 @@ export default async function DashboardPage() {
           <div className="medium-number">{totalPostExamFlights.length} voli | {minutesToHoursMinutes(totalPostExamMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
           <div className="inline-meta" style={{ marginTop: 8 }}>
-            <ClockIcon />
-            PIC: {minutesToHoursMinutes(totalPostExamPICMinutes)}
+            ⌛️ PIC: {minutesToHoursMinutes(totalPostExamPICMinutes)}
           </div><br />
           <div className="inline-meta" style={{ marginTop: 4 }}>
-            <ClockIcon />
-            Istruttore: {minutesToHoursMinutes(totalPostExamInstructorMinutes)}
+            ⌛️ Istruttore: {minutesToHoursMinutes(totalPostExamInstructorMinutes)}
           </div>
         </div>}
 
@@ -306,12 +299,10 @@ export default async function DashboardPage() {
           <div className="medium-number">{totalFlights.length} voli | {minutesToHoursMinutes(totalFlightMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
           <div className="inline-meta" style={{ marginTop: 8 }}>
-            <ClockIcon />
-            PIC: {minutesToHoursMinutes(totalPICMinutes)}
+            ⌛️ PIC: {minutesToHoursMinutes(totalPICMinutes)}
           </div><br />
           <div className="inline-meta" style={{ marginTop: 4 }}>
-            <ClockIcon />
-            Istruttore: {minutesToHoursMinutes(totalInstructorMinutes)}
+            ⌛️ Istruttore: {minutesToHoursMinutes(totalInstructorMinutes)}
           </div>
         </div>
 
@@ -322,8 +313,7 @@ export default async function DashboardPage() {
             Scade tra {medicalExamRemaining(settings.dateMedicalExam)}
           </div>
           <div className="inline-meta" style={{ marginTop: 32 }}>
-            <CalendarIcon />
-            <span>Visita: {formatDateDisplay(settings.dateMedicalExam)}</span>
+            📅 Visita: {formatDateDisplay(settings.dateMedicalExam)}
           </div>
         </div>}
 
@@ -392,8 +382,7 @@ export default async function DashboardPage() {
                     </div><br />
                     {item.type === "FLIGHT" &&
                       <div className={"inline-meta" + (isFutureMovement ? " future-movement" : "")}>
-                        <ClockIcon />
-                        <span>{formatTimeDisplay(item.date)}</span>
+                        🕒 <span>{formatTimeDisplay(item.date)}</span>
                       </div>
                     }
                   </td>
@@ -518,7 +507,7 @@ function dashboardItem(item: any, movements: any[] = [], isFutureMovement = fals
           <div>
             <div className={"muted" + (isFutureMovement ? " future-movement" : "")}>
               ✈️ {(item.flight?.aircraftRegistration ?? "I-4150") + " · "}
-              🕒 {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
+              ⌛️ {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
             </div>
             {(item.flight?.takeoffPlace != null || item.flight?.arrivalPlace != null) &&
               <div className={isFutureMovement ? "future-movement" : undefined}>
