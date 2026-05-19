@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import type { Route } from "next";
 import { redirect } from "next/navigation";
@@ -18,7 +19,11 @@ import { requireUser } from "@/lib/require-user";
 import { eur, formatDateDisplay, formatTimeDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate, daysToDate } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const user = await requireUser();
   const settings = user.settings;
 
@@ -26,33 +31,33 @@ export default async function DashboardPage() {
     redirect("/onboarding");
   }
 
-  const movements = await prisma.movement.findMany({
+  const allMovements = await prisma.movement.findMany({
     where: { userId: user.id },
     include: { flight: true },
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
   });
 
-  type MovementItem = (typeof movements)[number];
+  type MovementItem = (typeof allMovements)[number];
 
-  const saldo = movements
+  const saldo = allMovements
     .filter((item: MovementItem) => item.type !== "SERVICE" && !item.isDraft)
     .reduce(
       (acc: number, item: MovementItem) => acc + Number(item.amount),
       0
     );
 
-  const futureFlights = movements
+  const futureFlights = allMovements
     .filter((item: MovementItem) => item.type === "FLIGHT" && item.isDraft && item.date > new Date())
     .sort((a, b) => a.date.getTime() - b.date.getTime());
 
   const nextFlight = futureFlights.length > 0 ? futureFlights[0] : null;
 
-  const flights = movements
+  const flights = allMovements
     .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft);
 
   const lastFlight = flights.length > 0 ? flights[0] : null;
 
-  const last6mFlights = movements
+  const last6mFlights = allMovements
     .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft && item.date >= new Date(new Date().setMonth(new Date().getMonth() - 6)));
 
   const last6mMinutes = last6mFlights
@@ -64,7 +69,7 @@ export default async function DashboardPage() {
   const last6mInstructorMinutes = last6mFlights
     .reduce((sum, flight) => sum + (flight.flight?.instructorMinutes ?? 0), 0);
 
-  const totalFlights = movements.filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft);
+  const totalFlights = allMovements.filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft);
 
   const totalFlightMinutes = totalFlights
     .reduce(
@@ -86,7 +91,7 @@ export default async function DashboardPage() {
       0
     );
 
-  const totalPostExamFlights = movements
+  const totalPostExamFlights = allMovements
     .filter((item: MovementItem) => item.type === "FLIGHT" && !item.isDraft && settings?.dateMonoExam != null && item.date > settings.dateMonoExam);
 
   const totalPostExamMinutes = totalPostExamFlights
@@ -110,14 +115,14 @@ export default async function DashboardPage() {
       0
     );
 
-  const totalCosts = movements
+  const totalCosts = allMovements
     .filter((item: MovementItem) => item.type !== "FLIGHT" && !item.isDraft)
     .reduce(
       (acc: number, item: MovementItem) => acc + Math.abs(Number(item.amount)),
       0
     );
 
-  const draftCostMovements = movements
+  const draftCostMovements = allMovements
     .filter((item: MovementItem) => item.type !== "FLIGHT" && item.isDraft);
 
   const draftCosts = draftCostMovements
@@ -140,7 +145,7 @@ export default async function DashboardPage() {
       0
     );
 
-  const totalTopups = movements
+  const totalTopups = allMovements
     .filter((item: MovementItem) => item.type === "TOPUP" && !item.isDraft)
     .reduce(
       (acc: number, item: MovementItem) =>
@@ -148,13 +153,35 @@ export default async function DashboardPage() {
       0
     );
 
-  const totalServices = movements
+  const totalServices = allMovements
     .filter((item: MovementItem) => item.type === "SERVICE" && !item.isDraft)
     .reduce(
       (acc: number, item: MovementItem) =>
         acc + (Number(item.amount) > 0 ? Number(item.amount) : 0),
       0
     );
+
+  const { filter } = await searchParams;
+  const filterVal = typeof filter === "string" ? filter : undefined;
+
+  const movements = allMovements.filter((item: MovementItem) => {
+    if (!filterVal) return true;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    switch (filterVal) {
+      case "prenotazioni":
+        return item.type === "FLIGHT" && item.isDraft && item.date >= today;
+      case "voli-passati":
+        return item.type === "FLIGHT" && !item.isDraft;
+      case "pagamenti":
+        return item.type === "TOPUP" || item.type === "SERVICE";
+      case "promemoria-futuri":
+        return item.type === "REMINDER" && item.date >= today;
+      default:
+        return true;
+    }
+  });
 
   async function deleteMovement(formData: FormData) {
     "use server";
@@ -326,7 +353,9 @@ export default async function DashboardPage() {
 
       <div className="between dashboard-registry-header" style={{ marginBottom: 16 }}>
         <h2 style={{ margin: 0 }}>Registro movimenti</h2>
-        <DashboardRegistryActions />
+        <Suspense fallback={<div style={{ display: "inline-block", width: 150, height: 40 }} />}>
+          <DashboardRegistryActions />
+        </Suspense>
       </div>
 
       <div className="card dashboard-registry-table" style={{ overflowX: "auto" }}>
@@ -397,7 +426,7 @@ export default async function DashboardPage() {
                   </td>
 
                   <td>
-                    {dashboardItem(item, movements, isFutureMovement)}
+                    {dashboardItem(item, allMovements, isFutureMovement)}
                   </td>
 
                   <td style={{ fontWeight: 700 }}>

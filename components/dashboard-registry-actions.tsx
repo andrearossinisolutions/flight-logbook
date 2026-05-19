@@ -2,16 +2,25 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import type { Route } from "next";
 
 export function DashboardRegistryActions() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const filterDropdownRef = useRef<HTMLDivElement>(null);
+
+  const searchParams = useSearchParams();
+  const activeFilter = searchParams.get("filter") || "";
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+      }
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target as Node)) {
+        setIsFilterOpen(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -21,8 +30,8 @@ export function DashboardRegistryActions() {
   }, []);
 
   return (
-    <div className="row dashboard-actions-row" style={{ position: "relative" }}>
-      {/* Dropdown Container */}
+    <div className="row dashboard-actions-row" style={{ position: "relative", gap: 12 }}>
+      {/* Add Dropdown Container */}
       <div ref={dropdownRef} className="dropdown-container">
         <button
           onClick={() => setIsOpen(!isOpen)}
@@ -60,6 +69,65 @@ export function DashboardRegistryActions() {
             >
               <span className="dropdown-item-icon">🔔</span>
               <span className="dropdown-item-text">Aggiungi promemoria</span>
+            </Link>
+          </div>
+        )}
+      </div>
+
+      {/* Filter Dropdown Container */}
+      <div ref={filterDropdownRef} className="dropdown-container">
+        <button
+          onClick={() => setIsFilterOpen(!isFilterOpen)}
+          className={`btn icon-btn filter-btn ${activeFilter ? "active-filter" : "secondary"}`}
+          aria-expanded={isFilterOpen}
+          aria-haspopup="true"
+          title="Filtra movimenti"
+          style={{ fontSize: "18px", display: "inline-flex", alignItems: "center", justifyContent: "center" }}
+        >
+          🔍
+        </button>
+
+        {isFilterOpen && (
+          <div className="dropdown-menu">
+            <Link
+              href="/dashboard"
+              className={`dropdown-item ${activeFilter === "" ? "active" : ""}`}
+              onClick={() => setIsFilterOpen(false)}
+            >
+              <span className="dropdown-item-icon">📋</span>
+              <span className="dropdown-item-text">Tutti i movimenti</span>
+            </Link>
+            <Link
+              href="/dashboard?filter=prenotazioni"
+              className={`dropdown-item ${activeFilter === "prenotazioni" ? "active" : ""}`}
+              onClick={() => setIsFilterOpen(false)}
+            >
+              <span className="dropdown-item-icon">📅</span>
+              <span className="dropdown-item-text">Prenotazioni</span>
+            </Link>
+            <Link
+              href="/dashboard?filter=voli-passati"
+              className={`dropdown-item ${activeFilter === "voli-passati" ? "active" : ""}`}
+              onClick={() => setIsFilterOpen(false)}
+            >
+              <span className="dropdown-item-icon">✈️</span>
+              <span className="dropdown-item-text">Voli passati</span>
+            </Link>
+            <Link
+              href="/dashboard?filter=pagamenti"
+              className={`dropdown-item ${activeFilter === "pagamenti" ? "active" : ""}`}
+              onClick={() => setIsFilterOpen(false)}
+            >
+              <span className="dropdown-item-icon">💶</span>
+              <span className="dropdown-item-text">Pagamenti</span>
+            </Link>
+            <Link
+              href="/dashboard?filter=promemoria-futuri"
+              className={`dropdown-item ${activeFilter === "promemoria-futuri" ? "active" : ""}`}
+              onClick={() => setIsFilterOpen(false)}
+            >
+              <span className="dropdown-item-icon">🔔</span>
+              <span className="dropdown-item-text">Promemoria futuri</span>
             </Link>
           </div>
         )}

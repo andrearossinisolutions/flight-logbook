@@ -944,5 +944,29 @@ textarea {
   }
 }
 
+.filter-btn {
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.filter-btn:hover {
+  transform: scale(1.06);
+  background-color: #f8fafc;
+}
+
+.filter-btn:active {
+  transform: scale(0.95);
+}
+
+.filter-btn.active-filter {
+  background-color: rgba(2, 132, 199, 0.1);
+  border-color: #0284c7;
+  color: #0284c7;
+}
+
+.dropdown-item.active {
+  background: #e6f0ed;
+  color: var(--primary-strong);
+}
+
 
 
