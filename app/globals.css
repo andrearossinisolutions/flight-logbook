@@ -211,17 +211,69 @@ textarea {
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
-.dashboard-widgets:not(.is-expanded) .dashboard-widget-item:nth-child(n + 3) {
-  display: none;
+.dashboard-widgets:not(.is-expanded) {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 16px;
 }
 
-@media (min-width: 768px) {
-  .dashboard-widgets:not(.is-expanded) .dashboard-widget-item:nth-child(n + 5) {
-    display: none;
-  }
+.dashboard-widgets:not(.is-expanded) .dashboard-widgets-inner {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 16px;
+  width: 100%;
+  transform: translate3d(0, 0, 0);
+}
 
-  .dashboard-widgets:not(.is-expanded) .dashboard-widget-item:nth-child(-n + 4) {
-    display: block;
+.dashboard-widgets:not(.is-expanded) .dashboard-widgets-inner.is-sliding {
+  transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dashboard-widgets:not(.is-expanded) .dashboard-widget-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-widgets:not(.is-expanded) .dashboard-widget-item > * {
+  flex: 1;
+  height: 100%;
+}
+
+/* On mobile (max-width: 767px): 2 items visible, stacked vertically, scrolling bottom-to-top */
+@media (max-width: 767px) {
+  .dashboard-widgets:not(.is-expanded) {
+    height: calc(2 * 190px + 16px);
+  }
+  .dashboard-widgets:not(.is-expanded) .dashboard-widgets-inner {
+    flex-direction: column;
+    --shift-y: calc(-190px - 16px);
+  }
+  .dashboard-widgets:not(.is-expanded) .dashboard-widgets-inner.is-sliding {
+    transform: translate3d(0, var(--shift-y), 0);
+  }
+  .dashboard-widgets:not(.is-expanded) .dashboard-widget-item {
+    flex: 0 0 190px;
+    height: 190px;
+    min-height: 190px;
+  }
+  .dashboard-widgets:not(.is-expanded) .card {
+    padding: 16px;
+  }
+}
+
+/* On desktop (min-width: 768px): 4 items visible, scrolling horizontally */
+@media (min-width: 768px) {
+  .dashboard-widgets:not(.is-expanded) .dashboard-widgets-inner {
+    flex-direction: row;
+    --shift-x: calc(-25% - 4px);
+  }
+  .dashboard-widgets:not(.is-expanded) .dashboard-widgets-inner.is-sliding {
+    transform: translate3d(var(--shift-x), 0, 0);
+  }
+  .dashboard-widgets:not(.is-expanded) .dashboard-widget-item {
+    flex: 0 0 calc(25% - 12px);
+    min-width: calc(25% - 12px);
   }
 }
 
