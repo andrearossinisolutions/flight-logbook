@@ -97,7 +97,8 @@ export async function addMember(partnershipId: string, formData: FormData) {
       data: {
         partnershipId,
         email: email.toLowerCase(),
-        role: "MEMBER"
+        role: "MEMBER",
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
       }
     });
 
@@ -487,6 +488,54 @@ export async function cancelInvitation(partnershipId: string, invitationId: stri
       id: invitationId,
       partnershipId
     }
+  });
+
+  revalidatePath(`/societa/${partnershipId}`);
+}
+
+export async function addMessage(partnershipId: string, formData: FormData) {
+  const user = await requireUser();
+  const content = String(formData.get("content") || "").trim();
+
+  if (!content) return;
+
+  const membership = await prisma.partnershipMember.findUnique({
+    where: { partnershipId_userId: { partnershipId, userId: user.id } }
+  });
+
+  if (!membership) return;
+
+  await prisma.partnershipMessage.create({
+    data: {
+      content,
+      partnershipId,
+      userId: user.id,
+    }
+  });
+
+  revalidatePath(`/societa/${partnershipId}`);
+}
+
+export async function deleteMessage(partnershipId: string, messageId: string) {
+  const user = await requireUser();
+
+  const membership = await prisma.partnershipMember.findUnique({
+    where: { partnershipId_userId: { partnershipId, userId: user.id } }
+  });
+
+  if (!membership) return;
+
+  const message = await prisma.partnershipMessage.findUnique({
+    where: { id: messageId }
+  });
+
+  if (!message || message.partnershipId !== partnershipId) return;
+
+  // Solo l'autore del messaggio o un admin può eliminare
+  if (message.userId !== user.id && membership.role !== "ADMIN") return;
+
+  await prisma.partnershipMessage.delete({
+    where: { id: messageId }
   });
 
   revalidatePath(`/societa/${partnershipId}`);

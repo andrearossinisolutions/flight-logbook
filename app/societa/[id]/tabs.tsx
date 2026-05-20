@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation } from "./actions";
+import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation, addMessage, deleteMessage } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 
 function formatMinutes(minutes: number) {
@@ -11,7 +11,7 @@ function formatMinutes(minutes: number) {
 }
 
 export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
-  const [activeTab, setActiveTab] = useState("AIRCRAFTS");
+  const [activeTab, setActiveTab] = useState("BACHECA");
 
   // Edit state
   const [editingAircraftId, setEditingAircraftId] = useState<string | null>(null);
@@ -46,6 +46,14 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
     <div>
       <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 24 }}>
         <div className="navbar-tabs" style={{ display: "flex", flexWrap: "wrap", width: "fit-content" }}>
+          <button
+            type="button"
+            className={`navbar-tab ${activeTab === "BACHECA" ? "active" : ""}`}
+            style={{ border: "none", cursor: "pointer", background: activeTab === "BACHECA" ? "white" : "transparent" }}
+            onClick={() => setActiveTab("BACHECA")}
+          >
+            Bacheca
+          </button>
           <button
             type="button"
             className={`navbar-tab ${activeTab === "AIRCRAFTS" ? "active" : ""}`}
@@ -90,6 +98,80 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
           )}
         </div>
       </div>
+
+      {activeTab === "BACHECA" && (
+        <div className="card" style={{ maxWidth: 800, margin: "0 auto", padding: "20px 24px" }}>
+          <h2 style={{ marginTop: 0, marginBottom: 16 }}>Bacheca Società</h2>
+          
+          <form action={async (fd) => {
+            const form = document.getElementById("message-form") as HTMLFormElement;
+            await addMessage(partnership.id, fd);
+            form?.reset();
+          }} id="message-form" style={{ marginBottom: 32 }}>
+            <div className="field">
+              <textarea 
+                name="content" 
+                className="textarea" 
+                placeholder="Scrivi un messaggio a tutti i soci..."
+                required
+                style={{ minHeight: 80 }}
+              />
+            </div>
+            <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
+              <SubmitButton>Invia messaggio</SubmitButton>
+            </div>
+          </form>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {partnership.messages?.length === 0 ? (
+              <div className="muted" style={{ textAlign: "center", padding: "40px 0" }}>Nessun messaggio in bacheca. Rompi il ghiaccio!</div>
+            ) : (
+              partnership.messages?.map((msg: any) => (
+                <div key={msg.id} style={{
+                  background: msg.userId === currentUserId ? "var(--bg)" : "white",
+                  border: "1px solid var(--border)",
+                  borderRadius: 16,
+                  padding: 16,
+                  position: "relative"
+                }}>
+                  <div className="between" style={{ marginBottom: 8 }}>
+                    <div style={{ fontWeight: 600, fontSize: "0.95rem", color: "var(--primary-strong)" }}>
+                      {msg.user?.fullName || msg.user?.email || "Utente"}
+                    </div>
+                    <div className="row" style={{ gap: 8 }}>
+                      <div className="muted" style={{ fontSize: "0.85rem" }}>
+                        {new Date(msg.createdAt).toLocaleString("it-IT", {
+                          day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
+                        })}
+                      </div>
+                      {(msg.userId === currentUserId || isAdmin) && (
+                        <form 
+                          action={deleteMessage.bind(null, partnership.id, msg.id)} 
+                          style={{ opacity: 0.5, transition: "opacity 0.2s" }} 
+                          onMouseEnter={(e) => e.currentTarget.style.opacity = "1"} 
+                          onMouseLeave={(e) => e.currentTarget.style.opacity = "0.5"}
+                          onSubmit={(e) => {
+                            if (!window.confirm("Sei sicuro di voler eliminare questo messaggio?")) {
+                              e.preventDefault();
+                            }
+                          }}
+                        >
+                          <button type="submit" className="icon-btn" style={{ background: "transparent", border: "none", color: "var(--danger)", width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0, margin: 0 }} title="Elimina">
+                            ✕
+                          </button>
+                        </form>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.5, fontSize: "0.95rem" }}>
+                    {msg.content}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {activeTab === "AIRCRAFTS" && (
         <div className="grid grid-2">

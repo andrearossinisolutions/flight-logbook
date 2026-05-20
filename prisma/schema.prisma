@@ -27,6 +27,7 @@ model User {
   movements             Movement[]
   partnerships          PartnershipMember[]
   partnershipTransactns PartnershipTransaction[]
+  partnershipMessages   PartnershipMessage[]
   rentalAircrafts       RentalAircraft[]
   createdAt             DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -105,8 +106,21 @@ model DailyJobState {
   key            String   @id
   lastRunDateKey String?
   lastRunAt      DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
+model PartnershipMessage {
+  id             String      @id @default(cuid())
+  content        String
+  partnershipId  String
+  partnership    Partnership @relation(fields: [partnershipId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 }
 
 model Partnership {
@@ -120,6 +134,7 @@ model Partnership {
   fixedCosts   PartnershipFixedCost[]
   transactions PartnershipTransaction[]
   invitations  PartnershipInvitation[]
+  messages     PartnershipMessage[]
 }
 
 model PartnershipMember {
@@ -200,6 +215,7 @@ model PartnershipInvitation {
   partnership   Partnership @relation(fields: [partnershipId], references: [id], onDelete: Cascade)
   email         String
   role          String      @default("MEMBER")
+  expiresAt     DateTime
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
 
