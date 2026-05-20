@@ -308,8 +308,9 @@ export function OnboardingFlow({ userName }: { userName: string | null }) {
                         }}
                       >
                         <option value="MONTHLY">Mensile</option>
-                        <option value="YEARLY">Annuale</option>
-                        <option value="ONCE">Una tantum</option>
+                        <option value="YEARLY_PRORATED">Annuale diviso per mese</option>
+                        <option value="YEARLY_ONCE">Annuale ogni 12 mesi</option>
+                        <option value="ONE_OFF">Una tantum</option>
                       </select>
                     </div>
                   </div>
@@ -336,7 +337,7 @@ export function OnboardingFlow({ userName }: { userName: string | null }) {
         return (
           <div className="onboarding-step fade-in">
             <h1>Costi Variabili</h1>
-            <p>Inserisci i costi orari stimati per il funzionamento dell'aereo.</p>
+            <p>Inserisci i costi per ora di volo dovuti alla società (€/h).</p>
             <p className="muted" style={{ fontSize: "0.9rem", marginBottom: "32px" }}>
               Se utilizzate la tecnica del riempimento autonomo a fine volo, e non prevedete l'accantonamento orario per manutenzione, potete lasciare tutti i campi a 0.
             </p>

@@ -537,7 +537,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                         <option value="MONTHLY">Mensile</option>
                         <option value="YEARLY_PRORATED">Annuale diviso per mese</option>
                         <option value="YEARLY_ONCE">Annuale ogni 12 mesi</option>
-                        <option value="ONE_OFF">Singolo</option>
+                        <option value="ONE_OFF">Una tantum</option>
                       </select>
                     </div>
                     {newFixedCostPeriod === "YEARLY_ONCE" && (
