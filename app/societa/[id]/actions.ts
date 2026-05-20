@@ -44,6 +44,10 @@ export async function addFixedCost(partnershipId: string, formData: FormData) {
   const description = String(formData.get("description") || "").trim();
   const amount = Number(formData.get("amount") || 0);
   const period = String(formData.get("period") || "MONTHLY").trim();
+  const billingMonthStr = formData.get("billingMonth");
+  const billingMonth = billingMonthStr ? Number(billingMonthStr) : null;
+  const billingYearStr = formData.get("billingYear");
+  const billingYear = billingYearStr ? Number(billingYearStr) : null;
 
   if (!description || amount <= 0) return;
 
@@ -59,6 +63,8 @@ export async function addFixedCost(partnershipId: string, formData: FormData) {
       description,
       amount,
       period,
+      billingMonth,
+      billingYear,
     }
   });
 
@@ -249,6 +255,10 @@ export async function updateFixedCost(partnershipId: string, costId: string, for
   const description = String(formData.get("description") || "").trim();
   const amount = Number(formData.get("amount") || 0);
   const period = String(formData.get("period") || "MONTHLY").trim();
+  const billingMonthStr = formData.get("billingMonth");
+  const billingMonth = billingMonthStr ? Number(billingMonthStr) : null;
+  const billingYearStr = formData.get("billingYear");
+  const billingYear = billingYearStr ? Number(billingYearStr) : null;
 
   if (!description || amount <= 0) return;
 
@@ -258,6 +268,8 @@ export async function updateFixedCost(partnershipId: string, costId: string, for
       description,
       amount,
       period,
+      billingMonth,
+      billingYear,
     }
   });
 
@@ -306,7 +318,17 @@ export async function getMonthlyReport(partnershipId: string, year: number, mont
   const startOfMonth = new Date(year, month, 1);
   const endOfMonth = new Date(year, month + 1, 1);
 
-  const fixedCostTotal = partnership.fixedCosts.reduce((acc, c) => acc + (c.period === 'YEARLY' ? Number(c.amount) / 12 : Number(c.amount)), 0);
+  const fixedCostTotal = partnership.fixedCosts.reduce((acc, c) => {
+    if (c.period === 'MONTHLY') return acc + Number(c.amount);
+    if (c.period === 'YEARLY_PRORATED' || c.period === 'YEARLY') return acc + (Number(c.amount) / 12);
+    if (c.period === 'YEARLY_ONCE') {
+      return (c.billingMonth === month + 1) ? acc + Number(c.amount) : acc;
+    }
+    if (c.period === 'ONE_OFF') {
+      return (c.billingMonth === month + 1 && c.billingYear === year) ? acc + Number(c.amount) : acc;
+    }
+    return acc;
+  }, 0);
   const fixedCostPerMember = partnership.members.length > 0 ? fixedCostTotal / partnership.members.length : 0;
 
   const aircraftIds = partnership.aircrafts.map(a => a.id);

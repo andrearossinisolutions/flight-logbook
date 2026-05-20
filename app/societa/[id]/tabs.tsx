@@ -16,6 +16,10 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
   // Edit state
   const [editingAircraftId, setEditingAircraftId] = useState<string | null>(null);
   const [editingFixedCostId, setEditingFixedCostId] = useState<string | null>(null);
+  const [editingFixedCostPeriod, setEditingFixedCostPeriod] = useState("MONTHLY");
+  const [editingFixedCostYear, setEditingFixedCostYear] = useState<string>(new Date().getFullYear().toString());
+  const [newFixedCostPeriod, setNewFixedCostPeriod] = useState("MONTHLY");
+  const [newFixedCostYear, setNewFixedCostYear] = useState<string>(new Date().getFullYear().toString());
   const [roundingTarget, setRoundingTarget] = useState("");
 
   // Report state
@@ -301,7 +305,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
           </div>
 
           <div className="card">
-            <h2 style={{ marginTop: 0 }}>Costi Fissi (Mensili)</h2>
+            <h2 style={{ marginTop: 0 }}>Costi Fissi</h2>
             {partnership.fixedCosts.length === 0 ? (
               <div className="muted">Nessun costo fisso inserito.</div>
             ) : (
@@ -309,7 +313,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                 <thead>
                   <tr>
                     <th>Descrizione</th>
-                    <th>Importo (Mese)</th>
+                    <th>Importo</th>
                     {isAdmin && <th>Azioni</th>}
                   </tr>
                 </thead>
@@ -323,12 +327,54 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                             <form action={async (fd) => {
                               await updateFixedCost(partnership.id, c.id, fd);
                               setEditingFixedCostId(null);
-                            }} className="row" style={{ gap: 8 }}>
-                              <input className="input" name="description" defaultValue={c.description} required style={{ padding: "4px 8px", flex: 1 }} />
-                              <select className="select" name="period" defaultValue={c.period} style={{ padding: "4px 8px", width: 120 }}>
+                            }} className="row" style={{ gap: 8, flexWrap: "wrap" }}>
+                              <input className="input" name="description" defaultValue={c.description} required style={{ padding: "4px 8px", flex: 1, minWidth: 150 }} />
+                              <select className="select" name="period" value={editingFixedCostPeriod} onChange={(e) => {
+                                  setEditingFixedCostPeriod(e.target.value);
+                                  if (e.target.value !== "ONE_OFF") {
+                                    setEditingFixedCostYear(new Date().getFullYear().toString());
+                                  }
+                                }} style={{ padding: "4px 8px", width: "auto" }}>
                                 <option value="MONTHLY">Mensile</option>
-                                <option value="YEARLY">Annuale</option>
+                                <option value="YEARLY_PRORATED">Annuale diviso per mese</option>
+                                <option value="YEARLY_ONCE">Annuale ogni 12 mesi</option>
+                                <option value="ONE_OFF">Una tantum</option>
                               </select>
+                              {editingFixedCostPeriod === "YEARLY_ONCE" && (
+                                <select className="select" name="billingMonth" defaultValue={c.billingMonth || 1} style={{ padding: "4px 8px" }}>
+                                  <option value="1">Gennaio</option>
+                                  <option value="2">Febbraio</option>
+                                  <option value="3">Marzo</option>
+                                  <option value="4">Aprile</option>
+                                  <option value="5">Maggio</option>
+                                  <option value="6">Giugno</option>
+                                  <option value="7">Luglio</option>
+                                  <option value="8">Agosto</option>
+                                  <option value="9">Settembre</option>
+                                  <option value="10">Ottobre</option>
+                                  <option value="11">Novembre</option>
+                                  <option value="12">Dicembre</option>
+                                </select>
+                              )}
+                              {editingFixedCostPeriod === "ONE_OFF" && (
+                                <>
+                                  <select className="select" name="billingMonth" defaultValue={c.billingMonth || 1} style={{ padding: "4px 8px" }}>
+                                    <option value="1">Gennaio</option>
+                                    <option value="2">Febbraio</option>
+                                    <option value="3">Marzo</option>
+                                    <option value="4">Aprile</option>
+                                    <option value="5">Maggio</option>
+                                    <option value="6">Giugno</option>
+                                    <option value="7">Luglio</option>
+                                    <option value="8">Agosto</option>
+                                    <option value="9">Settembre</option>
+                                    <option value="10">Ottobre</option>
+                                    <option value="11">Novembre</option>
+                                    <option value="12">Dicembre</option>
+                                  </select>
+                                  <input className="input" name="billingYear" type="number" min="2020" max="2100" defaultValue={c.billingYear || new Date().getFullYear()} style={{ padding: "4px 8px", width: 80 }} />
+                                </>
+                              )}
                               <input className="input" name="amount" type="number" step="0.01" min="0" defaultValue={c.amount} required style={{ padding: "4px 8px", width: 100 }} />
                               <SubmitButton style={{ padding: "4px 12px" }}>Salva</SubmitButton>
                               <button className="btn secondary" type="button" onClick={() => setEditingFixedCostId(null)} style={{ padding: "4px 12px" }}>Annulla</button>
@@ -338,8 +384,16 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                           <>
                             <td>{c.description}</td>
                             <td>
-                              € {c.period === "YEARLY" ? (c.amount / 12).toFixed(2) : c.amount.toFixed(2)}
-                              {c.period === "YEARLY" && <span className="muted" style={{ fontSize: 12, marginLeft: 4 }}>(da € {c.amount.toFixed(2)}/anno)</span>}
+                              {c.period === "MONTHLY" && <span>€ {c.amount.toFixed(2)}/mese</span>}
+                              {(c.period === "YEARLY" || c.period === "YEARLY_PRORATED") && (
+                                <span>€ {(c.amount / 12).toFixed(2)} /mese <span className="muted" style={{ fontSize: 12 }}>(da € {c.amount.toFixed(2)}/anno)</span></span>
+                              )}
+                              {c.period === "YEARLY_ONCE" && (
+                                <span>€ {c.amount.toFixed(2)} /anno <span className="muted" style={{ fontSize: 12 }}>(ogni mese {c.billingMonth})</span></span>
+                              )}
+                              {c.period === "ONE_OFF" && (
+                                <span>€ {c.amount.toFixed(2)} <span className="muted" style={{ fontSize: 12 }}>(Singolo, addebitato a {c.billingMonth}/{c.billingYear})</span></span>
+                              )}
                             </td>
                             {isAdmin && (
                               <td>
@@ -347,7 +401,10 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                                   <button
                                     className="btn secondary"
                                     style={{ padding: "4px 8px", fontSize: 12 }}
-                                    onClick={() => setEditingFixedCostId(c.id)}
+                                    onClick={() => {
+                                      setEditingFixedCostId(c.id);
+                                      setEditingFixedCostPeriod(c.period === "YEARLY" ? "YEARLY_PRORATED" : c.period);
+                                    }}
                                   >
                                     Modifica
                                   </button>
@@ -375,7 +432,12 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                   <tr style={{ background: "var(--bg-secondary)", fontWeight: "bold" }}>
                     <td>Totale mensile societario</td>
                     <td>
-                      € {partnership.fixedCosts.reduce((acc: number, c: any) => acc + (c.period === 'YEARLY' ? Number(c.amount) / 12 : Number(c.amount)), 0).toFixed(2)}
+                      € {partnership.fixedCosts.reduce((acc: number, c: any) => {
+                        if (c.period === 'MONTHLY') return acc + Number(c.amount);
+                        if (c.period === 'YEARLY' || c.period === 'YEARLY_PRORATED') return acc + (Number(c.amount) / 12);
+                        return acc; // YEARLY_ONCE not included in the standard monthly running total preview
+                      }, 0).toFixed(2)}
+                      <div className="muted" style={{ fontSize: 11, fontWeight: "normal", marginTop: 4 }}>(non include rate annuali fisse)</div>
                     </td>
                     {isAdmin && <td></td>}
                   </tr>
@@ -385,7 +447,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
 
             {isAdmin && (
               <div style={{ marginTop: 16, display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
-                <span className="muted" style={{ fontSize: 13 }}>Arrotonda totale a:</span>
+                <span className="muted" style={{ fontSize: 13 }}>Arrotonda mensile a:</span>
                 <input
                   type="number"
                   step="0.01"
@@ -399,7 +461,11 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                   className="btn secondary"
                   style={{ padding: "4px 12px", fontSize: 13 }}
                   onClick={async () => {
-                    const currentTotal = partnership.fixedCosts.reduce((acc: number, c: any) => acc + (c.period === 'YEARLY' ? Number(c.amount) / 12 : Number(c.amount)), 0);
+                    const currentTotal = partnership.fixedCosts.reduce((acc: number, c: any) => {
+                      if (c.period === 'MONTHLY') return acc + Number(c.amount);
+                      if (c.period === 'YEARLY' || c.period === 'YEARLY_PRORATED') return acc + (Number(c.amount) / 12);
+                      return acc; // YEARLY_ONCE not included in the standard monthly running total preview
+                    }, 0);
                     const target = parseFloat(roundingTarget);
                     if (isNaN(target) || target <= currentTotal) {
                       alert("Inserisci un importo superiore al totale attuale.");
@@ -422,7 +488,12 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
             {isAdmin && (
               <div style={{ marginTop: 24, paddingTop: 24, borderTop: "1px solid var(--border)" }}>
                 <h3 style={{ marginTop: 0 }}>Aggiungi costo fisso</h3>
-                <form action={addFixedCost.bind(null, partnership.id)} className="grid">
+                <form action={async (fd) => {
+                  const form = document.getElementById("add-fixed-cost-form") as HTMLFormElement;
+                  await addFixedCost(partnership.id, fd);
+                  form?.reset();
+                  setNewFixedCostPeriod("MONTHLY");
+                }} id="add-fixed-cost-form" className="grid">
                   <div className="field">
                     <label>Descrizione</label>
                     <input className="input" name="description" required placeholder="Es. Affitto Hangar" />
@@ -430,11 +501,57 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                   <div className="grid grid-2">
                     <div className="field">
                       <label>Periodicità</label>
-                      <select className="select" name="period">
+                      <select className="select" name="period" value={newFixedCostPeriod} onChange={(e) => setNewFixedCostPeriod(e.target.value)}>
                         <option value="MONTHLY">Mensile</option>
-                        <option value="YEARLY">Annuale</option>
+                        <option value="YEARLY_PRORATED">Annuale diviso per mese</option>
+                        <option value="YEARLY_ONCE">Annuale ogni 12 mesi</option>
+                        <option value="ONE_OFF">Singolo</option>
                       </select>
                     </div>
+                    {newFixedCostPeriod === "YEARLY_ONCE" && (
+                      <div className="field">
+                        <label>Mese di addebito</label>
+                        <select className="select" name="billingMonth">
+                          <option value="1">Gennaio</option>
+                          <option value="2">Febbraio</option>
+                          <option value="3">Marzo</option>
+                          <option value="4">Aprile</option>
+                          <option value="5">Maggio</option>
+                          <option value="6">Giugno</option>
+                          <option value="7">Luglio</option>
+                          <option value="8">Agosto</option>
+                          <option value="9">Settembre</option>
+                          <option value="10">Ottobre</option>
+                          <option value="11">Novembre</option>
+                          <option value="12">Dicembre</option>
+                        </select>
+                      </div>
+                    )}
+{newFixedCostPeriod === "ONE_OFF" && (
+  <div className="grid grid-2">
+    <div className="field">
+      <label>Mese di addebito</label>
+      <select className="select" name="billingMonth">
+        <option value="1">Gennaio</option>
+        <option value="2">Febbraio</option>
+        <option value="3">Marzo</option>
+        <option value="4">Aprile</option>
+        <option value="5">Maggio</option>
+        <option value="6">Giugno</option>
+        <option value="7">Luglio</option>
+        <option value="8">Agosto</option>
+        <option value="9">Settembre</option>
+        <option value="10">Ottobre</option>
+        <option value="11">Novembre</option>
+        <option value="12">Dicembre</option>
+      </select>
+    </div>
+    <div className="field">
+      <label>Anno di addebito</label>
+      <input className="input" name="billingYear" type="number" min="2000" placeholder="2024" required />
+    </div>
+  </div>
+)}
                     <div className="field">
                       <label>Importo (€)</label>
                       <input className="input" name="amount" type="number" step="0.01" min="0" required />
