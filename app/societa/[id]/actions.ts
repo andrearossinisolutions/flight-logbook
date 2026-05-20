@@ -110,7 +110,7 @@ export async function addMember(partnershipId: string, formData: FormData) {
 
     // Prepariamo l'email
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    const registerUrl = `${appUrl}/register`;
+    const registerUrl = `${appUrl}/register?email=${encodeURIComponent(email)}`;
 
     try {
       await sendEmail({

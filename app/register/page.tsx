@@ -2,12 +2,21 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useEffect } from "react";
 
 export default function RegisterPage() {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const emailParam = params.get("email");
+    if (emailParam) {
+      setEmail(emailParam);
+    }
+  }, []);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -44,12 +53,20 @@ export default function RegisterPage() {
 
         <form className="grid" onSubmit={onSubmit} style={{ marginTop: 16 }}>
           <div className="field">
-            <label htmlFor="fullName">Nome</label>
-            <input className="input" id="fullName" name="fullName" />
+            <label htmlFor="email">Email</label>
+            <input
+              className="input"
+              id="email"
+              name="email"
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div className="field">
-            <label htmlFor="email">Email</label>
-            <input className="input" id="email" name="email" type="email" required />
+            <label htmlFor="fullName">Nome</label>
+            <input className="input" id="fullName" name="fullName" />
           </div>
           <div className="field">
             <label htmlFor="password">Password</label>
