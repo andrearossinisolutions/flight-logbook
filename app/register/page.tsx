@@ -24,6 +24,25 @@ export default function RegisterPage() {
     setLoading(true);
 
     const formData = new FormData(event.currentTarget);
+    
+    const password = formData.get("password") as string;
+    const repeatPassword = formData.get("repeatPassword") as string;
+
+    if (password !== repeatPassword) {
+      setError("Le password inserite non coincidono.");
+      setLoading(false);
+
+      const form = event.currentTarget;
+      const passwordInput = form.elements.namedItem("password") as HTMLInputElement | null;
+      const repeatPasswordInput = form.elements.namedItem("repeatPassword") as HTMLInputElement | null;
+      
+      if (passwordInput) passwordInput.value = "";
+      if (repeatPasswordInput) repeatPasswordInput.value = "";
+      
+      passwordInput?.focus();
+      return;
+    }
+
     const payload = Object.fromEntries(formData.entries());
 
     const response = await fetch("/api/register", {
@@ -71,6 +90,10 @@ export default function RegisterPage() {
           <div className="field">
             <label htmlFor="password">Password</label>
             <input className="input" id="password" name="password" type="password" minLength={8} required />
+          </div>
+          <div className="field">
+            <label htmlFor="repeatPassword">Ripeti Password</label>
+            <input className="input" id="repeatPassword" name="repeatPassword" type="password" minLength={8} required />
           </div>
 
           {error ? <div className="error">{error}</div> : null}
