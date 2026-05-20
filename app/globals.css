@@ -735,6 +735,33 @@ textarea {
    RESPONSIVE TABLE TO MOBILE CARDS TRANSFORMATION
    ======================================================= */
 @media (max-width: 768px) {
+  /* Print specific overrides for the new table rows layout */
+  .dashboard-container .dashboard-registry-table .table tr {
+    box-shadow: none !important;
+    border-color: #ddd !important;
+    break-inside: avoid;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+.opacity-25 {
+  opacity: 0.25;
+}
+.opacity-75 {
+  opacity: 0.75;
+}
+.cursor-not-allowed {
+  cursor: not-allowed;
+}
+
+@media (max-width: 768px) {
   /* Make the card container transparent and borderless on mobile to look native */
   .dashboard-container .dashboard-registry-table {
     border: none !important;

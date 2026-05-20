@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { eur, minutesToHoursMinutes } from "@/lib/utils";
 import type { PaymentFormValues } from "@/lib/payment-form";
+import { SubmitButton } from "./submit-button";
 
 type PaymentFormProps = {
   mode: "create" | "edit";
@@ -162,9 +163,9 @@ export default function PaymentForm({
           </div>
 
           <div className="row" style={{ gap: 12 }}>
-            <button type="submit" className="btn">
+            <SubmitButton>
               {effectiveSubmitLabel}
-            </button>
+            </SubmitButton>
 
             <Link href="/dashboard" className="btn secondary">
               Annulla

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import type { Route } from "next";
+import { SubmitButton } from "@/components/submit-button";
 
 export default async function SocietaPage() {
   const user = await requireUser();
@@ -86,7 +87,7 @@ export default async function SocietaPage() {
                 placeholder="Es. P92 Club"
               />
             </div>
-            <button type="submit" className="btn">Crea Società</button>
+            <SubmitButton>Crea Società</SubmitButton>
           </form>
         </div>
       </div>

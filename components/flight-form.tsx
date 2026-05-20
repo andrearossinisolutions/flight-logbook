@@ -2,6 +2,7 @@
 
 import { CopyArrowIcon } from "@/components/icons";
 import Link from "next/link";
+import { SubmitButton } from "./submit-button";
 import {
   defaultWarmupMinutesForDate,
   formatDateTimeInput,
@@ -644,9 +645,9 @@ export default function FlightForm({
           </div>}
 
           <div className="row" style={{ gap: 12, marginTop: "16px" }}>
-            <button className="btn" type="submit" disabled={durationMinutes === 0 || durationMinutes === Number(warmupMinutes || 0) || (instructorMinutesNumber > 0 && instructorMinutesNumber > durationMinutes)}>
+            <SubmitButton disabled={durationMinutes === 0 || durationMinutes === Number(warmupMinutes || 0) || (instructorMinutesNumber > 0 && instructorMinutesNumber > durationMinutes)}>
               {effectiveSubmitLabel}
-            </button>
+            </SubmitButton>
 
             <Link href="/dashboard" className="btn secondary">
               Annulla

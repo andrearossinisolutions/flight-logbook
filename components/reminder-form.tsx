@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState, useMemo } from "react";
 import type { ReminderFormValues } from "@/lib/reminder-form";
+import { SubmitButton } from "./submit-button";
 
 type ReminderFormProps = {
   mode: "create" | "edit";
@@ -110,9 +111,9 @@ export default function ReminderForm({
 
           {/* Action Buttons */}
           <div className="row" style={{ gap: 12, marginTop: 8 }}>
-            <button type="submit" className="btn">
+            <SubmitButton>
               {effectiveSubmitLabel}
-            </button>
+            </SubmitButton>
 
             <Link href="/dashboard" className="btn secondary">
               Annulla

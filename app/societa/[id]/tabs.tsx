@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation } from "./actions";
+import { SubmitButton } from "@/components/submit-button";
 
 function formatMinutes(minutes: number) {
   const h = Math.floor(minutes / 60);
@@ -139,7 +140,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                                   <input className="input" name="hourlyEngineFund" type="number" step="0.01" min="0" defaultValue={a.hourlyEngineFund} required style={{ padding: "4px 8px" }} />
                                 </div>
                                 <div className="row" style={{ gap: 4 }}>
-                                  <button className="btn" type="submit" style={{ padding: "4px 12px" }}>Salva</button>
+                                  <SubmitButton style={{ padding: "4px 12px" }}>Salva</SubmitButton>
                                   <button className="btn secondary" type="button" onClick={() => setEditingAircraftId(null)} style={{ padding: "4px 12px" }}>Annulla</button>
                                 </div>
                               </div>
@@ -211,7 +212,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                       <input className="input" name="hourlyEngineFund" type="number" step="0.01" min="0" required />
                     </div>
                   </div>
-                  <button className="btn">Aggiungi aereo</button>
+                  <SubmitButton>Aggiungi aereo</SubmitButton>
                 </form>
               </div>
             )}
@@ -247,7 +248,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                                 <option value="YEARLY">Annuale</option>
                               </select>
                               <input className="input" name="amount" type="number" step="0.01" min="0" defaultValue={c.amount} required style={{ padding: "4px 8px", width: 100 }} />
-                              <button className="btn" type="submit" style={{ padding: "4px 12px" }}>Salva</button>
+                              <SubmitButton style={{ padding: "4px 12px" }}>Salva</SubmitButton>
                               <button className="btn secondary" type="button" onClick={() => setEditingFixedCostId(null)} style={{ padding: "4px 12px" }}>Annulla</button>
                             </form>
                           </td>
@@ -357,7 +358,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                       <input className="input" name="amount" type="number" step="0.01" min="0" required />
                     </div>
                   </div>
-                  <button className="btn">Aggiungi costo fisso</button>
+                  <SubmitButton>Aggiungi costo fisso</SubmitButton>
                 </form>
               </div>
             )}
@@ -438,7 +439,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                   <label>Email utente</label>
                   <input className="input" type="email" name="email" required placeholder="email@esempio.it" />
                 </div>
-                <button className="btn">Aggiungi alla società</button>
+                <SubmitButton>Aggiungi alla società</SubmitButton>
               </form>
             </div>
           )}
@@ -590,7 +591,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                   <label style={{ fontSize: 12 }}>Importo (€)</label>
                   <input className="input" name="amount" type="number" step="0.01" min="0.01" required />
                 </div>
-                <button className="btn" style={{ gridColumn: "span 5" }}>Aggiungi Transazione</button>
+                <SubmitButton style={{ gridColumn: "span 5" }}>Aggiungi Transazione</SubmitButton>
               </form>
             </div>
 
@@ -674,9 +675,9 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                   placeholder="Es. Aero Club Milano"
                 />
               </div>
-              <button type="submit" className="btn" style={{ marginTop: 4 }}>
+              <SubmitButton style={{ marginTop: 4 }}>
                 Salva modifiche
-              </button>
+              </SubmitButton>
             </form>
           </div>
 

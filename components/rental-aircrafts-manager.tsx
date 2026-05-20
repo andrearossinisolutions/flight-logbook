@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { AirplaneIcon, TrashIcon, PencilIcon } from "@/components/icons";
 import { eur } from "@/lib/utils";
+import { SubmitButton } from "./submit-button";
 
 interface RentalAircraft {
   id: string;
@@ -114,14 +115,13 @@ export default function RentalAircraftsManager({
                   </button>
                   <form action={onDelete}>
                     <input type="hidden" name="id" value={a.id} />
-                    <button
-                      type="submit"
+                    <SubmitButton
                       className="btn secondary icon-btn"
                       style={{ width: 34, height: 34, borderColor: "transparent", color: "var(--danger)" }}
                       title="Elimina aereo"
                     >
                       <TrashIcon size={16} />
-                    </button>
+                    </SubmitButton>
                   </form>
                 </div>
               </div>
@@ -193,9 +193,9 @@ export default function RentalAircraftsManager({
             />
           </div>
           <div className="row" style={{ gap: 12, marginTop: 4 }}>
-            <button type="submit" className="btn" style={{ flex: 1 }}>
+            <SubmitButton style={{ flex: 1 }}>
               {editingAircraft ? "Salva modifiche" : "Salva aereo"}
-            </button>
+            </SubmitButton>
             {editingAircraft && (
               <button
                 type="button"
