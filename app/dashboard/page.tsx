@@ -312,7 +312,7 @@ export default async function DashboardPage({
         </div>}
 
         <div className="card">
-          <div className="muted">Dal primo giorno</div>
+          <div className="muted">Da sempre</div>
           <div className="medium-number">{totalFlights.length} voli | {minutesToHoursMinutes(totalFlightMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
           <div className="inline-meta" style={{ marginTop: 8 }}>
