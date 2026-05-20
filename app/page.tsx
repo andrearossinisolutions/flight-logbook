@@ -10,12 +10,22 @@ import {
   CalendarIcon
 } from "@/components/icons";
 
+import { prisma } from "@/lib/prisma";
+
 export default async function HomePage() {
   const session = await getSessionFromCookie();
 
   if (session) {
-    redirect("/dashboard");
+    const user = await prisma.user.findUnique({
+      where: { id: session.userId }
+    });
+    if (user) {
+      redirect("/dashboard");
+    } else {
+      redirect("/api/auth/logout?redirect=/");
+    }
   }
+
 
   return (
     <main className="landing-page">

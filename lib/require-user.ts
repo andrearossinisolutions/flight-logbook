@@ -14,8 +14,9 @@ export async function requireUser() {
   });
 
   if (!user) {
-    redirect("/login");
+    redirect("/api/auth/logout?redirect=/login");
   }
 
   return user;
 }
+
