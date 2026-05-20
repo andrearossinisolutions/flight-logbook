@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import type { Route } from "next";
 import { sendEmail } from "@/lib/mail";
+import { renderBoardMessageEmail } from "@/lib/board-message-email";
 
 export async function addAircraft(partnershipId: string, formData: FormData) {
   const user = await requireUser();
@@ -500,7 +501,16 @@ export async function addMessage(partnershipId: string, formData: FormData) {
   if (!content) return;
 
   const membership = await prisma.partnershipMember.findUnique({
-    where: { partnershipId_userId: { partnershipId, userId: user.id } }
+    where: { partnershipId_userId: { partnershipId, userId: user.id } },
+    include: {
+      partnership: {
+        include: {
+          members: {
+            include: { user: true }
+          }
+        }
+      }
+    }
   });
 
   if (!membership) return;
@@ -512,6 +522,27 @@ export async function addMessage(partnershipId: string, formData: FormData) {
       userId: user.id,
     }
   });
+
+  // Invia email a tutti gli altri membri
+  const partnership = membership.partnership;
+  const authorName = user.fullName || user.email;
+  
+  const otherMembers = partnership.members.filter(m => m.userId !== user.id);
+  
+  if (otherMembers.length > 0) {
+    const html = renderBoardMessageEmail(partnership.name, authorName, content, partnershipId);
+    
+    // Invia le email in modo asincrono (fire and forget)
+    Promise.allSettled(
+      otherMembers.map(m => 
+        sendEmail({
+          to: m.user.email,
+          subject: `Nuovo messaggio in bacheca - ${partnership.name}`,
+          html,
+        })
+      )
+    ).catch(console.error);
+  }
 
   revalidatePath(`/societa/${partnershipId}`);
 }
