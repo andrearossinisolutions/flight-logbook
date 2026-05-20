@@ -199,36 +199,51 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                     return (
                       <tr key={a.id}>
                         {isEditing ? (
-                          <td colSpan={isAdmin ? 4 : 3}>
+                          <td colSpan={isAdmin ? 4 : 3} style={{ padding: "16px" }}>
                             <form action={async (fd) => {
                               await updateAircraft(partnership.id, a.id, fd);
                               setEditingAircraftId(null);
-                            }} className="grid grid-4" style={{ gap: 8, alignItems: "end" }}>
-                              <div>
-                                <label style={{ fontSize: 11 }}>Marche</label>
-                                <input className="input" name="registration" defaultValue={a.registration} required style={{ padding: "4px 8px" }} />
+                            }} className="grid" style={{ gap: 16, backgroundColor: "var(--bg-card-hover)", borderRadius: "8px", padding: "16px", border: "1px solid var(--border)" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "8px", marginBottom: "4px" }}>
+                                <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>Modifica Aereo: <strong>{a.registration}</strong></span>
                               </div>
-                              <div>
-                                <label style={{ fontSize: 11 }}>Tipo</label>
-                                <input className="input" name="type" defaultValue={a.type} required style={{ padding: "4px 8px" }} />
+                              
+                              <div className="grid grid-2" style={{ gap: 16 }}>
+                                <div className="field">
+                                  <label style={{ fontWeight: 500, fontSize: "0.85rem", marginBottom: "4px", display: "block" }}>Marche</label>
+                                  <input className="input" name="registration" defaultValue={a.registration} required />
+                                </div>
+                                <div className="field">
+                                  <label style={{ fontWeight: 500, fontSize: "0.85rem", marginBottom: "4px", display: "block" }}>Tipo</label>
+                                  <input className="input" name="type" defaultValue={a.type} required />
+                                </div>
                               </div>
-                              <div className="row" style={{ gridColumn: "span 2", gap: 8 }}>
-                                <div>
-                                  <label style={{ fontSize: 11 }}>Benzina</label>
-                                  <input className="input" name="hourlyFuelCost" type="number" step="0.01" min="0" defaultValue={a.hourlyFuelCost} required style={{ padding: "4px 8px" }} />
+
+                              <div style={{ marginTop: "8px" }}>
+                                <label style={{ fontWeight: 600, color: "var(--muted)", display: "block", marginBottom: "12px" }}>
+                                  Costi per ora di volo dovuti alla società (€/h)
+                                </label>
+                                <div className="grid grid-3" style={{ gap: 16 }}>
+                                  <div className="field">
+                                    <label style={{ fontSize: "0.8rem", marginBottom: "4px", display: "block" }}>Benzina</label>
+                                    <input className="input" name="hourlyFuelCost" type="number" step="0.01" min="0" defaultValue={a.hourlyFuelCost} required />
+                                  </div>
+                                  <div className="field">
+                                    <label style={{ fontSize: "0.8rem", marginBottom: "4px", display: "block" }}>Manutenzione</label>
+                                    <input className="input" name="hourlyMaintCost" type="number" step="0.01" min="0" defaultValue={a.hourlyMaintCost} required />
+                                  </div>
+                                  <div className="field">
+                                    <label style={{ fontSize: "0.8rem", marginBottom: "4px", display: "block" }}>Fondo Motore</label>
+                                    <input className="input" name="hourlyEngineFund" type="number" step="0.01" min="0" defaultValue={a.hourlyEngineFund} required />
+                                  </div>
                                 </div>
-                                <div>
-                                  <label style={{ fontSize: 11 }}>Manutenz.</label>
-                                  <input className="input" name="hourlyMaintCost" type="number" step="0.01" min="0" defaultValue={a.hourlyMaintCost} required style={{ padding: "4px 8px" }} />
-                                </div>
-                                <div>
-                                  <label style={{ fontSize: 11 }}>Fondo</label>
-                                  <input className="input" name="hourlyEngineFund" type="number" step="0.01" min="0" defaultValue={a.hourlyEngineFund} required style={{ padding: "4px 8px" }} />
-                                </div>
-                                <div className="row" style={{ gap: 4 }}>
-                                  <SubmitButton style={{ padding: "4px 12px" }}>Salva</SubmitButton>
-                                  <button className="btn secondary" type="button" onClick={() => setEditingAircraftId(null)} style={{ padding: "4px 12px" }}>Annulla</button>
-                                </div>
+                              </div>
+
+                              <div className="row" style={{ justifyContent: "flex-end", gap: 12, marginTop: "8px", borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
+                                <button className="btn secondary" type="button" onClick={() => setEditingAircraftId(null)}>
+                                  Annulla
+                                </button>
+                                <SubmitButton>Salva</SubmitButton>
                               </div>
                             </form>
                           </td>
@@ -285,6 +300,9 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                     </div>
                   </div>
                   <div className="grid grid-3">
+                    <label style={{ fontWeight: 600, color: "var(--muted)", display: "block", marginTop: "12px" }}>
+                      Costi per ora di volo dovuti alla società (€/h)
+                    </label>
                     <div className="field">
                       <label>Benzina (€/h)</label>
                       <input className="input" name="hourlyFuelCost" type="number" step="0.01" min="0" required />
@@ -323,61 +341,75 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                     return (
                       <tr key={c.id}>
                         {isEditing ? (
-                          <td colSpan={isAdmin ? 3 : 2}>
+                          <td colSpan={isAdmin ? 3 : 2} style={{ padding: "16px" }}>
                             <form action={async (fd) => {
                               await updateFixedCost(partnership.id, c.id, fd);
                               setEditingFixedCostId(null);
-                            }} className="row" style={{ gap: 8, flexWrap: "wrap" }}>
-                              <input className="input" name="description" defaultValue={c.description} required style={{ padding: "4px 8px", flex: 1, minWidth: 150 }} />
-                              <select className="select" name="period" value={editingFixedCostPeriod} onChange={(e) => {
-                                  setEditingFixedCostPeriod(e.target.value);
-                                  if (e.target.value !== "ONE_OFF") {
-                                    setEditingFixedCostYear(new Date().getFullYear().toString());
-                                  }
-                                }} style={{ padding: "4px 8px", width: "auto" }}>
-                                <option value="MONTHLY">Mensile</option>
-                                <option value="YEARLY_PRORATED">Annuale diviso per mese</option>
-                                <option value="YEARLY_ONCE">Annuale ogni 12 mesi</option>
-                                <option value="ONE_OFF">Una tantum</option>
-                              </select>
-                              {editingFixedCostPeriod === "YEARLY_ONCE" && (
-                                <select className="select" name="billingMonth" defaultValue={c.billingMonth || 1} style={{ padding: "4px 8px" }}>
-                                  <option value="1">Gennaio</option>
-                                  <option value="2">Febbraio</option>
-                                  <option value="3">Marzo</option>
-                                  <option value="4">Aprile</option>
-                                  <option value="5">Maggio</option>
-                                  <option value="6">Giugno</option>
-                                  <option value="7">Luglio</option>
-                                  <option value="8">Agosto</option>
-                                  <option value="9">Settembre</option>
-                                  <option value="10">Ottobre</option>
-                                  <option value="11">Novembre</option>
-                                  <option value="12">Dicembre</option>
-                                </select>
-                              )}
-                              {editingFixedCostPeriod === "ONE_OFF" && (
-                                <>
-                                  <select className="select" name="billingMonth" defaultValue={c.billingMonth || 1} style={{ padding: "4px 8px" }}>
-                                    <option value="1">Gennaio</option>
-                                    <option value="2">Febbraio</option>
-                                    <option value="3">Marzo</option>
-                                    <option value="4">Aprile</option>
-                                    <option value="5">Maggio</option>
-                                    <option value="6">Giugno</option>
-                                    <option value="7">Luglio</option>
-                                    <option value="8">Agosto</option>
-                                    <option value="9">Settembre</option>
-                                    <option value="10">Ottobre</option>
-                                    <option value="11">Novembre</option>
-                                    <option value="12">Dicembre</option>
+                            }} className="grid" style={{ gap: 16, backgroundColor: "var(--bg-card-hover)", borderRadius: "8px", padding: "16px", border: "1px solid var(--border)" }}>
+                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "8px", marginBottom: "4px" }}>
+                                <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>Modifica Costo Fisso: <strong>{c.description}</strong></span>
+                              </div>
+                              
+                              <div className="grid grid-2" style={{ gap: 16 }}>
+                                <div className="field">
+                                  <label style={{ fontWeight: 500, fontSize: "0.85rem", marginBottom: "4px", display: "block" }}>Descrizione</label>
+                                  <input className="input" name="description" defaultValue={c.description} required />
+                                </div>
+                                <div className="field">
+                                  <label style={{ fontWeight: 500, fontSize: "0.85rem", marginBottom: "4px", display: "block" }}>Periodicità</label>
+                                  <select className="select" name="period" value={editingFixedCostPeriod} onChange={(e) => {
+                                      setEditingFixedCostPeriod(e.target.value);
+                                      if (e.target.value !== "ONE_OFF") {
+                                        setEditingFixedCostYear(new Date().getFullYear().toString());
+                                      }
+                                    }}>
+                                    <option value="MONTHLY">Mensile</option>
+                                    <option value="YEARLY_PRORATED">Annuale diviso per mese</option>
+                                    <option value="YEARLY_ONCE">Annuale ogni 12 mesi</option>
+                                    <option value="ONE_OFF">Una tantum</option>
                                   </select>
-                                  <input className="input" name="billingYear" type="number" min="2020" max="2100" defaultValue={c.billingYear || new Date().getFullYear()} style={{ padding: "4px 8px", width: 80 }} />
-                                </>
+                                </div>
+                              </div>
+
+                              {(editingFixedCostPeriod === "YEARLY_ONCE" || editingFixedCostPeriod === "ONE_OFF") && (
+                                <div className="grid grid-2" style={{ gap: 16 }}>
+                                  <div className="field">
+                                    <label style={{ fontWeight: 500, fontSize: "0.85rem", marginBottom: "4px", display: "block" }}>Mese di addebito</label>
+                                    <select className="select" name="billingMonth" defaultValue={c.billingMonth || 1}>
+                                      <option value="1">Gennaio</option>
+                                      <option value="2">Febbraio</option>
+                                      <option value="3">Marzo</option>
+                                      <option value="4">Aprile</option>
+                                      <option value="5">Maggio</option>
+                                      <option value="6">Giugno</option>
+                                      <option value="7">Luglio</option>
+                                      <option value="8">Agosto</option>
+                                      <option value="9">Settembre</option>
+                                      <option value="10">Ottobre</option>
+                                      <option value="11">Novembre</option>
+                                      <option value="12">Dicembre</option>
+                                    </select>
+                                  </div>
+                                  {editingFixedCostPeriod === "ONE_OFF" && (
+                                    <div className="field">
+                                      <label style={{ fontWeight: 500, fontSize: "0.85rem", marginBottom: "4px", display: "block" }}>Anno di addebito</label>
+                                      <input className="input" name="billingYear" type="number" min="2020" max="2100" defaultValue={c.billingYear || new Date().getFullYear()} required />
+                                    </div>
+                                  )}
+                                </div>
                               )}
-                              <input className="input" name="amount" type="number" step="0.01" min="0" defaultValue={c.amount} required style={{ padding: "4px 8px", width: 100 }} />
-                              <SubmitButton style={{ padding: "4px 12px" }}>Salva</SubmitButton>
-                              <button className="btn secondary" type="button" onClick={() => setEditingFixedCostId(null)} style={{ padding: "4px 12px" }}>Annulla</button>
+
+                              <div className="field" style={{ maxWidth: "250px" }}>
+                                <label style={{ fontWeight: 500, fontSize: "0.85rem", marginBottom: "4px", display: "block" }}>Importo (€)</label>
+                                <input className="input" name="amount" type="number" step="0.01" min="0" defaultValue={c.amount} required />
+                              </div>
+
+                              <div className="row" style={{ justifyContent: "flex-end", gap: 12, marginTop: "8px", borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
+                                <button className="btn secondary" type="button" onClick={() => setEditingFixedCostId(null)}>
+                                  Annulla
+                                </button>
+                                <SubmitButton>Salva</SubmitButton>
+                              </div>
                             </form>
                           </td>
                         ) : (
