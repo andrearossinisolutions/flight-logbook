@@ -109,7 +109,7 @@ export async function addMember(partnershipId: string, formData: FormData) {
     const societyName = partnership?.name || "Società di volo";
 
     // Prepariamo l'email
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
     const registerUrl = `${appUrl}/register?email=${encodeURIComponent(email)}`;
 
     try {
