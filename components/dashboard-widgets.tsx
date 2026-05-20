@@ -47,7 +47,7 @@ export function DashboardWidgets({ children }: DashboardWidgetsProps) {
 
     const interval = setInterval(() => {
       setIsSliding(true);
-    }, 3000);
+    }, 5000);
 
     return () => clearInterval(interval);
   }, [isExpanded, isMobile, originalItems.length, isHovered, limit]);
