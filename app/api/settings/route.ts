@@ -55,5 +55,5 @@ export async function POST(request: Request) {
     },
   });
 
-  redirect("/dashboard");
+  redirect("/logbook");
 }

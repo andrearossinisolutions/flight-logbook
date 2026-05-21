@@ -84,7 +84,7 @@ export default async function FlightPageContent(
       : null;
 
   if (props.mode === "edit" && (!movementToEdit || !movementToEdit.flight)) {
-    redirect("/dashboard");
+    redirect("/logbook");
   }
 
   async function saveFlight(formData: FormData) {
@@ -197,8 +197,8 @@ export default async function FlightPageContent(
       });
     }
 
-    revalidatePath("/dashboard");
-    redirect("/dashboard");
+    revalidatePath("/logbook");
+    redirect("/logbook");
   }
 
   const lastFlightMovement = movements

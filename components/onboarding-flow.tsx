@@ -449,8 +449,8 @@ export function OnboardingFlow({ userName }: { userName: string | null }) {
             </div>
             <h1>Configurazione completata!</h1>
             <p>Sei pronto per decollare. Abbiamo preparato la tua dashboard personalizzata.</p>
-            <button className="btn btn-lg" onClick={() => router.push("/dashboard")}>
-              Vai alla Dashboard <ArrowRightIcon size={20} />
+            <button className="btn btn-lg" onClick={() => router.push("/logbook")}>
+              Vai al Logbook <ArrowRightIcon size={20} />
             </button>
           </div>
         );

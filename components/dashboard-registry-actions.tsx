@@ -90,7 +90,7 @@ export function DashboardRegistryActions() {
         {isFilterOpen && (
           <div className="dropdown-menu">
             <Link
-              href="/dashboard"
+              href="/logbook"
               className={`dropdown-item ${activeFilter === "" ? "active" : ""}`}
               onClick={() => setIsFilterOpen(false)}
             >
@@ -98,7 +98,7 @@ export function DashboardRegistryActions() {
               <span className="dropdown-item-text">Tutti i movimenti</span>
             </Link>
             <Link
-              href="/dashboard?filter=pianificazioni"
+              href="/logbook?filter=pianificazioni"
               className={`dropdown-item ${activeFilter === "pianificazioni" ? "active" : ""}`}
               onClick={() => setIsFilterOpen(false)}
             >
@@ -106,7 +106,7 @@ export function DashboardRegistryActions() {
               <span className="dropdown-item-text">Pianificazioni</span>
             </Link>
             <Link
-              href="/dashboard?filter=voli-passati"
+              href="/logbook?filter=voli-passati"
               className={`dropdown-item ${activeFilter === "voli-passati" ? "active" : ""}`}
               onClick={() => setIsFilterOpen(false)}
             >
@@ -114,7 +114,7 @@ export function DashboardRegistryActions() {
               <span className="dropdown-item-text">Voli passati</span>
             </Link>
             <Link
-              href="/dashboard?filter=pagamenti"
+              href="/logbook?filter=pagamenti"
               className={`dropdown-item ${activeFilter === "pagamenti" ? "active" : ""}`}
               onClick={() => setIsFilterOpen(false)}
             >
@@ -122,7 +122,7 @@ export function DashboardRegistryActions() {
               <span className="dropdown-item-text">Pagamenti</span>
             </Link>
             <Link
-              href="/dashboard?filter=promemoria-futuri"
+              href="/logbook?filter=promemoria-futuri"
               className={`dropdown-item ${activeFilter === "promemoria-futuri" ? "active" : ""}`}
               onClick={() => setIsFilterOpen(false)}
             >

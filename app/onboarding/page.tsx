@@ -7,7 +7,7 @@ export default async function OnboardingPage() {
   
   // If already completed, go back to dashboard
   if (user.settings?.onboardingCompleted) {
-    redirect("/dashboard");
+    redirect("/logbook");
   }
 
   return <OnboardingFlow userName={user.fullName} />;

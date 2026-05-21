@@ -16,7 +16,7 @@ export default function robots(): MetadataRoute.Robots {
         "/favicon.ico",
       ],
       disallow: [
-        "/dashboard",
+        "/logbook",
         "/societa",
         "/onboarding",
         "/settings",

@@ -45,7 +45,7 @@ export default async function HomePage() {
       where: { id: session.userId }
     });
     if (user) {
-      redirect("/dashboard");
+      redirect("/logbook");
     } else {
       redirect("/api/auth/logout?redirect=/");
     }

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { Route } from "next";
 import { useState } from "react";
-import { AirplaneIcon, DashboardIcon, LogOutIcon, SettingsIcon, UsersIcon } from "./icons";
+import { AirplaneIcon, PlaneIcon, LogOutIcon, SettingsIcon, UsersIcon } from "./icons";
 import { version } from "../package.json";
 
 export function Navbar() {
@@ -20,7 +20,7 @@ export function Navbar() {
   }
 
   const navItems = [
-    { name: "Dashboard", href: "/dashboard", icon: DashboardIcon },
+    { name: "Logbook", href: "/logbook", icon: PlaneIcon },
     { name: "Società", href: "/societa", icon: UsersIcon },
     { name: "Impostazioni", href: "/settings", icon: SettingsIcon },
   ];
@@ -28,7 +28,7 @@ export function Navbar() {
   return (
     <header className="navbar-container">
       <nav className="navbar">
-        <Link href="/dashboard" className="navbar-brand">
+        <Link href="/logbook" className="navbar-brand">
           <div className="navbar-logo">
             <AirplaneIcon size={20} />
           </div>
@@ -42,7 +42,7 @@ export function Navbar() {
           {navItems.map((item) => {
             const isActive =
               pathname === item.href ||
-              (item.href !== "/dashboard" && pathname?.startsWith(item.href));
+              (item.href !== "/logbook" && pathname?.startsWith(item.href));
             const Icon = item.icon;
             return (
               <Link

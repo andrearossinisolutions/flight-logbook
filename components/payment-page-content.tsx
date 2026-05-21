@@ -95,8 +95,8 @@ export default async function PaymentPageContent(
       });
     }
 
-    revalidatePath("/dashboard");
-    redirect("/dashboard");
+    revalidatePath("/logbook");
+    redirect("/logbook");
   }
 
   let title = "Nuovo pagamento";

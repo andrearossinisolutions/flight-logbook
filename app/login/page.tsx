@@ -11,7 +11,7 @@ export default async function LoginPage() {
       where: { id: session.userId }
     });
     if (user) {
-      redirect("/dashboard");
+      redirect("/logbook");
     } else {
       redirect("/api/auth/logout?redirect=/login");
     }

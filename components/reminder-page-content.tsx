@@ -73,8 +73,8 @@ export default async function ReminderPageContent(props: ReminderPageContentProp
       });
     }
 
-    revalidatePath("/dashboard");
-    redirect("/dashboard");
+    revalidatePath("/logbook");
+    redirect("/logbook");
   }
 
   let title = "Nuovo promemoria";

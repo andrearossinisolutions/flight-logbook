@@ -167,7 +167,7 @@ export default function PaymentForm({
               {effectiveSubmitLabel}
             </SubmitButton>
 
-            <Link href="/dashboard" className="btn secondary">
+            <Link href="/logbook" className="btn secondary">
               Annulla
             </Link>
           </div>

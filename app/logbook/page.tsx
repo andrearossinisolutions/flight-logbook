@@ -278,8 +278,8 @@ export default async function DashboardPage({
       });
     });
 
-    revalidatePath("/dashboard");
-    redirect("/dashboard");
+    revalidatePath("/logbook");
+    redirect("/logbook");
   }
 
   return (
