@@ -104,7 +104,7 @@ export default function RegisterPage() {
         </form>
 
         <p className="muted" style={{ marginTop: 16 }}>
-          Hai già un account? <Link href="/login">Accedi</Link>
+          Hai già un account? <Link href="/login" style={{ color: "var(--primary)", fontWeight: 500 }}>Accedi</Link>
         </p>
       </div>
     </main>

@@ -49,7 +49,12 @@ export default function LoginForm() {
           </div>
 
           <div className="field">
-            <label htmlFor="password">Password</label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <label htmlFor="password">Password</label>
+              <Link href="/forgot-password" style={{ fontSize: "0.85rem", color: "var(--primary)", fontWeight: 500 }}>
+                Password dimenticata?
+              </Link>
+            </div>
             <input className="input" id="password" name="password" type="password" required />
           </div>
 
@@ -61,7 +66,7 @@ export default function LoginForm() {
         </form>
 
         <p className="muted" style={{ marginTop: 16 }}>
-          Non hai un account? <Link href="/register">Registrati</Link>
+          Non hai un account? <Link href="/register" style={{ color: "var(--primary)", fontWeight: 500 }}>Registrati</Link>
         </p>
       </div>
     </main>

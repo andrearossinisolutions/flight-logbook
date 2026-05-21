@@ -7,8 +7,19 @@ import {
   verifySessionToken,
 } from "@/lib/auth";
 
-const PUBLIC_PATHS = new Set(["/", "/login", "/register"]);
-const PUBLIC_API_PREFIXES = ["/api/auth/login", "/api/register"];
+const PUBLIC_PATHS = new Set([
+  "/",
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+]);
+const PUBLIC_API_PREFIXES = [
+  "/api/auth/login",
+  "/api/register",
+  "/api/auth/forgot-password",
+  "/api/auth/reset-password",
+];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
