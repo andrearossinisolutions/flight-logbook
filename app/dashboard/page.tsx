@@ -356,7 +356,7 @@ export default async function DashboardPage({
             Ore di volo disponibili
           </div>
           <div className="inline-meta" style={{ marginTop: 8 }}>
-            ⏱️ PIC:{" "}
+            ⏱️ PiC:{" "}
             {saldo > 0
               ? minutesToHoursMinutes(
                 (saldo /
@@ -423,7 +423,7 @@ export default async function DashboardPage({
           <div className="medium-number">{last6mFlights.length} voli | {minutesToHoursMinutes(last6mMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
           <div className="inline-meta" style={{ marginTop: 8 }}>
-            ⏱️ PIC: {minutesToHoursMinutes(last6mPICMinutes)}
+            ⏱️ PiC: {minutesToHoursMinutes(last6mPICMinutes)}
           </div><br />
           <div className="inline-meta" style={{ marginTop: 4 }}>
             ⏱️ Istruttore: {minutesToHoursMinutes(last6mInstructorMinutes)}
@@ -435,7 +435,7 @@ export default async function DashboardPage({
           <div className="medium-number">{totalFlights.length} voli | {minutesToHoursMinutes(totalFlightMinutes)}</div>
           <div className="muted" style={{ marginTop: 16 }}>Di cui</div>
           <div className="inline-meta" style={{ marginTop: 8 }}>
-            ⏱️ PIC: {minutesToHoursMinutes(totalPICMinutes)}
+            ⏱️ PiC: {minutesToHoursMinutes(totalPICMinutes)}
           </div><br />
           <div className="inline-meta" style={{ marginTop: 4 }}>
             ⏱️ Istruttore: {minutesToHoursMinutes(totalInstructorMinutes)}

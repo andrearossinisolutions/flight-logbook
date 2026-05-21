@@ -190,7 +190,7 @@ export default function PaymentForm({
         <div style={{ marginTop: 24 }}>
           <div className="muted">Nuove ore disponibili stimate</div>
           <div style={{ marginTop: 8 }}>
-            PIC:{" "}
+            PiC:{" "}
             {estimatedBalance > 0
               ? minutesToHoursMinutes(estimatedPicMinutes)
               : "0:00"}
