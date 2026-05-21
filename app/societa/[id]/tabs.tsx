@@ -4,6 +4,14 @@ import React, { useState, useEffect } from "react";
 import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateDisplay, daysFromDate } from "@/lib/utils";
+import {
+  DashboardIcon,
+  PlaneIcon,
+  UsersIcon,
+  FileTextIcon,
+  WalletIcon,
+  SettingsIcon
+} from "@/components/icons";
 
 function formatMinutes(minutes: number) {
   const h = Math.floor(minutes / 60);
@@ -66,40 +74,50 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             className={`navbar-tab ${activeTab === "BACHECA" ? "active" : ""}`}
             style={{ border: "none", cursor: "pointer", background: activeTab === "BACHECA" ? "white" : "transparent" }}
             onClick={() => setActiveTab("BACHECA")}
+            title="Bacheca"
           >
-            Bacheca
+            <DashboardIcon size={18} />
+            <span className="navbar-tab-text">Bacheca</span>
           </button>
           <button
             type="button"
             className={`navbar-tab ${activeTab === "AIRCRAFTS" ? "active" : ""}`}
             style={{ border: "none", cursor: "pointer", background: activeTab === "AIRCRAFTS" ? "white" : "transparent" }}
             onClick={() => setActiveTab("AIRCRAFTS")}
+            title="Aerei e Costi"
           >
-            Aerei e Costi
+            <PlaneIcon size={18} />
+            <span className="navbar-tab-text">Aerei e Costi</span>
           </button>
           <button
             type="button"
             className={`navbar-tab ${activeTab === "MEMBERS" ? "active" : ""}`}
             style={{ border: "none", cursor: "pointer", background: activeTab === "MEMBERS" ? "white" : "transparent" }}
             onClick={() => setActiveTab("MEMBERS")}
+            title="Soci"
           >
-            Soci
+            <UsersIcon size={18} />
+            <span className="navbar-tab-text">Soci</span>
           </button>
           <button
             type="button"
             className={`navbar-tab ${activeTab === "REPORT" ? "active" : ""}`}
             style={{ border: "none", cursor: "pointer", background: activeTab === "REPORT" ? "white" : "transparent" }}
             onClick={() => setActiveTab("REPORT")}
+            title="Rendiconto Mensile"
           >
-            Rendiconto Mensile
+            <FileTextIcon size={18} />
+            <span className="navbar-tab-text">Rendiconto Mensile</span>
           </button>
           <button
             type="button"
             className={`navbar-tab ${activeTab === "CASSA" ? "active" : ""}`}
             style={{ border: "none", cursor: "pointer", background: activeTab === "CASSA" ? "white" : "transparent" }}
             onClick={() => setActiveTab("CASSA")}
+            title="Cassa"
           >
-            Cassa
+            <WalletIcon size={18} />
+            <span className="navbar-tab-text">Cassa</span>
           </button>
           {isAdmin && (
             <button
@@ -107,8 +125,10 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               className={`navbar-tab ${activeTab === "SETTINGS" ? "active" : ""}`}
               style={{ border: "none", cursor: "pointer", background: activeTab === "SETTINGS" ? "white" : "transparent" }}
               onClick={() => setActiveTab("SETTINGS")}
+              title="Impostazioni"
             >
-              Impostazioni
+              <SettingsIcon size={18} />
+              <span className="navbar-tab-text">Impostazioni</span>
             </button>
           )}
         </div>

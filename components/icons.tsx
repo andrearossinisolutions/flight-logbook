@@ -184,3 +184,41 @@ export function CheckIcon(props: IconProps) {
     </BaseIcon>
   );
 }
+
+export function MessageIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    </BaseIcon>
+  );
+}
+
+export function PlaneIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L14 19v-5.5z" />
+    </BaseIcon>
+  );
+}
+
+export function FileTextIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+      <line x1="10" y1="9" x2="8" y2="9" />
+    </BaseIcon>
+  );
+}
+
+export function WalletIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4" />
+      <path d="M3 10h18a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2z" />
+      <circle cx="16" cy="16" r="2" />
+    </BaseIcon>
+  );
+}
