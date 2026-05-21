@@ -1,6 +1,6 @@
 {
   "name": "flight-logbook-starter",
-  "version": "1.8.3",
+  "version": "1.9.0",
   "private": false,
   "scripts": {
     "dev": "next dev",

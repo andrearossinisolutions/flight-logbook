@@ -20,7 +20,30 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
       members: {
         include: { user: true }
       },
-      aircrafts: true,
+      aircrafts: {
+        include: {
+          flights: {
+            where: {
+              movement: {
+                isDraft: false
+              }
+            },
+            select: {
+              durationMinutes: true
+            }
+          },
+          reminders: {
+            orderBy: {
+              hoursInterval: 'asc'
+            }
+          },
+          maintenanceLogs: {
+            orderBy: {
+              date: 'desc'
+            }
+          }
+        }
+      },
       fixedCosts: true,
       transactions: {
         include: { user: true },
@@ -86,12 +109,32 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
         email: m.user.email,
       }
     })),
-    aircrafts: partnership.aircrafts.map(a => ({
-      ...a,
-      hourlyFuelCost: Number(a.hourlyFuelCost),
-      hourlyMaintCost: Number(a.hourlyMaintCost),
-      hourlyEngineFund: Number(a.hourlyEngineFund),
-    })),
+    aircrafts: partnership.aircrafts.map(a => {
+      const flightMinutes = a.flights.reduce((sum, f) => sum + f.durationMinutes, 0);
+      const totalHours = Number(a.initialHours) + (flightMinutes / 60);
+      return {
+        ...a,
+        initialHours: Number(a.initialHours),
+        hourlyFuelCost: Number(a.hourlyFuelCost),
+        hourlyMaintCost: Number(a.hourlyMaintCost),
+        hourlyEngineFund: Number(a.hourlyEngineFund),
+        totalHours,
+        reminders: (a.reminders || []).map(r => ({
+          ...r,
+          hoursInterval: Number(r.hoursInterval),
+          lastCompletedHours: Number(r.lastCompletedHours),
+          createdAt: r.createdAt.toISOString(),
+          updatedAt: r.updatedAt.toISOString(),
+        })),
+        maintenanceLogs: (a.maintenanceLogs || []).map(l => ({
+          ...l,
+          performedAtHours: Number(l.performedAtHours),
+          date: l.date.toISOString(),
+          createdAt: l.createdAt.toISOString(),
+          updatedAt: l.updatedAt.toISOString(),
+        })),
+      };
+    }),
     fixedCosts: partnership.fixedCosts.map(c => ({
       ...c,
       amount: Number(c.amount),

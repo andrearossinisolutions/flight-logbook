@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation, addMessage, deleteMessage } from "./actions";
+import React, { useState, useEffect } from "react";
+import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateDisplay, daysFromDate } from "@/lib/utils";
 
@@ -25,6 +25,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
 
   // Edit state
   const [editingAircraftId, setEditingAircraftId] = useState<string | null>(null);
+  const [loggingReminderId, setLoggingReminderId] = useState<string | null>(null);
   const [editingFixedCostId, setEditingFixedCostId] = useState<string | null>(null);
   const [editingFixedCostPeriod, setEditingFixedCostPeriod] = useState("MONTHLY");
   const [editingFixedCostYear, setEditingFixedCostYear] = useState<string>(new Date().getFullYear().toString());
@@ -314,88 +315,294 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                   {partnership.aircrafts.map((a: any) => {
                     const isEditing = editingAircraftId === a.id;
                     return (
-                      <tr key={a.id}>
-                        {isEditing ? (
-                          <td colSpan={isAdmin ? 4 : 3} style={{ padding: "16px" }}>
-                            <form action={async (fd) => {
-                              await updateAircraft(partnership.id, a.id, fd);
-                              setEditingAircraftId(null);
-                            }} className="grid" style={{ gap: 16, backgroundColor: "var(--bg-card-hover)", borderRadius: "8px", padding: "16px", border: "1px solid var(--border)" }}>
-                              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "8px", marginBottom: "4px" }}>
-                                <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>Modifica Aereo: <strong>{a.registration}</strong></span>
-                              </div>
-                              
-                              <div className="grid grid-2" style={{ gap: 16 }}>
-                                <div className="field">
-                                  <label style={{ fontWeight: 500, fontSize: "0.85rem", marginBottom: "4px", display: "block" }}>Marche</label>
-                                  <input className="input" name="registration" defaultValue={a.registration} required />
+                      <React.Fragment key={a.id}>
+                        <tr>
+                          {isEditing ? (
+                            <td colSpan={isAdmin ? 4 : 3} style={{ padding: "16px" }}>
+                              <form action={async (fd) => {
+                                await updateAircraft(partnership.id, a.id, fd);
+                                setEditingAircraftId(null);
+                              }} className="grid" style={{ gap: 16, backgroundColor: "var(--bg-card-hover)", borderRadius: "8px", padding: "16px", border: "1px solid var(--border)" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--border)", paddingBottom: "8px", marginBottom: "4px" }}>
+                                  <span style={{ fontWeight: 600, fontSize: "0.95rem" }}>Modifica Aereo: <strong>{a.registration}</strong></span>
                                 </div>
-                                <div className="field">
-                                  <label style={{ fontWeight: 500, fontSize: "0.85rem", marginBottom: "4px", display: "block" }}>Tipo</label>
-                                  <input className="input" name="type" defaultValue={a.type} required />
-                                </div>
-                              </div>
-
-                              <div style={{ marginTop: "8px" }}>
-                                <label style={{ fontWeight: 600, color: "var(--muted)", display: "block", marginBottom: "12px" }}>
-                                  Costi per ora di volo dovuti alla società (€/h)
-                                </label>
+                                
                                 <div className="grid grid-3" style={{ gap: 16 }}>
                                   <div className="field">
-                                    <label style={{ fontSize: "0.8rem", marginBottom: "4px", display: "block" }}>Benzina</label>
-                                    <input className="input" name="hourlyFuelCost" type="number" step="0.01" min="0" defaultValue={a.hourlyFuelCost} required />
+                                    <label style={{ fontWeight: 500, fontSize: "0.85rem", marginBottom: "4px", display: "block" }}>Marche</label>
+                                    <input className="input" name="registration" defaultValue={a.registration} required />
                                   </div>
                                   <div className="field">
-                                    <label style={{ fontSize: "0.8rem", marginBottom: "4px", display: "block" }}>Manutenzione</label>
-                                    <input className="input" name="hourlyMaintCost" type="number" step="0.01" min="0" defaultValue={a.hourlyMaintCost} required />
+                                    <label style={{ fontWeight: 500, fontSize: "0.85rem", marginBottom: "4px", display: "block" }}>Tipo</label>
+                                    <input className="input" name="type" defaultValue={a.type} required />
                                   </div>
                                   <div className="field">
-                                    <label style={{ fontSize: "0.8rem", marginBottom: "4px", display: "block" }}>Fondo Motore</label>
-                                    <input className="input" name="hourlyEngineFund" type="number" step="0.01" min="0" defaultValue={a.hourlyEngineFund} required />
+                                    <label style={{ fontWeight: 500, fontSize: "0.85rem", marginBottom: "4px", display: "block" }}>Ore motore iniziali</label>
+                                    <input className="input" name="initialHours" type="number" step="0.1" min="0" defaultValue={a.initialHours} required />
                                   </div>
                                 </div>
-                              </div>
 
-                              <div className="row" style={{ justifyContent: "flex-end", gap: 12, marginTop: "8px", borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
-                                <button className="btn secondary" type="button" onClick={() => setEditingAircraftId(null)}>
-                                  Annulla
-                                </button>
-                                <SubmitButton>Salva</SubmitButton>
-                              </div>
-                            </form>
-                          </td>
-                        ) : (
-                          <>
-                            <td><strong>{a.registration}</strong></td>
-                            <td>{a.type}</td>
-                            <td>€ {(a.hourlyFuelCost + a.hourlyMaintCost + a.hourlyEngineFund).toFixed(2)} / h</td>
-                            {isAdmin && (
+                                <div style={{ marginTop: "8px" }}>
+                                  <label style={{ fontWeight: 600, color: "var(--muted)", display: "block", marginBottom: "12px" }}>
+                                    Costi per ora di volo dovuti alla società (€/h)
+                                  </label>
+                                  <div className="grid grid-3" style={{ gap: 16 }}>
+                                    <div className="field">
+                                      <label style={{ fontSize: "0.8rem", marginBottom: "4px", display: "block" }}>Benzina</label>
+                                      <input className="input" name="hourlyFuelCost" type="number" step="0.01" min="0" defaultValue={a.hourlyFuelCost} required />
+                                    </div>
+                                    <div className="field">
+                                      <label style={{ fontSize: "0.8rem", marginBottom: "4px", display: "block" }}>Manutenzione</label>
+                                      <input className="input" name="hourlyMaintCost" type="number" step="0.01" min="0" defaultValue={a.hourlyMaintCost} required />
+                                    </div>
+                                    <div className="field">
+                                      <label style={{ fontSize: "0.8rem", marginBottom: "4px", display: "block" }}>Fondo Motore</label>
+                                      <input className="input" name="hourlyEngineFund" type="number" step="0.01" min="0" defaultValue={a.hourlyEngineFund} required />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="row" style={{ justifyContent: "flex-end", gap: 12, marginTop: "8px", borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
+                                  <button className="btn secondary" type="button" onClick={() => setEditingAircraftId(null)}>
+                                    Annulla
+                                  </button>
+                                  <SubmitButton>Salva</SubmitButton>
+                                </div>
+                              </form>
+                            </td>
+                          ) : (
+                            <>
                               <td>
-                                <div className="row" style={{ gap: 8 }}>
-                                  <button
-                                    className="btn secondary"
-                                    style={{ padding: "4px 8px", fontSize: 12 }}
-                                    onClick={() => setEditingAircraftId(a.id)}
-                                  >
-                                    Modifica
-                                  </button>
-                                  <button
-                                    className="btn secondary"
-                                    style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
-                                    onClick={() => {
-                                      if (confirm(`Sei sicuro di voler eliminare l'aereo ${a.registration}?`)) {
-                                        deleteAircraft(partnership.id, a.id);
-                                      }
-                                    }}
-                                  >
-                                    Elimina
-                                  </button>
+                                <strong>{a.registration}</strong>
+                                <div className="muted" style={{ fontSize: "0.8rem", marginTop: 4 }}>
+                                  ⏱️ {a.totalHours.toFixed(1)} ore totali
                                 </div>
                               </td>
-                            )}
-                          </>
+                              <td>{a.type}</td>
+                              <td>€ {(a.hourlyFuelCost + a.hourlyMaintCost + a.hourlyEngineFund).toFixed(2)} / h</td>
+                              {isAdmin && (
+                                <td>
+                                  <div className="row" style={{ gap: 8 }}>
+                                    <button
+                                      className="btn secondary"
+                                      style={{ padding: "4px 8px", fontSize: 12 }}
+                                      onClick={() => setEditingAircraftId(a.id)}
+                                    >
+                                      Modifica
+                                    </button>
+                                    <button
+                                      className="btn secondary"
+                                      style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
+                                      onClick={() => {
+                                        if (confirm(`Sei sicuro di voler eliminare l'aereo ${a.registration}?`)) {
+                                          deleteAircraft(partnership.id, a.id);
+                                        }
+                                      }}
+                                    >
+                                      Elimina
+                                    </button>
+                                  </div>
+                                </td>
+                              )}
+                            </>
+                          )}
+                        </tr>
+                        {!isEditing && (
+                          <tr key={`${a.id}-reminders`}>
+                            <td colSpan={isAdmin ? 4 : 3} style={{ padding: "12px 24px 24px 24px", backgroundColor: "var(--bg)", borderTop: "none" }}>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                                <div className="between" style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
+                                  <h4 style={{ margin: 0, fontSize: "0.95rem", color: "var(--primary-strong)" }}>🔔 Scadenze Manutenzione ({a.registration})</h4>
+                                  <span className="muted" style={{ fontSize: "0.85rem" }}>
+                                    Stato motore: <strong>{a.totalHours.toFixed(1)} h</strong> (Base: {a.initialHours.toFixed(1)}h)
+                                  </span>
+                                </div>
+
+                                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                                  {(!a.reminders || a.reminders.length === 0) ? (
+                                    <div className="muted" style={{ fontSize: "0.85rem", fontStyle: "italic" }}>
+                                      Nessuna scadenza configurata per questo velivolo.
+                                    </div>
+                                  ) : (
+                                    a.reminders.map((r: any) => {
+                                      const nextDeadline = r.lastCompletedHours + r.hoursInterval;
+                                      const remaining = nextDeadline - a.totalHours;
+                                      const isOverdue = remaining <= 0;
+                                      const isWarning = remaining > 0 && remaining <= 10;
+                                      
+                                      let statusColor = "var(--muted)";
+                                      let statusBg = "transparent";
+                                      let statusText = `Scade a ${nextDeadline.toFixed(1)}h (mancano ${remaining.toFixed(1)}h)`;
+                                      
+                                      if (isOverdue) {
+                                        statusColor = "var(--danger)";
+                                        statusBg = "rgba(180, 35, 24, 0.1)";
+                                        statusText = `🚨 SCADUTO da ${Math.abs(remaining).toFixed(1)}h (Scadenza: ${nextDeadline.toFixed(1)}h)`;
+                                      } else if (isWarning) {
+                                        statusColor = "#b45309";
+                                        statusBg = "#fef3c7";
+                                        statusText = `⚠️ In scadenza! Mancano ${remaining.toFixed(1)}h (Scadenza: ${nextDeadline.toFixed(1)}h)`;
+                                      } else {
+                                        statusColor = "#1f6f5b";
+                                        statusBg = "#ecf5f2";
+                                        statusText = `✅ In regola. Mancano ${remaining.toFixed(1)}h (Scadenza: ${nextDeadline.toFixed(1)}h)`;
+                                      }
+
+                                      return (
+                                        <div key={r.id} style={{ border: "1px solid var(--border)", borderRadius: 12, padding: 12, background: "white" }}>
+                                          <div className="between">
+                                            <div>
+                                              <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>{r.description}</div>
+                                              <div className="muted" style={{ fontSize: "0.8rem", marginTop: 4 }}>
+                                                Intervallo: ogni {r.hoursInterval.toFixed(0)}h · Ultima esecuzione: a {r.lastCompletedHours.toFixed(1)}h
+                                              </div>
+                                            </div>
+                                            <div className="row" style={{ gap: 12 }}>
+                                              <span style={{ 
+                                                fontSize: "0.8rem", 
+                                                fontWeight: 600, 
+                                                padding: "4px 8px", 
+                                                borderRadius: 8, 
+                                                color: statusColor, 
+                                                backgroundColor: statusBg 
+                                              }}>
+                                                {statusText}
+                                              </span>
+                                              {isAdmin && (
+                                                <div className="row" style={{ gap: 8 }}>
+                                                  <button 
+                                                    className="btn secondary" 
+                                                    style={{ padding: "4px 8px", fontSize: 11 }}
+                                                    type="button"
+                                                    onClick={() => setLoggingReminderId(loggingReminderId === r.id ? null : r.id)}
+                                                  >
+                                                    Registra Esecuzione
+                                                  </button>
+                                                  <form 
+                                                    action={deleteAircraftReminder.bind(null, partnership.id, r.id)}
+                                                    onSubmit={(e) => {
+                                                      if (!confirm("Sei sicuro di voler eliminare questa scadenza?")) {
+                                                        e.preventDefault();
+                                                      }
+                                                    }}
+                                                  >
+                                                    <button className="btn secondary" style={{ padding: "4px 8px", fontSize: 11, color: "var(--danger)" }} type="submit">
+                                                      Elimina
+                                                    </button>
+                                                  </form>
+                                                </div>
+                                              )}
+                                            </div>
+                                          </div>
+
+                                          {loggingReminderId === r.id && (
+                                            <form action={async (fd) => {
+                                              await logAircraftMaintenance(partnership.id, r.id, fd);
+                                              setLoggingReminderId(null);
+                                            }} className="grid" style={{ gap: 8, marginTop: 12, padding: 12, border: "1px solid var(--border)", borderRadius: 8, backgroundColor: "var(--bg)" }}>
+                                              <div style={{ fontWeight: 600, fontSize: "0.8rem" }}>Registra manutenzione effettuata: {r.description}</div>
+                                              <div className="grid grid-3" style={{ gap: 12 }}>
+                                                <div className="field">
+                                                  <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Ore aereo all'esecuzione</label>
+                                                  <input className="input" name="performedAtHours" type="number" step="0.1" min="0" defaultValue={a.totalHours.toFixed(1)} required style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                                </div>
+                                                <div className="field">
+                                                  <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Data esecuzione</label>
+                                                  <input className="input" name="date" type="date" defaultValue={new Date().toISOString().substring(0, 10)} required style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                                </div>
+                                                <div className="field">
+                                                  <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Note / Intervento</label>
+                                                  <input className="input" name="notes" placeholder="Es. olio 15W50" style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                                </div>
+                                              </div>
+                                              <div className="row" style={{ justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
+                                                <button className="btn secondary" style={{ padding: "4px 8px", fontSize: 11 }} type="button" onClick={() => setLoggingReminderId(null)}>
+                                                  Annulla
+                                                </button>
+                                                <SubmitButton style={{ padding: "4px 8px", fontSize: 11 }}>Salva</SubmitButton>
+                                              </div>
+                                            </form>
+                                          )}
+                                        </div>
+                                      );
+                                    })
+                                  )}
+                                </div>
+
+                                {isAdmin && (
+                                  <form action={addAircraftReminder.bind(null, partnership.id, a.id)} className="grid" style={{ gap: 12, padding: 12, border: "1px dashed var(--border)", borderRadius: 12, background: "white" }}>
+                                    <div style={{ fontWeight: 600, fontSize: "0.85rem" }}>➕ Nuova scadenza manutenzione</div>
+                                    <div className="grid grid-3" style={{ gap: 12 }}>
+                                      <div className="field">
+                                        <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Descrizione</label>
+                                        <input className="input" name="description" placeholder="Es. Cambio Olio (50h)" required style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                      </div>
+                                      <div className="field">
+                                        <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Frequenza (ore di volo)</label>
+                                        <input className="input" name="hoursInterval" type="number" step="1" min="1" placeholder="Es. 50" required style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                      </div>
+                                      <div className="field">
+                                        <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Ultimo eseguito a (ore)</label>
+                                        <input className="input" name="lastCompletedHours" type="number" step="0.1" min="0" placeholder={`Opzionale (default: ${a.totalHours.toFixed(1)})`} style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                      </div>
+                                    </div>
+                                    <div className="row" style={{ justifyContent: "flex-end" }}>
+                                      <SubmitButton style={{ padding: "6px 12px", fontSize: 12 }}>Aggiungi scadenza</SubmitButton>
+                                    </div>
+                                  </form>
+                                )}
+
+                                {a.maintenanceLogs && a.maintenanceLogs.length > 0 && (
+                                  <div style={{ marginTop: 8 }}>
+                                    <div style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--muted)", borderBottom: "1px solid var(--border)", paddingBottom: 4, marginBottom: 8 }}>
+                                      📜 Registro manutenzioni eseguite
+                                    </div>
+                                    <div style={{ overflowX: "auto" }}>
+                                      <table className="table" style={{ fontSize: "0.8rem", width: "100%" }}>
+                                        <thead>
+                                          <tr>
+                                            <th>Data</th>
+                                            <th>Descrizione</th>
+                                            <th>A ore</th>
+                                            <th>Note</th>
+                                            {isAdmin && <th>Azioni</th>}
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {a.maintenanceLogs.map((log: any) => (
+                                            <tr key={log.id}>
+                                              <td>{new Date(log.date).toLocaleDateString("it-IT")}</td>
+                                              <td><strong>{log.description}</strong></td>
+                                              <td>{log.performedAtHours.toFixed(1)} h</td>
+                                              <td>{log.notes || "—"}</td>
+                                              {isAdmin && (
+                                                <td>
+                                                  <form 
+                                                    action={deleteMaintenanceLog.bind(null, partnership.id, log.id)}
+                                                    onSubmit={(e) => {
+                                                      if (!confirm("Sei sicuro di voler eliminare questa registrazione storica?")) {
+                                                        e.preventDefault();
+                                                      }
+                                                    }}
+                                                  >
+                                                    <button className="btn secondary" style={{ padding: "2px 6px", fontSize: 10, color: "var(--danger)" }} type="submit">
+                                                      Elimina
+                                                    </button>
+                                                  </form>
+                                                </td>
+                                              )}
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
                         )}
-                      </tr>
+                      </React.Fragment>
                     );
                   })}
                 </tbody>
@@ -406,7 +613,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               <div style={{ marginTop: 24, paddingTop: 24, borderTop: "1px solid var(--border)" }}>
                 <h3 style={{ marginTop: 0 }}>Aggiungi aereo</h3>
                 <form action={addAircraft.bind(null, partnership.id)} className="grid">
-                  <div className="grid grid-2">
+                  <div className="grid grid-3">
                     <div className="field">
                       <label>Marche</label>
                       <input className="input" name="registration" required placeholder="Es. I-4150" />
@@ -414,6 +621,10 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                     <div className="field">
                       <label>Tipo</label>
                       <input className="input" name="type" required placeholder="Es. P92" />
+                    </div>
+                    <div className="field">
+                      <label>Ore motore iniziali</label>
+                      <input className="input" name="initialHours" type="number" step="0.1" min="0" defaultValue="0" required />
                     </div>
                   </div>
                   <div className="grid grid-3">

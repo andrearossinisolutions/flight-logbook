@@ -39,6 +39,65 @@ export default async function DashboardPage({
 
   type MovementItem = (typeof allMovements)[number];
 
+  const partnerships = await prisma.partnership.findMany({
+    where: {
+      members: { some: { userId: user.id } }
+    },
+    include: {
+      aircrafts: {
+        include: {
+          flights: {
+            where: {
+              movement: {
+                isDraft: false
+              }
+            },
+            select: {
+              durationMinutes: true
+            }
+          },
+          reminders: true
+        }
+      }
+    }
+  });
+
+  const alerts: Array<{
+    partnershipId: string;
+    partnershipName: string;
+    aircraftRegistration: string;
+    reminderDescription: string;
+    remainingHours: number;
+    nextDeadline: number;
+    hoursInterval: number;
+    isOverdue: boolean;
+  }> = [];
+
+  for (const p of partnerships) {
+    for (const a of p.aircrafts) {
+      const flightMinutes = a.flights.reduce((sum, f) => sum + f.durationMinutes, 0);
+      const totalHours = Number(a.initialHours) + (flightMinutes / 60);
+      
+      for (const r of a.reminders) {
+        const nextDeadline = Number(r.lastCompletedHours) + Number(r.hoursInterval);
+        const remaining = nextDeadline - totalHours;
+        
+        if (remaining <= 10) {
+          alerts.push({
+            partnershipId: p.id,
+            partnershipName: p.name,
+            aircraftRegistration: a.registration,
+            reminderDescription: r.description,
+            remainingHours: remaining,
+            nextDeadline,
+            hoursInterval: Number(r.hoursInterval),
+            isOverdue: remaining <= 0,
+          });
+        }
+      }
+    }
+  }
+
   const saldo = allMovements
     .filter((item: MovementItem) => item.type !== "SERVICE" && !item.isDraft)
     .reduce(
@@ -229,6 +288,66 @@ export default async function DashboardPage({
       subtitle="Saldo, movimenti e accesso rapido a inserimento volo, ricarica e settings."
       className="dashboard-container"
     >
+      {alerts.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+          {alerts.map((alert, i) => {
+            const isOverdue = alert.isOverdue;
+            const bg = isOverdue ? "rgba(180, 35, 24, 0.1)" : "#fef3c7";
+            const border = isOverdue ? "1px solid var(--danger)" : "1px solid #b45309";
+            const color = isOverdue ? "var(--danger)" : "#b45309";
+            const icon = isOverdue ? "🚨" : "⚠️";
+            const label = isOverdue 
+              ? `SCADUTO da ${Math.abs(alert.remainingHours).toFixed(1)} ore!` 
+              : `In scadenza! Mancano solo ${alert.remainingHours.toFixed(1)} ore.`;
+
+            return (
+              <div 
+                key={i} 
+                style={{ 
+                  backgroundColor: bg, 
+                  border, 
+                  borderRadius: 16, 
+                  padding: "16px 20px", 
+                  color,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 16
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ fontSize: "1.5rem" }}>{icon}</span>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>
+                      Manutenzione {alert.aircraftRegistration} ({alert.partnershipName})
+                    </div>
+                    <div style={{ fontSize: "0.85rem", marginTop: 2, opacity: 0.9 }}>
+                      {alert.reminderDescription} · {label} (Scadenza a {alert.nextDeadline.toFixed(1)}h, intervallo ogni {alert.hoursInterval.toFixed(0)}h)
+                    </div>
+                  </div>
+                </div>
+                <Link 
+                  href={`/societa/${alert.partnershipId}` as Route}
+                  className="btn"
+                  style={{ 
+                    backgroundColor: isOverdue ? "var(--danger)" : "#b45309", 
+                    color: "white", 
+                    padding: "8px 16px", 
+                    fontSize: "0.85rem", 
+                    textDecoration: "none",
+                    borderRadius: 12,
+                    fontWeight: 600,
+                    whiteSpace: "nowrap"
+                  }}
+                >
+                  Gestisci
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <DashboardWidgets>
         <div className="card">
           <div className="muted">Saldo attuale (AeroClub)</div>

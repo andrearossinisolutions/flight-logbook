@@ -15,6 +15,7 @@ export async function addAircraft(partnershipId: string, formData: FormData) {
   const hourlyFuelCost = Number(formData.get("hourlyFuelCost") || 0);
   const hourlyMaintCost = Number(formData.get("hourlyMaintCost") || 0);
   const hourlyEngineFund = Number(formData.get("hourlyEngineFund") || 0);
+  const initialHours = Number(formData.get("initialHours") || 0);
 
   if (!registration || !type) return;
 
@@ -33,6 +34,7 @@ export async function addAircraft(partnershipId: string, formData: FormData) {
       hourlyFuelCost,
       hourlyMaintCost,
       hourlyEngineFund,
+      initialHours,
     }
   });
 
@@ -226,6 +228,7 @@ export async function updateAircraft(partnershipId: string, aircraftId: string, 
   const hourlyFuelCost = Number(formData.get("hourlyFuelCost") || 0);
   const hourlyMaintCost = Number(formData.get("hourlyMaintCost") || 0);
   const hourlyEngineFund = Number(formData.get("hourlyEngineFund") || 0);
+  const initialHours = Number(formData.get("initialHours") || 0);
 
   if (!registration || !type) return;
 
@@ -237,6 +240,7 @@ export async function updateAircraft(partnershipId: string, aircraftId: string, 
       hourlyFuelCost,
       hourlyMaintCost,
       hourlyEngineFund,
+      initialHours,
     }
   });
 
@@ -593,3 +597,116 @@ export async function deleteMessage(partnershipId: string, messageId: string) {
 
   revalidatePath(`/societa/${partnershipId}`);
 }
+
+export async function addAircraftReminder(partnershipId: string, aircraftId: string, formData: FormData) {
+  const user = await requireUser();
+  const membership = await prisma.partnershipMember.findUnique({
+    where: { partnershipId_userId: { partnershipId, userId: user.id } }
+  });
+  if (membership?.role !== "ADMIN") return;
+
+  const description = String(formData.get("description") || "").trim();
+  const hoursInterval = Number(formData.get("hoursInterval") || 0);
+  
+  if (!description || hoursInterval <= 0) return;
+
+  // Calculate default lastCompletedHours from aircraft current hours if not specified
+  const lastCompletedHoursInput = formData.get("lastCompletedHours");
+  let lastCompletedHoursNum = lastCompletedHoursInput ? Number(lastCompletedHoursInput) : null;
+
+  if (lastCompletedHoursNum === null || isNaN(lastCompletedHoursNum)) {
+    // Fetch aircraft flights to calculate current hours
+    const aircraft = await prisma.partnershipAircraft.findUnique({
+      where: { id: aircraftId },
+      include: {
+        flights: {
+          where: { movement: { isDraft: false } },
+          select: { durationMinutes: true }
+        }
+      }
+    });
+    if (!aircraft) return;
+    const flightMinutes = aircraft.flights.reduce((sum, f) => sum + f.durationMinutes, 0);
+    lastCompletedHoursNum = Number(aircraft.initialHours) + (flightMinutes / 60);
+  }
+
+  await prisma.partnershipAircraftReminder.create({
+    data: {
+      aircraftId,
+      description,
+      hoursInterval,
+      lastCompletedHours: lastCompletedHoursNum,
+    }
+  });
+
+  revalidatePath(`/societa/${partnershipId}`);
+}
+
+export async function deleteAircraftReminder(partnershipId: string, reminderId: string) {
+  const user = await requireUser();
+  const membership = await prisma.partnershipMember.findUnique({
+    where: { partnershipId_userId: { partnershipId, userId: user.id } }
+  });
+  if (membership?.role !== "ADMIN") return;
+
+  await prisma.partnershipAircraftReminder.delete({
+    where: { id: reminderId }
+  });
+
+  revalidatePath(`/societa/${partnershipId}`);
+}
+
+export async function logAircraftMaintenance(partnershipId: string, reminderId: string, formData: FormData) {
+  const user = await requireUser();
+  const membership = await prisma.partnershipMember.findUnique({
+    where: { partnershipId_userId: { partnershipId, userId: user.id } }
+  });
+  if (membership?.role !== "ADMIN") return;
+
+  const reminder = await prisma.partnershipAircraftReminder.findUnique({
+    where: { id: reminderId },
+    include: { aircraft: true }
+  });
+  if (!reminder) return;
+
+  const performedAtHours = Number(formData.get("performedAtHours") || 0);
+  const dateInput = String(formData.get("date") || "");
+  const date = dateInput ? new Date(dateInput) : new Date();
+  const notes = String(formData.get("notes") || "").trim();
+
+  await prisma.$transaction(async (tx) => {
+    // 1. Update reminder last completed hours
+    await tx.partnershipAircraftReminder.update({
+      where: { id: reminderId },
+      data: { lastCompletedHours: performedAtHours }
+    });
+
+    // 2. Create history log
+    await tx.partnershipAircraftMaintenanceLog.create({
+      data: {
+        aircraftId: reminder.aircraftId,
+        description: `Esecuzione: ${reminder.description}`,
+        performedAtHours,
+        date,
+        notes: notes || null,
+      }
+    });
+  });
+
+  revalidatePath(`/societa/${partnershipId}`);
+}
+
+export async function deleteMaintenanceLog(partnershipId: string, logId: string) {
+  const user = await requireUser();
+  const membership = await prisma.partnershipMember.findUnique({
+    where: { partnershipId_userId: { partnershipId, userId: user.id } }
+  });
+  if (membership?.role !== "ADMIN") return;
+
+  await prisma.partnershipAircraftMaintenanceLog.delete({
+    where: { id: logId }
+  });
+
+  revalidatePath(`/societa/${partnershipId}`);
+}
+

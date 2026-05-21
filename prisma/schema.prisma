@@ -163,11 +163,43 @@ model PartnershipAircraft {
   hourlyFuelCost   Decimal     @default(0)
   hourlyMaintCost  Decimal     @default(0)
   hourlyEngineFund Decimal     @default(0)
+  initialHours     Decimal     @default(0)
 
   flights          Flight[]
+  reminders        PartnershipAircraftReminder[]
+  maintenanceLogs  PartnershipAircraftMaintenanceLog[]
 
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
+}
+
+model PartnershipAircraftReminder {
+  id                 String              @id @default(cuid())
+  aircraftId         String
+  aircraft           PartnershipAircraft @relation(fields: [aircraftId], references: [id], onDelete: Cascade)
+  description        String
+  hoursInterval      Decimal
+  lastCompletedHours Decimal             @default(0)
+  
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  @@index([aircraftId])
+}
+
+model PartnershipAircraftMaintenanceLog {
+  id               String              @id @default(cuid())
+  aircraftId       String
+  aircraft         PartnershipAircraft @relation(fields: [aircraftId], references: [id], onDelete: Cascade)
+  description      String
+  performedAtHours Decimal
+  date             DateTime            @default(now())
+  notes            String?
+  
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+
+  @@index([aircraftId])
 }
 
 model PartnershipFixedCost {
