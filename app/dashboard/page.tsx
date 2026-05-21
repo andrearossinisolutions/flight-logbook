@@ -229,7 +229,7 @@ export default async function DashboardPage({
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
     switch (filterVal) {
-      case "prenotazioni":
+      case "pianificazioni":
         return item.type === "FLIGHT" && item.isDraft && item.date >= today;
       case "voli-passati":
         return item.type === "FLIGHT" && !item.isDraft;

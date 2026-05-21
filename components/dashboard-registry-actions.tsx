@@ -98,12 +98,12 @@ export function DashboardRegistryActions() {
               <span className="dropdown-item-text">Tutti i movimenti</span>
             </Link>
             <Link
-              href="/dashboard?filter=prenotazioni"
-              className={`dropdown-item ${activeFilter === "prenotazioni" ? "active" : ""}`}
+              href="/dashboard?filter=pianificazioni"
+              className={`dropdown-item ${activeFilter === "pianificazioni" ? "active" : ""}`}
               onClick={() => setIsFilterOpen(false)}
             >
               <span className="dropdown-item-icon">📅</span>
-              <span className="dropdown-item-text">Prenotazioni</span>
+              <span className="dropdown-item-text">Pianificazioni</span>
             </Link>
             <Link
               href="/dashboard?filter=voli-passati"
