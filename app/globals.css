@@ -995,5 +995,25 @@ textarea {
   color: var(--primary-strong);
 }
 
+/* Bacheca Split Layout */
+.bacheca-layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+@media (min-width: 992px) {
+  .bacheca-layout {
+    grid-template-columns: 380px 1fr;
+    gap: 32px;
+    align-items: start;
+  }
+  
+  .bacheca-sidebar {
+    position: sticky;
+    top: 110px; /* Kept in viewport below the sticky header/navbar */
+  }
+}
+
 
 

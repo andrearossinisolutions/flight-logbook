@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation, addMessage, deleteMessage } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
+import { formatDateDisplay, daysFromDate } from "@/lib/utils";
 
 function formatMinutes(minutes: number) {
   const h = Math.floor(minutes / 60);
@@ -19,7 +20,7 @@ function formatMonth(monthNum: number | null | undefined): string {
   return months[monthNum - 1] || "";
 }
 
-export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
+export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFlights = [] }: any) {
   const [activeTab, setActiveTab] = useState("BACHECA");
 
   // Edit state
@@ -113,78 +114,185 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
       </div>
 
       {activeTab === "BACHECA" && (
-        <div className="card" style={{ maxWidth: 800, margin: "0 auto", padding: "20px 24px" }}>
-          <h2 style={{ marginTop: 0, marginBottom: 16 }}>Bacheca Società</h2>
-          
-          <form action={async (fd) => {
-            const form = document.getElementById("message-form") as HTMLFormElement;
-            await addMessage(partnership.id, fd);
-            form?.reset();
-          }} id="message-form" style={{ marginBottom: 32 }}>
-            <div className="field">
-              <textarea 
-                name="content" 
-                className="textarea" 
-                placeholder="Scrivi un messaggio a tutti i soci..."
-                required
-                style={{ minHeight: 80 }}
-              />
+        <div className="bacheca-layout">
+          {/* Colonna Sinistra: Ultimi Utilizzi / Statistiche */}
+          <div className="bacheca-sidebar">
+            <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16, height: "fit-content" }}>
+              <div>
+              <h2 style={{ marginTop: 0, marginBottom: 8, fontSize: "1.25rem", display: "flex", alignItems: "center", gap: 8 }}>
+                ✈️ Ultimi utilizzi
+              </h2>
+              <p className="muted" style={{ margin: 0, fontSize: "0.9rem" }}>
+                Ultimi 3 voli registrati dagli aerei societari.
+              </p>
             </div>
-            <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
-              <SubmitButton>Invia messaggio</SubmitButton>
-            </div>
-          </form>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {partnership.messages?.length === 0 ? (
-              <div className="muted" style={{ textAlign: "center", padding: "40px 0" }}>Nessun messaggio in bacheca. Rompi il ghiaccio!</div>
-            ) : (
-              partnership.messages?.map((msg: any) => (
-                <div key={msg.id} style={{
-                  background: msg.userId === currentUserId ? "var(--bg)" : "white",
-                  border: "1px solid var(--border)",
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {lastFlights.length === 0 ? (
+                <div className="muted" style={{ 
+                  padding: 20, 
+                  border: "1px dashed var(--border)", 
                   borderRadius: 16,
-                  padding: 16,
-                  position: "relative"
+                  textAlign: "center",
+                  fontSize: "0.95rem"
                 }}>
-                  <div className="between" style={{ marginBottom: 8 }}>
-                    <div style={{ fontWeight: 600, fontSize: "0.95rem", color: "var(--primary-strong)" }}>
-                      {msg.user?.fullName || msg.user?.email || "Utente"}
-                    </div>
-                    <div className="row" style={{ gap: 8 }}>
-                      <div className="muted" style={{ fontSize: "0.85rem" }}>
-                        {new Date(msg.createdAt).toLocaleString("it-IT", {
-                          day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
-                        })}
+                  Nessun volo registrato di recente.
+                </div>
+              ) : (
+                lastFlights.map((flight: any) => (
+                  <div key={flight.id} style={{
+                    background: "var(--bg, #f6f8fb)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 16,
+                    padding: 16,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "space-between",
+                    transition: "transform 0.2s, box-shadow 0.2s",
+                    cursor: "default"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-2px)";
+                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(20, 32, 51, 0.06)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "translateY(0)";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}>
+                    <div>
+                      <div className="between" style={{ marginBottom: 12 }}>
+                        <span className="pill">
+                          {flight.aircraftRegistration}
+                        </span>
+                        <span className="muted" style={{ fontSize: "0.8rem", fontWeight: 500 }} title={formatDateDisplay(flight.movement.date)}>
+                          {daysFromDate(flight.movement.date)}
+                        </span>
                       </div>
-                      {(msg.userId === currentUserId || isAdmin) && (
-                        <form 
-                          action={deleteMessage.bind(null, partnership.id, msg.id)} 
-                          style={{ opacity: 0.5, transition: "opacity 0.2s" }} 
-                          onMouseEnter={(e) => e.currentTarget.style.opacity = "1"} 
-                          onMouseLeave={(e) => e.currentTarget.style.opacity = "0.5"}
-                          onSubmit={(e) => {
-                            if (!window.confirm("Sei sicuro di voler eliminare questo messaggio?")) {
-                              e.preventDefault();
-                            }
-                          }}
-                        >
-                          <button type="submit" className="icon-btn" style={{ background: "transparent", border: "none", color: "var(--danger)", width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0, margin: 0 }} title="Elimina">
-                            ✕
-                          </button>
-                        </form>
+                      
+                      <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text)", marginBottom: 4 }}>
+                        {flight.movement.user.fullName || flight.movement.user.email}
+                      </div>
+                      
+                      <div style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: 8, display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+                        <span>📍 {flight.takeoffPlace || "?"} ➔ {flight.arrivalPlace || "?"}</span>
+                        <span style={{ color: "var(--border)" }}>•</span>
+                        <span>⏱️ {formatMinutes(flight.durationMinutes)}</span>
+                        {flight.hobbsStartMinutes !== null && flight.hobbsEndMinutes !== null && (
+                          <>
+                            <span style={{ color: "var(--border)" }}>•</span>
+                            <span>Oram.: {(flight.hobbsStartMinutes / 60).toFixed(1)} ➔ {(flight.hobbsEndMinutes / 60).toFixed(1)}</span>
+                          </>
+                        )}
+                      </div>
+
+                      {(flight.instructorName || flight.passengerName) && (
+                        <div style={{ fontSize: "0.8rem", color: "var(--muted)", marginBottom: 8 }}>
+                          {flight.instructorName ? `👨‍✈️ Istr. ${flight.instructorName}` : `👤 Pass. ${flight.passengerName}`}
+                        </div>
                       )}
                     </div>
+
+                    {flight.movement.notes && (
+                      <div style={{ 
+                        fontSize: "0.8rem", 
+                        fontStyle: "italic", 
+                        color: "var(--muted)",
+                        borderLeft: "2px solid var(--primary)",
+                        paddingLeft: 8,
+                        marginTop: 4,
+                        wordBreak: "break-word"
+                      }}>
+                        "{flight.movement.notes}"
+                      </div>
+                    )}
                   </div>
-                  <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.5, fontSize: "0.95rem" }}>
-                    {msg.content}
-                  </div>
-                </div>
-              ))
-            )}
+                ))
+              )}
+            </div>
           </div>
         </div>
-      )}
+
+          {/* Colonna Destra: Bacheca Messaggi */}
+          <div className="bacheca-content">
+            <div className="card">
+              <div>
+              <h2 style={{ marginTop: 0, marginBottom: 8, fontSize: "1.25rem" }}>Bacheca Messaggi</h2>
+              <p className="muted" style={{ margin: "0 0 20px 0", fontSize: "0.9rem" }}>
+                Messaggi e comunicazioni tra i soci.
+              </p>
+            </div>
+            
+            <form action={async (fd) => {
+              const form = document.getElementById("message-form") as HTMLFormElement;
+              await addMessage(partnership.id, fd);
+              form?.reset();
+            }} id="message-form" style={{ marginBottom: 24 }}>
+              <div className="field">
+                <textarea 
+                  name="content" 
+                  className="textarea" 
+                  placeholder="Scrivi un messaggio a tutti i soci..."
+                  required
+                  style={{ minHeight: 80 }}
+                />
+              </div>
+              <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
+                <SubmitButton>Invia messaggio</SubmitButton>
+              </div>
+            </form>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {partnership.messages?.length === 0 ? (
+                <div className="muted" style={{ textAlign: "center", padding: "40px 0" }}>Nessun messaggio in bacheca. Rompi il ghiaccio!</div>
+              ) : (
+                partnership.messages?.map((msg: any) => (
+                  <div key={msg.id} style={{
+                    background: msg.userId === currentUserId ? "var(--bg)" : "white",
+                    border: "1px solid var(--border)",
+                    borderRadius: 16,
+                    padding: 16,
+                    position: "relative"
+                  }}>
+                    <div className="between" style={{ marginBottom: 8 }}>
+                      <div style={{ fontWeight: 600, fontSize: "0.95rem", color: "var(--primary-strong)" }}>
+                        {msg.user?.fullName || msg.user?.email || "Utente"}
+                      </div>
+                      <div className="row" style={{ gap: 8 }}>
+                        <div className="muted" style={{ fontSize: "0.85rem" }}>
+                          {new Date(msg.createdAt).toLocaleString("it-IT", {
+                            day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit"
+                          })}
+                        </div>
+                        {(msg.userId === currentUserId || isAdmin) && (
+                          <form 
+                            action={deleteMessage.bind(null, partnership.id, msg.id)} 
+                            style={{ opacity: 0.5, transition: "opacity 0.2s" }} 
+                            onMouseEnter={(e) => e.currentTarget.style.opacity = "1"} 
+                            onMouseLeave={(e) => e.currentTarget.style.opacity = "0.5"}
+                            onSubmit={(e) => {
+                              if (!window.confirm("Sei sicuro di voler eliminare questo messaggio?")) {
+                                e.preventDefault();
+                              }
+                            }}
+                          >
+                            <button type="submit" className="icon-btn" style={{ background: "transparent", border: "none", color: "var(--danger)", width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", padding: 0, margin: 0 }} title="Elimina">
+                              ✕
+                            </button>
+                          </form>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.5, fontSize: "0.95rem" }}>
+                      {msg.content}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
 
       {activeTab === "AIRCRAFTS" && (
         <div className="grid grid-2">
