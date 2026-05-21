@@ -60,7 +60,7 @@ export default async function PrintLogbookPage() {
               <th>Data/Ora</th>
               <th>Tipo</th>
               <th>Aeromobile</th>
-              <th colSpan={2}>Tratta</th>
+              <th colSpan={3}>Tratta</th>
               <th>Persone</th>
               <th>Note</th>
             </tr>
@@ -86,20 +86,33 @@ export default async function PrintLogbookPage() {
                 </td>
                 <td>
                   { (item.flight?.takeoffPlace != null || item.flight?.arrivalPlace != null) &&
-                    <>Partenza: {item.flight?.takeoffPlace ?? "?"}<br /></> }
+                    <>Rotta:</> }<br />
+                  {item.flight?.durationMinutes != null &&
+                    <>Durata:</> }<br />
+                  {item.flight?.hobbsStartMinutes != null && item.flight?.hobbsEndMinutes != null &&
+                    <>Hobbs:</> }<br />
                   { (item.flight?.engineOn != null || item.flight?.engineOff != null) &&
-                    <>Accensione: {formatOptionalDateTime(item.flight?.engineOn)}<br /></> }
+                    <>Motore:</> }
+                </td>
+                <td>
+                  { (item.flight?.takeoffPlace != null || item.flight?.arrivalPlace != null) &&
+                    <>{item.flight?.takeoffPlace ?? "?"}</> }<br />
+                  { (item.flight?.durationMinutes != null) &&
+                    <>{minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}</> }<br />
                   { (item.flight?.hobbsStartMinutes != null || item.flight?.hobbsEndMinutes != null) &&
-                    <>Oram.Inizio: {formatOptionalHobbs(item.flight?.hobbsStartMinutes)}<br /></> }
-                  Temp.Tot.: {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
+                    <>{formatOptionalHobbs(item.flight?.hobbsStartMinutes)}</> }<br />
+                  { (item.flight?.engineOn != null || item.flight?.engineOff != null) &&
+                    <>{formatOptionalDateTime(item.flight?.engineOn)}</> }
                 </td>
                 <td>
                   { (item.flight?.arrivalPlace != null || item.flight?.engineOff != null) &&
-                    <>Arrivo: {item.flight?.arrivalPlace ?? "?"}<br /></> }
-                  { (item.flight?.engineOff != null) &&
-                    <>Spegnimento: {formatOptionalDateTime(item.flight?.engineOff)}<br /></> }
+                    <>➔ {item.flight?.arrivalPlace ?? "?"}</> }<br />
+                  { (item.flight?.durationMinutes != null) &&
+                    <></> }<br />
                   { (item.flight?.hobbsEndMinutes != null) &&
-                    <>Oram.Fine: {formatOptionalHobbs(item.flight?.hobbsEndMinutes)}<br /></> }
+                    <>➔ {formatOptionalHobbs(item.flight?.hobbsEndMinutes)}</> }<br />
+                  { (item.flight?.engineOff != null) &&
+                    <>➔ {formatOptionalDateTime(item.flight?.engineOff)}</> }
                 </td>
                 <td>
                   {item.flight?.instructorName && item.flight?.instructorMinutes > 0 ? (
