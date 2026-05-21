@@ -302,7 +302,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             {partnership.aircrafts.length === 0 ? (
               <div className="muted">Nessun aereo inserito.</div>
             ) : (
-              <table className="table">
+              <table className="table aircrafts-table">
                 <thead>
                   <tr>
                     <th>Marche</th>
@@ -316,7 +316,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                     const isEditing = editingAircraftId === a.id;
                     return (
                       <React.Fragment key={a.id}>
-                        <tr>
+                        <tr className="aircraft-row">
                           {isEditing ? (
                             <td colSpan={isAdmin ? 4 : 3} style={{ padding: "16px" }}>
                               <form action={async (fd) => {
@@ -408,7 +408,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                           )}
                         </tr>
                         {!isEditing && (
-                          <tr key={`${a.id}-reminders`}>
+                          <tr key={`${a.id}-reminders`} className="aircraft-reminders-row">
                             <td colSpan={isAdmin ? 4 : 3} style={{ padding: "12px 24px 24px 24px", backgroundColor: "var(--bg)", borderTop: "none" }}>
                               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                                 <div className="between" style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
@@ -655,7 +655,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             {partnership.fixedCosts.length === 0 ? (
               <div className="muted">Nessun costo fisso inserito.</div>
             ) : (
-              <table className="table">
+              <table className="table fixed-costs-table">
                 <thead>
                   <tr>
                     <th>Descrizione</th>
@@ -667,7 +667,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                   {partnership.fixedCosts.map((c: any) => {
                     const isEditing = editingFixedCostId === c.id;
                     return (
-                      <tr key={c.id}>
+                      <tr key={c.id} className="fixed-cost-row">
                         {isEditing ? (
                           <td colSpan={isAdmin ? 3 : 2} style={{ padding: "16px" }}>
                             <form action={async (fd) => {
@@ -819,7 +819,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             )}
 
             {isAdmin && (
-              <div style={{ marginTop: 16, display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
+              <div className="flex-wrap-mobile" style={{ marginTop: 16, display: "flex", gap: 8, alignItems: "center", justifyContent: "flex-end" }}>
                 <span className="muted" style={{ fontSize: 13 }}>Arrotonda mensile a:</span>
                 <input
                   type="number"
@@ -942,7 +942,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
         <div className="grid grid-2">
           <div className="card">
             <h2 style={{ marginTop: 0 }}>Elenco Soci</h2>
-            <table className="table">
+            <table className="table members-table">
               <thead>
                 <tr>
                   <th>Nome</th>

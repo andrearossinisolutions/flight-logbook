@@ -1209,6 +1209,308 @@ textarea {
     padding: 24px !important;
     width: 100%;
   }
+
+  /* Squished Forms (Nuova Transazione) Optimization */
+  .grid-5 {
+    display: flex !important;
+    flex-direction: column;
+    gap: 12px !important;
+  }
+  .grid-5 > div {
+    grid-column: span 1 !important;
+    width: 100% !important;
+  }
+  .grid-5 button,
+  .grid-5 SubmitButton,
+  .grid-5 .btn {
+    grid-column: span 1 !important;
+    width: 100% !important;
+  }
+
+  /* Aircrafts Table Mobile View */
+  .aircrafts-table {
+    display: block;
+    width: 100%;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .aircrafts-table thead {
+    display: none;
+  }
+  .aircrafts-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+  .aircrafts-table .aircraft-row {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-bottom: none;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    padding: 16px 16px 8px 16px;
+  }
+  .aircrafts-table .aircraft-row td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: none !important;
+    padding: 4px 0 !important;
+  }
+  .aircrafts-table .aircraft-row td:nth-child(1) {
+    font-size: 1.15rem;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border) !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+  }
+  .aircrafts-table .aircraft-row td:nth-child(2)::before {
+    content: "Modello:";
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .aircrafts-table .aircraft-row td:nth-child(3)::before {
+    content: "Costo orario:";
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .aircrafts-table .aircraft-row td:nth-child(4) {
+    border-top: 1px dashed var(--border) !important;
+    padding-top: 8px !important;
+    margin-top: 4px;
+    justify-content: flex-end;
+  }
+  .aircrafts-table .aircraft-row td[colSpan] {
+    display: block !important;
+    width: 100% !important;
+    padding: 16px !important;
+  }
+  .aircrafts-table .aircraft-row td[colSpan]::before {
+    content: none !important;
+  }
+  .aircrafts-table .aircraft-reminders-row {
+    display: block !important;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-top: none;
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    padding: 8px 16px 16px 16px;
+    margin-top: -16px;
+    margin-bottom: 8px;
+  }
+  .aircrafts-table .aircraft-reminders-row td {
+    display: block;
+    width: 100%;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  /* Fixed Costs Table Mobile View */
+  .fixed-costs-table {
+    display: block;
+    width: 100%;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .fixed-costs-table thead {
+    display: none;
+  }
+  .fixed-costs-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+  .fixed-costs-table .fixed-cost-row {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 4px 15px rgba(20, 32, 51, 0.02);
+  }
+  .fixed-costs-table .fixed-cost-row td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: none !important;
+    padding: 4px 0 !important;
+  }
+  .fixed-costs-table .fixed-cost-row td:nth-child(1) {
+    font-size: 1.05rem;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border) !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 4px;
+    display: block;
+    text-align: left;
+    width: 100%;
+  }
+  .fixed-costs-table .fixed-cost-row td:nth-child(2)::before {
+    content: "Importo:";
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  .fixed-costs-table .fixed-cost-row td:nth-child(3) {
+    border-top: 1px dashed var(--border) !important;
+    padding-top: 8px !important;
+    margin-top: 4px;
+    justify-content: flex-end;
+  }
+  .fixed-costs-table .fixed-cost-row td[colSpan] {
+    display: block !important;
+    width: 100% !important;
+    padding: 16px !important;
+  }
+  .fixed-costs-table .fixed-cost-row td[colSpan]::before {
+    content: none !important;
+  }
+  .fixed-costs-table tfoot {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    margin-top: 12px;
+  }
+  .fixed-costs-table tfoot tr {
+    display: flex !important;
+    flex-direction: column;
+    gap: 6px;
+    background: var(--bg-secondary) !important;
+    border: 1px dashed var(--border);
+    border-radius: 16px;
+    padding: 12px 16px;
+  }
+  .fixed-costs-table tfoot tr td {
+    display: block;
+    border: none !important;
+    padding: 0 !important;
+  }
+  .fixed-costs-table tfoot tr td:nth-child(1) {
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+  .fixed-costs-table tfoot tr td:nth-child(2) {
+    font-size: 1.1rem;
+    color: var(--text);
+  }
+  .fixed-costs-table tfoot tr td:nth-child(3) {
+    display: none !important;
+  }
+
+  /* Flex Wrap Mobile Utility */
+  .flex-wrap-mobile {
+    flex-wrap: wrap !important;
+    justify-content: flex-start !important;
+    width: 100%;
+    gap: 12px !important;
+  }
+  .flex-wrap-mobile span {
+    width: 100%;
+    margin-bottom: 2px;
+  }
+  .flex-wrap-mobile input {
+    flex-grow: 1;
+    max-width: 100% !important;
+    width: auto !important;
+  }
+  .flex-wrap-mobile button,
+  .flex-wrap-mobile .btn {
+    flex-grow: 1;
+  }
+
+  /* Grid collapsing on mobile to prevent minmax columns overflow */
+  .grid-2, .grid-3 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Members Table Mobile View */
+  .members-table {
+    display: block;
+    width: 100%;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .members-table thead {
+    display: none;
+  }
+  .members-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+  .members-table tr {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 4px 15px rgba(20, 32, 51, 0.02);
+  }
+  .members-table tr td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: none !important;
+    padding: 4px 0 !important;
+  }
+  
+  /* Nome column (First column) */
+  .members-table tr td:nth-child(1) {
+    font-size: 1.05rem;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border) !important;
+    padding-bottom: 8px !important;
+    margin-bottom: 4px;
+    display: block;
+    text-align: left;
+    width: 100%;
+  }
+  
+  /* Email column */
+  .members-table tr td:nth-child(2)::before {
+    content: "Email:";
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  
+  /* Ruolo column */
+  .members-table tr td:nth-child(3)::before {
+    content: "Ruolo:";
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+  
+  /* Actions column */
+  .members-table tr td:nth-child(4) {
+    border-top: 1px dashed var(--border) !important;
+    padding-top: 8px !important;
+    margin-top: 4px;
+    justify-content: flex-end;
+  }
+  .members-table tr td:nth-child(4):empty,
+  .members-table tr td:nth-child(4):not(:has(button)) {
+    display: none !important;
+  }
 }
 
 
