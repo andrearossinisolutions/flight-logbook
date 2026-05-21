@@ -137,14 +137,17 @@ export default async function PrintLogbookPage() {
 }
 
 function flightType(flight: any, short = false) {
+  if (!flight) return "Volo";
+  const isPartnership = !!flight.partnershipAircraftId;
+
   if (flight.instructorMinutes == flight.durationMinutes) {
     return "Lezione";
   } else if (flight.instructorMinutes > 0 && flight.instructorMinutes < flight.durationMinutes) {
-    return <>Noleggio<br />con lezione</>;
+    return isPartnership ? <>Volo Società<br />con lezione</> : <>Noleggio<br />con lezione</>;
   } else if (flight.passengerName) {
-    return <>Noleggio<br />con passeggero</>;
+    return isPartnership ? <>Volo Società<br />con passeggero</> : <>Noleggio<br />con passeggero</>;
   }
-  return "Noleggio";
+  return isPartnership ? "Volo Società" : "Noleggio";
 }
 
 function formatOptionalDateTime(date: Date | null | undefined) {

@@ -141,16 +141,17 @@ function flightType(flight: FlightMovement["flight"]) {
   if (!flight) {
     return "Volo";
   }
+  const isPartnership = !!flight.partnershipAircraftId;
 
   if (flight.instructorMinutes === flight.durationMinutes) {
     return "Lezione";
   }
 
   if (flight.instructorMinutes > 0 && flight.instructorMinutes < flight.durationMinutes) {
-    return "Noleggio con lezione";
+    return isPartnership ? "Volo Società con lezione" : "Noleggio con lezione";
   }
 
-  return "Noleggio";
+  return isPartnership ? "Volo Società" : "Noleggio";
 }
 
 function paymentTypeLabel(item: PaymentMovement) {

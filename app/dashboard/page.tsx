@@ -561,14 +561,15 @@ function dashboardItem(item: any, movements: any[] = [], isFutureMovement = fals
 }
 
 function flightType(flight: any) {
+  if (!flight) return "Volo";
+  const isPartnership = !!flight.partnershipAircraftId;
+
   if (flight.instructorMinutes == flight.durationMinutes) {
     return "Lezione";
   } else if (flight.instructorMinutes > 0 && flight.instructorMinutes < flight.durationMinutes) {
-    return "Noleggio con lezione";
-  }/*  else if (flight.passengerName) {
-    return "Noleggio con passeggero";
-  } */
-  return "Noleggio";
+    return isPartnership ? "Volo Società con lezione" : "Noleggio con lezione";
+  }
+  return isPartnership ? "Volo Società" : "Noleggio";
 }
 
 function buildCalendarLink(item: any) {
