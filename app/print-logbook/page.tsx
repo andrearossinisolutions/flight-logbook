@@ -57,11 +57,11 @@ export default async function PrintLogbookPage() {
         <table className="table print-table">
           <thead>
             <tr>
-              <th>Data/Ora</th>
-              <th>Tipo</th>
+              <th>Data e ora</th>
+              <th>Tipo di volo</th>
               <th>Aeromobile</th>
-              <th colSpan={3}>Tratta</th>
-              <th>Persone</th>
+              <th colSpan={3}>Informazioni</th>
+              <th>Persone a bordo</th>
               <th>Note</th>
             </tr>
           </thead>
@@ -89,8 +89,6 @@ export default async function PrintLogbookPage() {
                     <>Rotta:</> }<br />
                   {item.flight?.durationMinutes != null &&
                     <>Durata:</> }<br />
-                  {item.flight?.hobbsStartMinutes != null && item.flight?.hobbsEndMinutes != null &&
-                    <>Hobbs:</> }<br />
                   { (item.flight?.engineOn != null || item.flight?.engineOff != null) &&
                     <>Motore:</> }
                 </td>
@@ -98,9 +96,12 @@ export default async function PrintLogbookPage() {
                   { (item.flight?.takeoffPlace != null || item.flight?.arrivalPlace != null) &&
                     <>{item.flight?.takeoffPlace ?? "?"}</> }<br />
                   { (item.flight?.durationMinutes != null) &&
-                    <>{minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}</> }<br />
-                  { (item.flight?.hobbsStartMinutes != null || item.flight?.hobbsEndMinutes != null) &&
-                    <>{formatOptionalHobbs(item.flight?.hobbsStartMinutes)}</> }<br />
+                    <>
+                      {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
+                      { (item.flight?.hobbsStartMinutes != null || item.flight?.hobbsEndMinutes != null) &&
+                        <> (hobbs: {formatOptionalHobbs(item.flight?.hobbsStartMinutes)} ➔ {formatOptionalHobbs(item.flight?.hobbsEndMinutes)})</> }
+                    </> }<br />
+                  
                   { (item.flight?.engineOn != null || item.flight?.engineOff != null) &&
                     <>{formatOptionalDateTime(item.flight?.engineOn)}</> }
                 </td>
@@ -109,8 +110,6 @@ export default async function PrintLogbookPage() {
                     <>➔ {item.flight?.arrivalPlace ?? "?"}</> }<br />
                   { (item.flight?.durationMinutes != null) &&
                     <></> }<br />
-                  { (item.flight?.hobbsEndMinutes != null) &&
-                    <>➔ {formatOptionalHobbs(item.flight?.hobbsEndMinutes)}</> }<br />
                   { (item.flight?.engineOff != null) &&
                     <>➔ {formatOptionalDateTime(item.flight?.engineOff)}</> }
                 </td>
