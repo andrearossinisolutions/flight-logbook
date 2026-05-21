@@ -1026,17 +1026,81 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               <div className="muted">Contributo per costi fissi e ore volate.</div>
             </div>
 
-            <div className="row">
-              <select className="select" value={reportMonth} onChange={e => setReportMonth(Number(e.target.value))}>
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <option key={i} value={i}>{new Date(0, i).toLocaleString('it-IT', { month: 'long' })}</option>
-                ))}
+            <div className="row" style={{ gap: 8, flexWrap: "nowrap" }}>
+              <button 
+                type="button" 
+                className="btn secondary" 
+                style={{ padding: "8px 12px", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "36px", height: "40px" }}
+                onClick={() => {
+                  if (reportMonth === 0) {
+                    setReportMonth(11);
+                    setReportYear(reportYear - 1);
+                  } else {
+                    setReportMonth(reportMonth - 1);
+                  }
+                }}
+                title="Mese precedente"
+              >
+                ◀
+              </button>
+              
+              <select className="select" value={reportMonth} onChange={e => setReportMonth(Number(e.target.value))} style={{ width: "auto", minWidth: "180px", height: "40px" }}>
+                {Array.from({ length: 12 }).map((_, i) => {
+                  const mName = new Date(0, i).toLocaleString('it-IT', { month: 'long' });
+                  const capitalized = mName.charAt(0).toUpperCase() + mName.slice(1);
+                  const isCurrent = i === new Date().getMonth() && reportYear === new Date().getFullYear();
+                  return (
+                    <option key={i} value={i}>
+                      {capitalized}{isCurrent ? " (corrente)" : ""}
+                    </option>
+                  );
+                })}
               </select>
-              <select className="select" value={reportYear} onChange={e => setReportYear(Number(e.target.value))}>
-                <option value={new Date().getFullYear() - 1}>{new Date().getFullYear() - 1}</option>
-                <option value={new Date().getFullYear()}>{new Date().getFullYear()}</option>
-                <option value={new Date().getFullYear() + 1}>{new Date().getFullYear() + 1}</option>
+
+              <select className="select" value={reportYear} onChange={e => setReportYear(Number(e.target.value))} style={{ width: "auto", minWidth: "90px", height: "40px" }}>
+                {Array.from({ length: 5 }).map((_, idx) => {
+                  const y = new Date().getFullYear() - 2 + idx;
+                  return (
+                    <option key={y} value={y}>{y}</option>
+                  );
+                })}
+                {reportYear < new Date().getFullYear() - 2 && (
+                  <option value={reportYear}>{reportYear}</option>
+                )}
+                {reportYear > new Date().getFullYear() + 2 && (
+                  <option value={reportYear}>{reportYear}</option>
+                )}
               </select>
+
+              <button 
+                type="button" 
+                className="btn secondary" 
+                style={{ padding: "8px 12px", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "36px", height: "40px" }}
+                onClick={() => {
+                  if (reportMonth === 11) {
+                    setReportMonth(0);
+                    setReportYear(reportYear + 1);
+                  } else {
+                    setReportMonth(reportMonth + 1);
+                  }
+                }}
+                title="Mese successivo"
+              >
+                ▶
+              </button>
+
+              <button 
+                type="button" 
+                className="btn secondary" 
+                style={{ padding: "8px 16px", fontWeight: 600, height: "40px", display: "flex", alignItems: "center" }}
+                onClick={() => {
+                  setReportMonth(new Date().getMonth());
+                  setReportYear(new Date().getFullYear());
+                }}
+                title="Torna al mese corrente"
+              >
+                Corrente
+              </button>
             </div>
           </div>
 
