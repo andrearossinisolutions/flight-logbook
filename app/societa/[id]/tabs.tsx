@@ -174,10 +174,10 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                       </div>
                       
                       <div style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: 8, display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
-                        <span>📍 {flight.takeoffPlace || "?"} ➔ {flight.arrivalPlace || "?"}</span>
+                        <span>🛫 {flight.takeoffPlace || "?"} 🛬 {flight.arrivalPlace || "?"}</span>
                         <span style={{ color: "var(--border)" }}>•</span>
                         <span>⏱️ {formatMinutes(flight.durationMinutes)}</span>
-                        {flight.hobbsStartMinutes !== null && flight.hobbsEndMinutes !== null && (
+                        {flight.hobbsStartMinutes != null && flight.hobbsEndMinutes != null && (
                           <>
                             <span style={{ color: "var(--border)" }}>•</span>
                             <span>Oram.: {(flight.hobbsStartMinutes / 60).toFixed(1)} ➔ {(flight.hobbsEndMinutes / 60).toFixed(1)}</span>
