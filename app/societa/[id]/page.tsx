@@ -183,7 +183,7 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
     <AppShell title={partnership.name} subtitle="Gestione società">
       <div className="between" style={{ marginBottom: 24, alignItems: "center", gap: 16 }}>
         <Link href={"/societa?manage=true" as Route} className="muted" style={{ textDecoration: "none" }}>
-          ← Gestisci tutte le società
+          ← Tutte le società
         </Link>
         <PartnershipSelector partnerships={userPartnerships} currentId={id} />
       </div>
