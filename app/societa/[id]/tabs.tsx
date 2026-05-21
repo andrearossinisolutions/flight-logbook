@@ -10,6 +10,15 @@ function formatMinutes(minutes: number) {
   return `${h}:${m < 10 ? '0' : ''}${m}`;
 }
 
+function formatMonth(monthNum: number | null | undefined): string {
+  if (!monthNum) return "";
+  const months = [
+    "gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno",
+    "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"
+  ];
+  return months[monthNum - 1] || "";
+}
+
 export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
   const [activeTab, setActiveTab] = useState("BACHECA");
 
@@ -180,7 +189,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
       {activeTab === "AIRCRAFTS" && (
         <div className="grid grid-2">
           <div className="card">
-            <h2 style={{ marginTop: 0 }}>Aerei della società</h2>
+            <h2 style={{ marginTop: 0 }}>Aerei della Società</h2>
             {partnership.aircrafts.length === 0 ? (
               <div className="muted">Nessun aereo inserito.</div>
             ) : (
@@ -189,7 +198,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                   <tr>
                     <th>Marche</th>
                     <th>Tipo</th>
-                    <th>Costo Orario (Totale)</th>
+                    <th>Costo orario</th>
                     {isAdmin && <th>Azioni</th>}
                   </tr>
                 </thead>
@@ -420,12 +429,14 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                               {(c.period === "YEARLY" || c.period === "YEARLY_PRORATED") && (
                                 <span>€ {(c.amount / 12).toFixed(2)} /mese <span className="muted" style={{ fontSize: 12 }}>(da € {c.amount.toFixed(2)}/anno)</span></span>
                               )}
-                              {c.period === "YEARLY_ONCE" && (
-                                <span>€ {c.amount.toFixed(2)} /anno <span className="muted" style={{ fontSize: 12 }}>(ogni mese {c.billingMonth})</span></span>
-                              )}
-                              {c.period === "ONE_OFF" && (
-                                <span>€ {c.amount.toFixed(2)} <span className="muted" style={{ fontSize: 12 }}>(Singolo, addebitato a {c.billingMonth}/{c.billingYear})</span></span>
-                              )}
+                              {c.period === "YEARLY_ONCE" && <>
+                                <span>€ {c.amount.toFixed(2)} /anno</span><br />
+                                <span className="muted" style={{ fontSize: 12 }}>(ogni {formatMonth(c.billingMonth)})</span>
+                              </>}
+                              {c.period === "ONE_OFF" && <>
+                                <span>€ {c.amount.toFixed(2)}</span><br />
+                                <span className="muted" style={{ fontSize: 12 }}>(Singolo, addebitato a {c.billingMonth}/{c.billingYear})</span>
+                              </>}
                             </td>
                             {isAdmin && (
                               <td>
@@ -462,14 +473,25 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                 </tbody>
                 <tfoot>
                   <tr style={{ background: "var(--bg-secondary)", fontWeight: "bold" }}>
-                    <td>Totale mensile societario</td>
+                    <td>Rata annuale</td>
+                    <td>
+                      € {partnership.fixedCosts.reduce((acc: number, c: any) => {
+                        if (c.period === 'MONTHLY') return acc + Number(c.amount);
+                        if (c.period === 'YEARLY_ONCE') return acc + Number(c.amount);
+                      }, 0).toFixed(2)}
+                      <div className="muted" style={{ fontSize: 11, fontWeight: "normal", marginTop: 4 }}>(non include le rate mensili fisse)</div>
+                    </td>
+                    {isAdmin && <td></td>}
+                  </tr>
+                  <tr style={{ background: "var(--bg-secondary)", fontWeight: "bold" }}>
+                    <td>Rata mensile</td>
                     <td>
                       € {partnership.fixedCosts.reduce((acc: number, c: any) => {
                         if (c.period === 'MONTHLY') return acc + Number(c.amount);
                         if (c.period === 'YEARLY' || c.period === 'YEARLY_PRORATED') return acc + (Number(c.amount) / 12);
                         return acc; // YEARLY_ONCE not included in the standard monthly running total preview
                       }, 0).toFixed(2)}
-                      <div className="muted" style={{ fontSize: 11, fontWeight: "normal", marginTop: 4 }}>(non include rate annuali fisse)</div>
+                      <div className="muted" style={{ fontSize: 11, fontWeight: "normal", marginTop: 4 }}>(non include le rate annuali fisse)</div>
                     </td>
                     {isAdmin && <td></td>}
                   </tr>
@@ -705,11 +727,11 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
             <>
               <div className="grid grid-2" style={{ marginBottom: 24 }}>
                 <div className="card" style={{ background: "var(--bg-secondary)" }}>
-                  <div className="muted">Totale Costi Fissi (Mese)</div>
+                  <div className="muted">Totale costi fissi (Mese)</div>
                   <div className="big-number">€ {reportData.fixedCostTotal.toFixed(2)}</div>
                 </div>
                 <div className="card" style={{ background: "var(--bg-secondary)" }}>
-                  <div className="muted">Quota Fissa per Socio ({partnership.members.length} soci)</div>
+                  <div className="muted">Quota fissa per socio ({partnership.members.length == 1 ? `1 socio` : `${partnership.members.length} soci`})</div>
                   <div className="big-number">€ {reportData.fixedCostPerMember.toFixed(2)}</div>
                 </div>
               </div>
@@ -720,9 +742,9 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId }: any) {
                     <th>Socio</th>
                     <th>Voli effettuati</th>
                     <th>Ore volate</th>
-                    <th>Costo Orario Voli</th>
-                    <th>Quota Fissa</th>
-                    <th>Spese Anticipate</th>
+                    <th>Costo orario voli</th>
+                    <th>Quota fissa</th>
+                    <th>Spese anticipate</th>
                     <th>Totale da versare</th>
                   </tr>
                 </thead>
