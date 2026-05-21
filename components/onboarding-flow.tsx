@@ -58,9 +58,9 @@ export function OnboardingFlow({ userName }: { userName: string | null }) {
   const [psFuel, setPsFuel] = useState("0");
   const [psMaint, setPsMaint] = useState("0");
   const [psFund, setPsFund] = useState("0");
-  const [fixedCosts, setFixedCosts] = useState<{ description: string; amount: string; period: string }[]>([
-    { description: "Hangaraggio", amount: "0", period: "MONTHLY" },
-    { description: "Assicurazione", amount: "0", period: "YEARLY" },
+  const [fixedCosts, setFixedCosts] = useState<{ description: string; amount: string; period: string; billingMonth?: string; billingYear?: string }[]>([
+    { description: "Hangaraggio", amount: "0", period: "MONTHLY", billingMonth: "1", billingYear: new Date().getFullYear().toString() },
+    { description: "Assicurazione", amount: "0", period: "YEARLY_PRORATED", billingMonth: "1", billingYear: new Date().getFullYear().toString() },
   ]);
 
   const totalSteps = 6;
@@ -93,7 +93,13 @@ export function OnboardingFlow({ userName }: { userName: string | null }) {
         },
         fixedCosts: fixedCosts
           .filter(fc => Number(fc.amount) > 0)
-          .map(fc => ({ ...fc, amount: Number(fc.amount) })),
+          .map(fc => ({
+            description: fc.description,
+            amount: Number(fc.amount),
+            period: fc.period,
+            billingMonth: (fc.period === "YEARLY_ONCE" || fc.period === "ONE_OFF") ? Number(fc.billingMonth || 1) : null,
+            billingYear: fc.period === "ONE_OFF" ? Number(fc.billingYear || new Date().getFullYear()) : null,
+          })),
       };
     }
 
@@ -262,63 +268,127 @@ export function OnboardingFlow({ userName }: { userName: string | null }) {
                 {fixedCosts.map((fc, idx) => (
                   <div
                     key={idx}
-                    className="grid grid-3"
                     style={{
-                      alignItems: "end",
-                      gap: 8,
                       borderBottom: idx === fixedCosts.length - 1 ? "none" : "1px solid #f1f5f9",
                       paddingBottom: idx === fixedCosts.length - 1 ? 0 : 16,
-                      marginBottom: idx === fixedCosts.length - 1 ? 0 : 8
+                      marginBottom: idx === fixedCosts.length - 1 ? 0 : 16,
                     }}
                   >
-                    <div className="field">
-                      <label>Descrizione</label>
-                      <input
-                        className="input"
-                        value={fc.description}
-                        onChange={e => {
-                          const newCosts = [...fixedCosts];
-                          newCosts[idx].description = e.target.value;
-                          setFixedCosts(newCosts);
-                        }}
-                      />
+                    <div
+                      className="grid grid-3"
+                      style={{
+                        alignItems: "end",
+                        gap: 8,
+                      }}
+                    >
+                      <div className="field">
+                        <label>Descrizione</label>
+                        <input
+                          className="input"
+                          value={fc.description}
+                          onChange={e => {
+                            const newCosts = [...fixedCosts];
+                            newCosts[idx].description = e.target.value;
+                            setFixedCosts(newCosts);
+                          }}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Importo (€)</label>
+                        <input
+                          type="number"
+                          className="input"
+                          value={fc.amount}
+                          onChange={e => {
+                            const newCosts = [...fixedCosts];
+                            newCosts[idx].amount = e.target.value;
+                            setFixedCosts(newCosts);
+                          }}
+                        />
+                      </div>
+                      <div className="field">
+                        <label>Periodo</label>
+                        <select
+                          className="select"
+                          value={fc.period}
+                          onChange={e => {
+                            const newCosts = [...fixedCosts];
+                            newCosts[idx].period = e.target.value;
+                            setFixedCosts(newCosts);
+                          }}
+                        >
+                          <option value="MONTHLY">Mensile</option>
+                          <option value="YEARLY_PRORATED">Annuale diviso per mese</option>
+                          <option value="YEARLY_ONCE">Annuale ogni 12 mesi</option>
+                          <option value="ONE_OFF">Una tantum</option>
+                        </select>
+                      </div>
                     </div>
-                    <div className="field">
-                      <label>Importo (€)</label>
-                      <input
-                        type="number"
-                        className="input"
-                        value={fc.amount}
-                        onChange={e => {
-                          const newCosts = [...fixedCosts];
-                          newCosts[idx].amount = e.target.value;
-                          setFixedCosts(newCosts);
-                        }}
-                      />
-                    </div>
-                    <div className="field">
-                      <label>Periodo</label>
-                      <select
-                        className="select"
-                        value={fc.period}
-                        onChange={e => {
-                          const newCosts = [...fixedCosts];
-                          newCosts[idx].period = e.target.value;
-                          setFixedCosts(newCosts);
+
+                    {(fc.period === "YEARLY_ONCE" || fc.period === "ONE_OFF") && (
+                      <div
+                        className="grid grid-2"
+                        style={{
+                          marginTop: 12,
+                          gap: 12,
+                          padding: "12px",
+                          background: "#f8fafc",
+                          borderRadius: "12px",
+                          border: "1px solid #e2e8f0"
                         }}
                       >
-                        <option value="MONTHLY">Mensile</option>
-                        <option value="YEARLY_PRORATED">Annuale diviso per mese</option>
-                        <option value="YEARLY_ONCE">Annuale ogni 12 mesi</option>
-                        <option value="ONE_OFF">Una tantum</option>
-                      </select>
-                    </div>
+                        <div className="field">
+                          <label style={{ fontSize: "0.85rem", fontWeight: "600", color: "#475569" }}>Mese di addebito</label>
+                          <select
+                            className="select"
+                            value={fc.billingMonth || "1"}
+                            onChange={e => {
+                              const newCosts = [...fixedCosts];
+                              newCosts[idx].billingMonth = e.target.value;
+                              setFixedCosts(newCosts);
+                            }}
+                          >
+                            <option value="1">Gennaio</option>
+                            <option value="2">Febbraio</option>
+                            <option value="3">Marzo</option>
+                            <option value="4">Aprile</option>
+                            <option value="5">Maggio</option>
+                            <option value="6">Giugno</option>
+                            <option value="7">Luglio</option>
+                            <option value="8">Agosto</option>
+                            <option value="9">Settembre</option>
+                            <option value="10">Ottobre</option>
+                            <option value="11">Novembre</option>
+                            <option value="12">Dicembre</option>
+                          </select>
+                        </div>
+                        {fc.period === "ONE_OFF" ? (
+                          <div className="field">
+                            <label style={{ fontSize: "0.85rem", fontWeight: "600", color: "#475569" }}>Anno di addebito</label>
+                            <input
+                              type="number"
+                              className="input"
+                              min="2020"
+                              max="2100"
+                              value={fc.billingYear || new Date().getFullYear().toString()}
+                              onChange={e => {
+                                const newCosts = [...fixedCosts];
+                                newCosts[idx].billingYear = e.target.value;
+                                setFixedCosts(newCosts);
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div></div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
                 <button
                   className="btn secondary"
                   style={{ width: "fit-content" }}
-                  onClick={() => setFixedCosts([...fixedCosts, { description: "", amount: "0", period: "MONTHLY" }])}
+                  onClick={() => setFixedCosts([...fixedCosts, { description: "", amount: "0", period: "MONTHLY", billingMonth: "1", billingYear: new Date().getFullYear().toString() }])}
                 >
                   + Aggiungi costo
                 </button>

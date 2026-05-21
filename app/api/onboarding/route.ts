@@ -73,6 +73,8 @@ export async function POST(request: Request) {
                 description: fc.description,
                 amount: fc.amount,
                 period: fc.period || "MONTHLY",
+                billingMonth: fc.billingMonth != null ? Number(fc.billingMonth) : null,
+                billingYear: fc.billingYear != null ? Number(fc.billingYear) : null,
               },
             });
           }
