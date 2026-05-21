@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Route } from "next";
 import { PartnershipTabs } from "./tabs";
+import { PartnershipSelector } from "@/components/partnership-selector";
 
 export default async function SocietaDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
@@ -62,6 +63,16 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
   });
 
   const isAdmin = partnership.members.find(m => m.userId === user.id)?.role === "ADMIN";
+
+  const memberships = await prisma.partnershipMember.findMany({
+    where: { userId: user.id },
+    include: { partnership: true }
+  });
+
+  const userPartnerships = memberships.map(m => ({
+    id: m.partnership.id,
+    name: m.partnership.name
+  }));
 
   const serializedPartnership = {
     ...partnership,
@@ -127,10 +138,11 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
 
   return (
     <AppShell title={partnership.name} subtitle="Gestione società">
-      <div style={{ marginBottom: 24 }}>
-        <Link href={"/societa" as Route} className="muted" style={{ textDecoration: "none" }}>
-          ← Torna alle società
+      <div className="between" style={{ marginBottom: 24, alignItems: "center", gap: 16 }}>
+        <Link href={"/societa?manage=true" as Route} className="muted" style={{ textDecoration: "none" }}>
+          ← Gestisci tutte le società
         </Link>
+        <PartnershipSelector partnerships={userPartnerships} currentId={id} />
       </div>
 
       <PartnershipTabs 

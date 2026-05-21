@@ -6,8 +6,13 @@ import { redirect } from "next/navigation";
 import type { Route } from "next";
 import { SubmitButton } from "@/components/submit-button";
 
-export default async function SocietaPage() {
+export default async function SocietaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const user = await requireUser();
+  const { manage } = await searchParams;
 
   const memberships = await prisma.partnershipMember.findMany({
     where: { userId: user.id },
@@ -20,6 +25,10 @@ export default async function SocietaPage() {
       }
     }
   });
+
+  if (memberships.length > 0 && manage !== "true") {
+    redirect(`/societa/${memberships[0].partnershipId}` as Route);
+  }
 
   async function createPartnership(formData: FormData) {
     "use server";
