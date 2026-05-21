@@ -1023,5 +1023,194 @@ textarea {
   }
 }
 
+/* Mobile Optimizations for Partnership Tables */
+@media (max-width: 768px) {
+  /* Monthly Report Table */
+  .report-table {
+    display: block;
+    width: 100%;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  
+  .report-table thead {
+    display: none;
+  }
+  
+  .report-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+  
+  .report-table .report-row {
+    display: flex !important;
+    flex-direction: column;
+    gap: 4px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 4px 15px rgba(20, 32, 51, 0.02);
+  }
+  
+  .report-table .report-row td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: none !important;
+    padding: 4px 0 !important;
+  }
+  
+  /* Highlight Socio as header */
+  .report-table .report-row td:nth-child(1) {
+    font-size: 1.1rem;
+    font-weight: 700;
+    border-bottom: 1px solid var(--border) !important;
+    padding-bottom: 10px !important;
+    margin-bottom: 4px;
+    display: block;
+    text-align: left;
+  }
+  
+  /* Add labels for middle data columns */
+  .report-table .report-row td:nth-child(2)::before { content: "Voli effettuati:"; color: var(--muted); font-size: 0.9rem; }
+  .report-table .report-row td:nth-child(3)::before { content: "Ore volate:"; color: var(--muted); font-size: 0.9rem; }
+  .report-table .report-row td:nth-child(4)::before { content: "Costo orario voli:"; color: var(--muted); font-size: 0.9rem; }
+  .report-table .report-row td:nth-child(5)::before { content: "Quota fissa:"; color: var(--muted); font-size: 0.9rem; }
+  .report-table .report-row td:nth-child(6)::before { content: "Spese anticipate:"; color: var(--muted); font-size: 0.9rem; }
+  
+  /* Highlight total at the bottom */
+  .report-table .report-row td:nth-child(7) {
+    border-top: 1px solid var(--border) !important;
+    padding-top: 10px !important;
+    margin-top: 4px;
+    font-weight: 700;
+  }
+  .report-table .report-row td:nth-child(7)::before {
+    content: "Totale da versare:";
+    color: var(--muted);
+    font-weight: normal;
+    font-size: 0.9rem;
+  }
+
+  /* Transactions Table */
+  .transactions-table {
+    display: block;
+    width: 100%;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  
+  .transactions-table thead {
+    display: none;
+  }
+  
+  .transactions-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+  
+  .transactions-table .transaction-row {
+    display: flex !important;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 4px 15px rgba(20, 32, 51, 0.02);
+  }
+  
+  .transactions-table .transaction-row td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: none !important;
+    padding: 4px 0 !important;
+  }
+  
+  /* 1. Date (order: 3) */
+  .transactions-table .transaction-row td:nth-child(1) {
+    order: 3;
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+  .transactions-table .transaction-row td:nth-child(1)::before {
+    content: "Data:";
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+
+  /* 2. Utente / Tipo (order: 1) */
+  .transactions-table .transaction-row td:nth-child(2) {
+    order: 1;
+    font-weight: 700;
+    font-size: 1.05rem;
+    border-bottom: 1px solid var(--border) !important;
+    padding-bottom: 10px !important;
+    margin-bottom: 4px;
+    display: block;
+    text-align: left;
+  }
+  
+  /* 3. Descrizione (order: 2) */
+  .transactions-table .transaction-row td:nth-child(3) {
+    order: 2;
+    font-size: 0.95rem;
+    color: var(--text);
+    display: block;
+    text-align: left;
+    margin-bottom: 4px;
+  }
+
+  /* 4. Entrata (order: 4) */
+  .transactions-table .transaction-row td:nth-child(4) {
+    order: 4;
+    font-size: 0.9rem;
+  }
+  .transactions-table .transaction-row td:nth-child(4)::before {
+    content: "Entrata:";
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  /* 5. Uscita (order: 5) */
+  .transactions-table .transaction-row td:nth-child(5) {
+    order: 5;
+    font-size: 0.9rem;
+  }
+  .transactions-table .transaction-row td:nth-child(5)::before {
+    content: "Uscita:";
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  /* 6. Azioni (order: 6) */
+  .transactions-table .transaction-row td:nth-child(6) {
+    order: 6;
+    border-top: 1px solid var(--border) !important;
+    padding-top: 10px !important;
+    margin-top: 4px;
+    justify-content: flex-end;
+  }
+
+  /* Empty state */
+  .transactions-table tr:not(.transaction-row) td {
+    display: block;
+    text-align: center;
+    padding: 24px !important;
+    width: 100%;
+  }
+}
+
+
 
 

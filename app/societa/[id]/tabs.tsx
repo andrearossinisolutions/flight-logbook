@@ -1026,81 +1026,87 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               <div className="muted">Contributo per costi fissi e ore volate.</div>
             </div>
 
-            <div className="row" style={{ gap: 8, flexWrap: "nowrap" }}>
-              <button 
-                type="button" 
-                className="btn secondary" 
-                style={{ padding: "8px 12px", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "36px", height: "40px" }}
-                onClick={() => {
-                  if (reportMonth === 0) {
-                    setReportMonth(11);
-                    setReportYear(reportYear - 1);
-                  } else {
-                    setReportMonth(reportMonth - 1);
-                  }
-                }}
-                title="Mese precedente"
-              >
-                ◀
-              </button>
-              
-              <select className="select" value={reportMonth} onChange={e => setReportMonth(Number(e.target.value))} style={{ width: "auto", minWidth: "180px", height: "40px" }}>
-                {Array.from({ length: 12 }).map((_, i) => {
-                  const mName = new Date(0, i).toLocaleString('it-IT', { month: 'long' });
-                  const capitalized = mName.charAt(0).toUpperCase() + mName.slice(1);
-                  const isCurrent = i === new Date().getMonth() && reportYear === new Date().getFullYear();
-                  return (
-                    <option key={i} value={i}>
-                      {capitalized}{isCurrent ? " (corrente)" : ""}
-                    </option>
-                  );
-                })}
-              </select>
+            <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-start", width: "100%", maxWidth: "fit-content" }}>
+              {/* Gruppo Select */}
+              <div className="row" style={{ gap: 8, flexWrap: "nowrap", flexGrow: 1, minWidth: "250px" }}>
+                <select className="select" value={reportMonth} onChange={e => setReportMonth(Number(e.target.value))} style={{ flexGrow: 1, minWidth: "150px", height: "40px" }}>
+                  {Array.from({ length: 12 }).map((_, i) => {
+                    const mName = new Date(0, i).toLocaleString('it-IT', { month: 'long' });
+                    const capitalized = mName.charAt(0).toUpperCase() + mName.slice(1);
+                    const isCurrent = i === new Date().getMonth() && reportYear === new Date().getFullYear();
+                    return (
+                      <option key={i} value={i}>
+                        {capitalized}{isCurrent ? " (corrente)" : ""}
+                      </option>
+                    );
+                  })}
+                </select>
 
-              <select className="select" value={reportYear} onChange={e => setReportYear(Number(e.target.value))} style={{ width: "auto", minWidth: "90px", height: "40px" }}>
-                {Array.from({ length: 5 }).map((_, idx) => {
-                  const y = new Date().getFullYear() - 2 + idx;
-                  return (
-                    <option key={y} value={y}>{y}</option>
-                  );
-                })}
-                {reportYear < new Date().getFullYear() - 2 && (
-                  <option value={reportYear}>{reportYear}</option>
-                )}
-                {reportYear > new Date().getFullYear() + 2 && (
-                  <option value={reportYear}>{reportYear}</option>
-                )}
-              </select>
+                <select className="select" value={reportYear} onChange={e => setReportYear(Number(e.target.value))} style={{ width: "90px", height: "40px" }}>
+                  {Array.from({ length: 5 }).map((_, idx) => {
+                    const y = new Date().getFullYear() - 2 + idx;
+                    return (
+                      <option key={y} value={y}>{y}</option>
+                    );
+                  })}
+                  {reportYear < new Date().getFullYear() - 2 && (
+                    <option value={reportYear}>{reportYear}</option>
+                  )}
+                  {reportYear > new Date().getFullYear() + 2 && (
+                    <option value={reportYear}>{reportYear}</option>
+                  )}
+                </select>
+              </div>
 
-              <button 
-                type="button" 
-                className="btn secondary" 
-                style={{ padding: "8px 12px", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "36px", height: "40px" }}
-                onClick={() => {
-                  if (reportMonth === 11) {
-                    setReportMonth(0);
-                    setReportYear(reportYear + 1);
-                  } else {
-                    setReportMonth(reportMonth + 1);
-                  }
-                }}
-                title="Mese successivo"
-              >
-                ▶
-              </button>
+              {/* Gruppo Pulsanti */}
+              <div className="row" style={{ gap: 8, flexWrap: "nowrap", justifyContent: "center" }}>
+                <button 
+                  type="button" 
+                  className="btn secondary" 
+                  style={{ padding: "8px 12px", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "36px", height: "40px" }}
+                  onClick={() => {
+                    if (reportMonth === 0) {
+                      setReportMonth(11);
+                      setReportYear(reportYear - 1);
+                    } else {
+                      setReportMonth(reportMonth - 1);
+                    }
+                  }}
+                  title="Mese precedente"
+                >
+                  ◀
+                </button>
 
-              <button 
-                type="button" 
-                className="btn secondary" 
-                style={{ padding: "8px 16px", fontWeight: 600, height: "40px", display: "flex", alignItems: "center" }}
-                onClick={() => {
-                  setReportMonth(new Date().getMonth());
-                  setReportYear(new Date().getFullYear());
-                }}
-                title="Torna al mese corrente"
-              >
-                Corrente
-              </button>
+                <button 
+                  type="button" 
+                  className="btn secondary" 
+                  style={{ padding: "8px 16px", fontWeight: 600, height: "40px", display: "flex", alignItems: "center" }}
+                  onClick={() => {
+                    setReportMonth(new Date().getMonth());
+                    setReportYear(new Date().getFullYear());
+                  }}
+                  title="Torna al mese corrente"
+                >
+                  Corrente
+                </button>
+
+                <button 
+                  type="button" 
+                  className="btn secondary" 
+                  style={{ padding: "8px 12px", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "36px", height: "40px" }}
+                  onClick={() => {
+                    if (reportMonth === 11) {
+                      setReportMonth(0);
+                      setReportYear(reportYear + 1);
+                    } else {
+                      setReportMonth(reportMonth + 1);
+                    }
+                  }}
+                  title="Mese successivo"
+                >
+                  ▶
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1119,7 +1125,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                 </div>
               </div>
 
-              <table className="table">
+              <table className="table report-table">
                 <thead>
                   <tr>
                     <th>Socio</th>
@@ -1133,12 +1139,12 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                 </thead>
                 <tbody>
                   {reportData.reports.map((r: any) => (
-                    <tr key={r.userId}>
+                    <tr key={r.userId} className="report-row">
                       <td>
                         <strong>{r.fullName}</strong>
                         {r.userId === currentUserId && " (Tu)"}
                       </td>
-                      <td>{r.flightsCount} voli</td>
+                      <td>{r.flightsCount == 1 ? "1 volo" : `${r.flightsCount} voli`}</td>
                       <td>{formatMinutes(r.durationMinutes)}</td>
                       <td>€ {r.flightCost.toFixed(2)}</td>
                       <td>€ {r.fixedCost.toFixed(2)}</td>
@@ -1231,7 +1237,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               </form>
             </div>
 
-            <table className="table">
+            <table className="table transactions-table">
               <thead>
                 <tr>
                   <th>Data</th>
@@ -1244,7 +1250,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               </thead>
               <tbody>
                 {partnership.transactions.map((t: any) => (
-                  <tr key={t.id}>
+                  <tr key={t.id} className="transaction-row">
                     <td>{new Date(t.date).toLocaleDateString("it-IT")}</td>
                     <td>
                       {t.type === "INCOME" ? (
