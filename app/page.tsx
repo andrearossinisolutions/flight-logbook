@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { getSessionFromCookie } from "@/lib/auth";
 import { redirect } from "next/navigation";
@@ -11,6 +12,30 @@ import {
 } from "@/components/icons";
 
 import { prisma } from "@/lib/prisma";
+
+export const metadata: Metadata = {
+  title: "Digital Flight Logbook | Gestione Voli & Società di Volo",
+  description: "Il logbook voli digitale professionale per piloti e associazioni. Organizza la flotta, monitora le scadenze dei motori, gestisci la cassa comune e calcola i rendiconti mensili dei soci.",
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Flight Logbook",
+  "description": "Digital Flight Logbook per piloti e software di gestione per società e associazioni di volo.",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "All",
+  "offers": {
+    "@type": "Offer",
+    "price": "0.00",
+    "priceCurrency": "EUR"
+  },
+  "author": {
+    "@type": "Organization",
+    "name": "Rossini Solutions",
+    "url": "https://logbook.rossinisolutions.com"
+  }
+};
 
 export default async function HomePage() {
   const session = await getSessionFromCookie();
@@ -29,12 +54,18 @@ export default async function HomePage() {
 
   return (
     <main className="landing-page">
+      {/* JSON-LD Structured Data for SEO Rich Snippets */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
       {/* Hero Section */}
       <section className="hero-section">
         <div className="container">
-          <div className="pill hero-pill">✈️ Digital Flight Management</div>
+          <div className="pill hero-pill">✈️ Digital Flight Logbook & Management</div>
           <h1 className="hero-title">
-            Il tuo Logbook Digitale, <span className="text-gradient">evoluto.</span>
+            Il tuo <span className="text-gradient">Digital Flight Logbook</span>, evoluto.
           </h1>
           <p className="hero-subtitle">
             Gestisci i tuoi voli, tieni traccia dei costi e coordina la tua società di volo 
@@ -57,18 +88,18 @@ export default async function HomePage() {
           <div className="grid grid-3">
             <div className="feature-card">
               <div className="feature-icon"><AirplaneIcon size={28} /></div>
-              <h3>Logbook Voli</h3>
-              <p>Registra ogni decollo con precisione. Calcolo automatico dei costi basato su orametro o durata effettiva.</p>
+              <h3>Digital Flight Logbook</h3>
+              <p>Registra ogni decollo con precisione. Il tuo logbook voli digitale personale con calcolo automatico dei costi basato su orametro o durata.</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon"><UsersIcon size={28} /></div>
-              <h3>Gestione Società</h3>
-              <p>Amministra la tua società di volo: costi fissi, variabili e rendiconti mensili automatizzati per tutti i soci.</p>
+              <h3>Logbook Società & Hangar</h3>
+              <p>Amministra la tua associazione o società di volo: costi fisso-variabili, scadenze dei velivoli e rendiconti mensili automatici per i soci.</p>
             </div>
             <div className="feature-card">
               <div className="feature-icon"><MoneyBillIcon size={28} /></div>
-              <h3>Controllo Costi</h3>
-              <p>Tieni sempre d'occhio il tuo budget. Ricariche, anticipi e spese di manutenzione sotto controllo.</p>
+              <h3>Cassa e Controllo Costi</h3>
+              <p>Tieni sempre sotto controllo il bilancio del club. Ricariche crediti dei piloti, spese anticipate di carburante e manutenzione.</p>
             </div>
           </div>
         </div>
