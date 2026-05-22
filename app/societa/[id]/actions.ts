@@ -84,7 +84,7 @@ async function createRecommendedRemindersDb(tx: any, aircraftId: string) {
   });
 
   // 6. 1000h / 1200h
-  await tx.partnershipAircraftReminder.create({
+  const r1200 = await tx.partnershipAircraftReminder.create({
     data: {
       aircraftId,
       description: "1000h / 1200h",
@@ -95,6 +95,22 @@ async function createRecommendedRemindersDb(tx: any, aircraftId: string) {
       notes: "600h + Controllo generale stato usura passaggi interni e componenti critici, con eventuale revisione dei carburatori",
       covers: {
         connect: [{ id: r50.id }, { id: r100.id }, { id: r200.id }, { id: r600.id }]
+      }
+    }
+  });
+
+  // 7. TBO (Revisione motore)
+  await tx.partnershipAircraftReminder.create({
+    data: {
+      aircraftId,
+      description: "TBO (Revisione motore)",
+      hoursInterval: 2000,
+      monthsInterval: 180, // 15 anni * 12 mesi = 180 mesi
+      lastCompletedHours: 0.0,
+      lastCompletedDate: new Date(),
+      notes: "Revisione totale motore (TBO - Time Between Overhaul). Generalmente ogni 2000 ore o 15 anni (1200h / 1500h per i motori più vecchi). Revisione totale motore e azzeramento ore.",
+      covers: {
+        connect: [{ id: rGomme.id }, { id: r50.id }, { id: r100.id }, { id: r200.id }, { id: r600.id }, { id: r1200.id }]
       }
     }
   });
