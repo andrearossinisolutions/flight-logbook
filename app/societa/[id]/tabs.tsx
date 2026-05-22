@@ -92,6 +92,97 @@ function handleCheckboxChange(
 export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFlights = [] }: any) {
   const [activeTab, setActiveTab] = useState("BACHECA");
 
+  // Calcolo scadenze manutenzione per Bacheca
+  const alerts: any[] = [];
+  if (partnership.aircrafts) {
+    for (const a of partnership.aircrafts) {
+      const totalHours = a.totalHours;
+      for (const r of (a.reminders || [])) {
+        let isOverdue = false;
+        let isWarning = false;
+        
+        let hoursRemainingNum = Infinity;
+        let daysRemainingNum = Infinity;
+        
+        const detailsParts: string[] = [];
+        
+        if (r.hoursInterval !== null && r.hoursInterval !== undefined) {
+          const hoursInt = Number(r.hoursInterval);
+          const nextDeadlineHours = Number(r.lastCompletedHours) + hoursInt;
+          const remainingHours = nextDeadlineHours - totalHours;
+          hoursRemainingNum = remainingHours;
+          
+          if (remainingHours <= 10) {
+            isWarning = true;
+          }
+          if (remainingHours <= 0) {
+            isOverdue = true;
+          }
+          
+          detailsParts.push(`Scadenza a ${nextDeadlineHours.toFixed(1)}h (ogni ${hoursInt}h)`);
+        }
+        
+        if (r.monthsInterval !== null && r.monthsInterval !== undefined && r.lastCompletedDate) {
+          const monthsInt = Number(r.monthsInterval);
+          const nextDeadlineDate = new Date(r.lastCompletedDate);
+          nextDeadlineDate.setMonth(nextDeadlineDate.getMonth() + monthsInt);
+          
+          const today = new Date();
+          const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          const deadlineStart = new Date(nextDeadlineDate.getFullYear(), nextDeadlineDate.getMonth(), nextDeadlineDate.getDate());
+          
+          const remainingDays = Math.ceil((deadlineStart.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
+          daysRemainingNum = remainingDays;
+          
+          if (remainingDays <= 30) {
+            isWarning = true;
+          }
+          if (remainingDays <= 0) {
+            isOverdue = true;
+          }
+          
+          const formattedDate = nextDeadlineDate.toLocaleDateString("it-IT", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric"
+          });
+          detailsParts.push(`Scadenza il ${formattedDate} (ogni ${monthsInt} mesi)`);
+        }
+        
+        if (isWarning || isOverdue) {
+          let labelText = "";
+          const hasHours = r.hoursInterval !== null && r.hoursInterval !== undefined;
+          const hasMonths = r.monthsInterval !== null && r.monthsInterval !== undefined && r.lastCompletedDate;
+          
+          const isHoursMoreUrgent = hasHours && (!hasMonths || (hoursRemainingNum / 10 <= daysRemainingNum / 30));
+          
+          if (isHoursMoreUrgent) {
+            if (hoursRemainingNum <= 0) {
+              labelText = `SCADUTO da ${Math.abs(hoursRemainingNum).toFixed(1)} ore!`;
+            } else {
+              labelText = `In scadenza! Mancano solo ${hoursRemainingNum.toFixed(1)} ore.`;
+            }
+          } else if (hasMonths) {
+            if (daysRemainingNum <= 0) {
+              const absDays = Math.abs(daysRemainingNum);
+              labelText = `SCADUTO da ${absDays} giorn${absDays === 1 ? 'o' : 'i'}!`;
+            } else {
+              labelText = `In scadenza! Mancano solo ${daysRemainingNum} giorn${daysRemainingNum === 1 ? 'o' : 'i'}.`;
+            }
+          }
+          
+          alerts.push({
+            aircraftRegistration: a.registration,
+            reminderDescription: r.description,
+            isOverdue,
+            labelText,
+            detailsText: `${r.description} · ${detailsParts.join(" o ")}`
+          });
+        }
+      }
+    }
+  }
+
   // Edit state
   const [editingAircraftId, setEditingAircraftId] = useState<string | null>(null);
   const [loggingReminderId, setLoggingReminderId] = useState<string | null>(null);
@@ -197,7 +288,66 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
       </div>
 
       {activeTab === "BACHECA" && (
-        <div className="bacheca-layout">
+        <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          {alerts.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {alerts.map((alert, i) => {
+                const isOverdue = alert.isOverdue;
+                const bg = isOverdue ? "rgba(180, 35, 24, 0.08)" : "#fffbeb";
+                const border = isOverdue ? "1px solid rgba(220, 38, 38, 0.2)" : "1px solid rgba(217, 119, 6, 0.2)";
+                const color = isOverdue ? "var(--danger)" : "#b45309";
+                const icon = isOverdue ? "🚨" : "⚠️";
+
+                return (
+                  <div 
+                    key={i} 
+                    style={{ 
+                      backgroundColor: bg, 
+                      border, 
+                      borderRadius: 16, 
+                      padding: "16px 20px", 
+                      color,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 16
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <span style={{ fontSize: "1.5rem" }}>{icon}</span>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>
+                          Manutenzione {alert.aircraftRegistration}
+                        </div>
+                        <div style={{ fontSize: "0.85rem", marginTop: 2, opacity: 0.9 }}>
+                          {alert.labelText} · {alert.detailsText}
+                        </div>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setActiveTab("AIRCRAFTS")}
+                      className="btn"
+                      style={{ 
+                        backgroundColor: isOverdue ? "var(--danger)" : "#b45309", 
+                        color: "white", 
+                        padding: "8px 16px", 
+                        fontSize: "0.85rem", 
+                        border: "none",
+                        borderRadius: 12,
+                        fontWeight: 600,
+                        whiteSpace: "nowrap",
+                        cursor: "pointer"
+                      }}
+                    >
+                      Gestisci
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="bacheca-layout">
           {/* Colonna Sinistra: Ultimi Utilizzi / Statistiche */}
           <div className="bacheca-sidebar">
             <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16, height: "fit-content" }}>
@@ -375,7 +525,8 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
           </div>
         </div>
       </div>
-    )}
+    </div>
+  )}
 
       {activeTab === "AIRCRAFTS" && (
         <div className="grid grid-2">
@@ -496,17 +647,6 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                 <div className="between" style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8, alignItems: "center" }}>
                                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                                     <h4 style={{ margin: 0, fontSize: "0.95rem", color: "var(--primary-strong)" }}>🔔 Scadenze Manutenzione ({a.registration})</h4>
-                                    {isAdmin && (
-                                      <form action={addRecommendedReminders.bind(null, partnership.id, a.id)} onSubmit={(e) => {
-                                        if (!confirm("Caricare le scadenze consigliate Rotax (gomme, 50h, 100h, 200h, 600h, 1200h)?")) {
-                                          e.preventDefault();
-                                        }
-                                      }}>
-                                        <SubmitButton className="btn secondary" style={{ padding: "4px 8px", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}>
-                                          ⚙️ Carica consigliate
-                                        </SubmitButton>
-                                      </form>
-                                    )}
                                   </div>
                                   <span className="muted" style={{ fontSize: "0.85rem" }}>
                                     Stato motore: <strong>{a.totalHours.toFixed(1)} h</strong> (Base: {a.initialHours.toFixed(1)}h)
@@ -539,9 +679,9 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                           hoursText = `SCADUTO da ${Math.abs(remainingHours).toFixed(1)}h (limite: ${nextDeadlineHours.toFixed(1)}h)`;
                                         } else if (remainingHours <= 10) {
                                           isWarning = true;
-                                          hoursText = `In scadenza! Mancano ${remainingHours.toFixed(1)}h (limite: ${nextDeadlineHours.toFixed(1)}h)`;
+                                          hoursText = `In scadenza: mancano ${remainingHours.toFixed(1)}h (limite: ${nextDeadlineHours.toFixed(1)}h)`;
                                         } else {
-                                          hoursText = `In regola. Mancano ${remainingHours.toFixed(1)}h (limite: ${nextDeadlineHours.toFixed(1)}h)`;
+                                          hoursText = `Mancano ${remainingHours.toFixed(1)}h (limite: ${nextDeadlineHours.toFixed(1)}h)`;
                                         }
                                       }
                                       
@@ -569,9 +709,9 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                           dateText = `SCADUTO da ${absDays} giorn${absDays === 1 ? 'o' : 'i'} (il ${formattedDate})`;
                                         } else if (remainingDays <= 30) {
                                           isWarning = true;
-                                          dateText = `In scadenza! Mancano ${remainingDays} giorn${remainingDays === 1 ? 'o' : 'i'} (il ${formattedDate})`;
+                                          dateText = `In scadenza: mancano ${remainingDays} giorn${remainingDays === 1 ? 'o' : 'i'} (il ${formattedDate})`;
                                         } else {
-                                          dateText = `In regola. Mancano ${remainingDays} giorn${remainingDays === 1 ? 'o' : 'i'} (il ${formattedDate})`;
+                                          dateText = `Mancano ${remainingDays} giorn${remainingDays === 1 ? 'o' : 'i'} (il ${formattedDate})`;
                                         }
                                       }
                                       
@@ -593,7 +733,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                       
                                       let detailStatus = "";
                                       if (hoursText && dateText) {
-                                        detailStatus = `${hoursText} o ${dateText} (la prima che arriva)`;
+                                        detailStatus = `${hoursText} oppure (la prima che arriva) ${dateText}`;
                                       } else if (hoursText) {
                                         detailStatus = hoursText;
                                       } else if (dateText) {
@@ -809,6 +949,18 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                 </div>
 
                                 {isAdmin && (
+                                  <form action={addRecommendedReminders.bind(null, partnership.id, a.id)} onSubmit={(e) => {
+                                    if (!confirm("Caricare le scadenze consigliate Rotax (gomme, 50h, 100h, 200h, 600h, 1200h, TBO)?")) {
+                                      e.preventDefault();
+                                    }
+                                  }}>
+                                    <SubmitButton className="btn secondary" style={{ padding: "4px 8px", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}>
+                                      ⚙️ Aggiungi consigliate da Rotax
+                                    </SubmitButton>
+                                  </form>
+                                )}
+
+                                {isAdmin && (
                                   <form 
                                     action={addAircraftReminder.bind(null, partnership.id, a.id)} 
                                     onSubmit={(e) => {
@@ -975,7 +1127,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                   <div style={{ marginTop: 8, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
                     <input type="checkbox" name="addRecommended" id="addRecommended" style={{ width: "auto", cursor: "pointer" }} />
                     <label htmlFor="addRecommended" style={{ fontSize: "0.85rem", fontWeight: 500, cursor: "pointer", userSelect: "none", color: "var(--text)" }}>
-                      Pre-popola con le scadenze consigliate Rotax (gomme, 50h, 100h, 200h, 600h, 1200h)
+                      Pre-popola con le scadenze consigliate Rotax (gomme, 50h, 100h, 200h, 600h, 1200h, TBO)
                     </label>
                   </div>
                   <SubmitButton>Aggiungi aereo</SubmitButton>
