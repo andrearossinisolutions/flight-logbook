@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog } from "./actions";
+import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateDisplay, daysFromDate } from "@/lib/utils";
 import {
@@ -28,6 +28,67 @@ function formatMonth(monthNum: number | null | undefined): string {
   return months[monthNum - 1] || "";
 }
 
+function handleCheckboxChange(
+  e: React.ChangeEvent<HTMLInputElement>,
+  reminders: any[]
+) {
+  const checkbox = e.target;
+  const isChecked = checkbox.checked;
+  const changedId = checkbox.value;
+
+  const form = checkbox.form;
+  if (!form) return;
+
+  const inputs = Array.from(form.querySelectorAll<HTMLInputElement>('input[name="covers"]'));
+
+  // Build mapping of reminder relations
+  const reminderMap = new Map<string, { covers: string[]; coveredBy: string[] }>();
+  for (const r of reminders) {
+    reminderMap.set(r.id, {
+      covers: r.covers?.map((c: any) => c.id) || [],
+      coveredBy: r.coveredBy?.map((c: any) => c.id) || [],
+    });
+  }
+
+  const visited = new Set<string>();
+
+  if (isChecked) {
+    // Cascade check: check everything that this reminder covers (recursively)
+    const checkQueue = [...(reminderMap.get(changedId)?.covers || [])];
+    while (checkQueue.length > 0) {
+      const currentId = checkQueue.shift()!;
+      if (!visited.has(currentId)) {
+        visited.add(currentId);
+        
+        const input = inputs.find(i => i.value === currentId);
+        if (input) {
+          input.checked = true;
+        }
+
+        const subCovers = reminderMap.get(currentId)?.covers || [];
+        checkQueue.push(...subCovers);
+      }
+    }
+  } else {
+    // Cascade uncheck: uncheck everything that covers this reminder (recursively)
+    const uncheckQueue = [...(reminderMap.get(changedId)?.coveredBy || [])];
+    while (uncheckQueue.length > 0) {
+      const currentId = uncheckQueue.shift()!;
+      if (!visited.has(currentId)) {
+        visited.add(currentId);
+
+        const input = inputs.find(i => i.value === currentId);
+        if (input) {
+          input.checked = false;
+        }
+
+        const subCoveredBy = reminderMap.get(currentId)?.coveredBy || [];
+        uncheckQueue.push(...subCoveredBy);
+      }
+    }
+  }
+}
+
 export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFlights = [] }: any) {
   const [activeTab, setActiveTab] = useState("BACHECA");
 
@@ -35,6 +96,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
   const [editingAircraftId, setEditingAircraftId] = useState<string | null>(null);
   const [loggingReminderId, setLoggingReminderId] = useState<string | null>(null);
   const [editingFixedCostId, setEditingFixedCostId] = useState<string | null>(null);
+  const [editingReminderId, setEditingReminderId] = useState<string | null>(null);
   const [editingFixedCostPeriod, setEditingFixedCostPeriod] = useState("MONTHLY");
   const [editingFixedCostYear, setEditingFixedCostYear] = useState<string>(new Date().getFullYear().toString());
   const [newFixedCostPeriod, setNewFixedCostPeriod] = useState("MONTHLY");
@@ -445,103 +507,287 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                     </div>
                                   ) : (
                                     a.reminders.map((r: any) => {
-                                      const nextDeadline = r.lastCompletedHours + r.hoursInterval;
-                                      const remaining = nextDeadline - a.totalHours;
-                                      const isOverdue = remaining <= 0;
-                                      const isWarning = remaining > 0 && remaining <= 10;
+                                      let isOverdue = false;
+                                      let isWarning = false;
                                       
-                                      let statusColor = "var(--muted)";
-                                      let statusBg = "transparent";
-                                      let statusText = `Scade a ${nextDeadline.toFixed(1)}h (mancano ${remaining.toFixed(1)}h)`;
+                                      let hoursText = "";
+                                      let dateText = "";
+                                      let hoursRemainingNum = Infinity;
+                                      let daysRemainingNum = Infinity;
+                                      
+                                      if (r.hoursInterval !== null && r.hoursInterval !== undefined) {
+                                        const hoursInt = Number(r.hoursInterval);
+                                        const nextDeadlineHours = Number(r.lastCompletedHours) + hoursInt;
+                                        const remainingHours = nextDeadlineHours - a.totalHours;
+                                        hoursRemainingNum = remainingHours;
+                                        
+                                        if (remainingHours <= 0) {
+                                          isOverdue = true;
+                                          hoursText = `SCADUTO da ${Math.abs(remainingHours).toFixed(1)}h (limite: ${nextDeadlineHours.toFixed(1)}h)`;
+                                        } else if (remainingHours <= 10) {
+                                          isWarning = true;
+                                          hoursText = `In scadenza! Mancano ${remainingHours.toFixed(1)}h (limite: ${nextDeadlineHours.toFixed(1)}h)`;
+                                        } else {
+                                          hoursText = `In regola. Mancano ${remainingHours.toFixed(1)}h (limite: ${nextDeadlineHours.toFixed(1)}h)`;
+                                        }
+                                      }
+                                      
+                                      if (r.monthsInterval !== null && r.monthsInterval !== undefined && r.lastCompletedDate) {
+                                        const monthsInt = Number(r.monthsInterval);
+                                        const nextDeadlineDate = new Date(r.lastCompletedDate);
+                                        nextDeadlineDate.setMonth(nextDeadlineDate.getMonth() + monthsInt);
+                                        
+                                        const today = new Date();
+                                        const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                                        const deadlineStart = new Date(nextDeadlineDate.getFullYear(), nextDeadlineDate.getMonth(), nextDeadlineDate.getDate());
+                                        
+                                        const remainingDays = Math.ceil((deadlineStart.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
+                                        daysRemainingNum = remainingDays;
+                                        
+                                        const formattedDate = nextDeadlineDate.toLocaleDateString("it-IT", {
+                                          day: "2-digit",
+                                          month: "2-digit",
+                                          year: "numeric"
+                                        });
+                                        
+                                        if (remainingDays <= 0) {
+                                          isOverdue = true;
+                                          const absDays = Math.abs(remainingDays);
+                                          dateText = `SCADUTO da ${absDays} giorn${absDays === 1 ? 'o' : 'i'} (il ${formattedDate})`;
+                                        } else if (remainingDays <= 30) {
+                                          isWarning = true;
+                                          dateText = `In scadenza! Mancano ${remainingDays} giorn${remainingDays === 1 ? 'o' : 'i'} (il ${formattedDate})`;
+                                        } else {
+                                          dateText = `In regola. Mancano ${remainingDays} giorn${remainingDays === 1 ? 'o' : 'i'} (il ${formattedDate})`;
+                                        }
+                                      }
+                                      
+                                      let statusColor = "#1f6f5b";
+                                      let statusBg = "#ecf5f2";
+                                      let statusText = "In regola";
                                       
                                       if (isOverdue) {
                                         statusColor = "var(--danger)";
                                         statusBg = "rgba(180, 35, 24, 0.1)";
-                                        statusText = `🚨 SCADUTO da ${Math.abs(remaining).toFixed(1)}h (Scadenza: ${nextDeadline.toFixed(1)}h)`;
+                                        statusText = `🚨 SCADUTO!`;
                                       } else if (isWarning) {
                                         statusColor = "#b45309";
                                         statusBg = "#fef3c7";
-                                        statusText = `⚠️ In scadenza! Mancano ${remaining.toFixed(1)}h (Scadenza: ${nextDeadline.toFixed(1)}h)`;
+                                        statusText = `⚠️ In scadenza!`;
                                       } else {
-                                        statusColor = "#1f6f5b";
-                                        statusBg = "#ecf5f2";
-                                        statusText = `✅ In regola. Mancano ${remaining.toFixed(1)}h (Scadenza: ${nextDeadline.toFixed(1)}h)`;
+                                        statusText = `✅ In regola`;
+                                      }
+                                      
+                                      let detailStatus = "";
+                                      if (hoursText && dateText) {
+                                        detailStatus = `${hoursText} o ${dateText} (la prima che arriva)`;
+                                      } else if (hoursText) {
+                                        detailStatus = hoursText;
+                                      } else if (dateText) {
+                                        detailStatus = dateText;
                                       }
 
                                       return (
                                         <div key={r.id} style={{ border: "1px solid var(--border)", borderRadius: 12, padding: 12, background: "white" }}>
-                                          <div className="between">
-                                            <div>
-                                              <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>{r.description}</div>
-                                              <div className="muted" style={{ fontSize: "0.8rem", marginTop: 4 }}>
-                                                Intervallo: ogni {r.hoursInterval.toFixed(0)}h · Ultima esecuzione: a {r.lastCompletedHours.toFixed(1)}h
+                                          {editingReminderId === r.id ? (
+                                            <form 
+                                              action={async (fd) => {
+                                                await updateAircraftReminder(partnership.id, r.id, fd);
+                                                setEditingReminderId(null);
+                                              }} 
+                                              onSubmit={(e) => {
+                                                const target = e.currentTarget;
+                                                const hoursVal = target.hoursInterval.value;
+                                                const monthsVal = target.monthsInterval.value;
+                                                if (!hoursVal && !monthsVal) {
+                                                  e.preventDefault();
+                                                  alert("Inserisci almeno una frequenza (ore di volo o temporale).");
+                                                }
+                                              }}
+                                              className="grid" 
+                                              style={{ gap: 12, padding: 12, border: "1px solid var(--border)", borderRadius: 8, backgroundColor: "var(--bg)" }}
+                                            >
+                                              <div style={{ fontWeight: 600, fontSize: "0.85rem" }}>Modifica scadenza: {r.description}</div>
+                                              
+                                              <div className="grid grid-2" style={{ gap: 12 }}>
+                                                <div className="field">
+                                                  <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Descrizione/Titolo</label>
+                                                  <input className="input" name="description" defaultValue={r.description} required style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                                </div>
+                                                <div className="field">
+                                                  <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Note / Istruzioni</label>
+                                                  <input className="input" name="notes" defaultValue={r.notes || ""} placeholder="Es. olio 15W50" style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                                </div>
                                               </div>
-                                            </div>
-                                            <div className="row" style={{ gap: 12 }}>
-                                              <span style={{ 
-                                                fontSize: "0.8rem", 
-                                                fontWeight: 600, 
-                                                padding: "4px 8px", 
-                                                borderRadius: 8, 
-                                                color: statusColor, 
-                                                backgroundColor: statusBg 
-                                              }}>
-                                                {statusText}
-                                              </span>
-                                              {isAdmin && (
-                                                <div className="row" style={{ gap: 8 }}>
-                                                  <button 
-                                                    className="btn secondary" 
-                                                    style={{ padding: "4px 8px", fontSize: 11 }}
-                                                    type="button"
-                                                    onClick={() => setLoggingReminderId(loggingReminderId === r.id ? null : r.id)}
-                                                  >
-                                                    Registra Esecuzione
-                                                  </button>
-                                                  <form 
-                                                    action={deleteAircraftReminder.bind(null, partnership.id, r.id)}
-                                                    onSubmit={(e) => {
-                                                      if (!confirm("Sei sicuro di voler eliminare questa scadenza?")) {
-                                                        e.preventDefault();
-                                                      }
-                                                    }}
-                                                  >
-                                                    <button className="btn secondary" style={{ padding: "4px 8px", fontSize: 11, color: "var(--danger)" }} type="submit">
-                                                      Elimina
-                                                    </button>
-                                                  </form>
+
+                                              <div className="grid grid-4" style={{ gap: 12 }}>
+                                                <div className="field">
+                                                  <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Frequenza (ore di volo)</label>
+                                                  <input className="input" name="hoursInterval" type="number" step="1" min="1" defaultValue={r.hoursInterval !== null ? Number(r.hoursInterval) : ""} placeholder="Es. 50" style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                                </div>
+                                                <div className="field">
+                                                  <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Frequenza (mesi)</label>
+                                                  <input className="input" name="monthsInterval" type="number" step="1" min="1" defaultValue={r.monthsInterval !== null ? r.monthsInterval : ""} placeholder="Es. 12" style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                                </div>
+                                                <div className="field">
+                                                  <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Ultimo eseguito a (ore)</label>
+                                                  <input className="input" name="lastCompletedHours" type="number" step="0.1" min="0" defaultValue={Number(r.lastCompletedHours)} required style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                                </div>
+                                                <div className="field">
+                                                  <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Ultimo eseguito il</label>
+                                                  <input className="input" name="lastCompletedDate" type="date" defaultValue={r.lastCompletedDate ? new Date(r.lastCompletedDate).toISOString().substring(0, 10) : ""} style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                                </div>
+                                              </div>
+
+                                              {a.reminders.filter((rem: any) => rem.id !== r.id).length > 0 && (
+                                                <div style={{ marginTop: 8 }}>
+                                                  <label style={{ fontSize: "0.75rem", fontWeight: 600, display: "block", marginBottom: 6, color: "var(--muted)" }}>
+                                                    Questa manutenzione ne copre altre? (es. 100h copre 50h)
+                                                  </label>
+                                                  <div style={{ display: "flex", flexWrap: "wrap", gap: 16, backgroundColor: "white", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)" }}>
+                                                    {a.reminders.filter((rem: any) => rem.id !== r.id).map((rem: any) => (
+                                                      <label key={rem.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.8rem", cursor: "pointer", userSelect: "none" }}>
+                                                        <input 
+                                                          type="checkbox" 
+                                                          name="covers" 
+                                                          value={rem.id} 
+                                                          defaultChecked={r.covers?.some((c: any) => c.id === rem.id)} 
+                                                          onChange={(e) => handleCheckboxChange(e, a.reminders)}
+                                                        />
+                                                        <span>{rem.description}</span>
+                                                      </label>
+                                                    ))}
+                                                  </div>
                                                 </div>
                                               )}
-                                            </div>
-                                          </div>
 
-                                          {loggingReminderId === r.id && (
-                                            <form action={async (fd) => {
-                                              await logAircraftMaintenance(partnership.id, r.id, fd);
-                                              setLoggingReminderId(null);
-                                            }} className="grid" style={{ gap: 8, marginTop: 12, padding: 12, border: "1px solid var(--border)", borderRadius: 8, backgroundColor: "var(--bg)" }}>
-                                              <div style={{ fontWeight: 600, fontSize: "0.8rem" }}>Registra manutenzione effettuata: {r.description}</div>
-                                              <div className="grid grid-3" style={{ gap: 12 }}>
-                                                <div className="field">
-                                                  <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Ore aereo all'esecuzione</label>
-                                                  <input className="input" name="performedAtHours" type="number" step="0.1" min="0" defaultValue={a.totalHours.toFixed(1)} required style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
-                                                </div>
-                                                <div className="field">
-                                                  <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Data esecuzione</label>
-                                                  <input className="input" name="date" type="date" defaultValue={new Date().toISOString().substring(0, 10)} required style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
-                                                </div>
-                                                <div className="field">
-                                                  <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Note / Intervento</label>
-                                                  <input className="input" name="notes" placeholder="Es. olio 15W50" style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
-                                                </div>
-                                              </div>
                                               <div className="row" style={{ justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
-                                                <button className="btn secondary" style={{ padding: "4px 8px", fontSize: 11 }} type="button" onClick={() => setLoggingReminderId(null)}>
+                                                <button className="btn secondary" style={{ padding: "4px 8px", fontSize: 11 }} type="button" onClick={() => setEditingReminderId(null)}>
                                                   Annulla
                                                 </button>
                                                 <SubmitButton style={{ padding: "4px 8px", fontSize: 11 }}>Salva</SubmitButton>
                                               </div>
                                             </form>
+                                          ) : (
+                                            <>
+                                              <div className="between">
+                                                <div>
+                                                  <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>{r.description}</div>
+                                                  <div className="muted" style={{ fontSize: "0.8rem", marginTop: 4 }}>
+                                                    {r.hoursInterval !== null && `Ogni ${Number(r.hoursInterval).toFixed(0)}h (Ultima: a ${Number(r.lastCompletedHours).toFixed(1)}h)`}
+                                                    {r.hoursInterval !== null && r.monthsInterval !== null && ` o `}
+                                                    {r.monthsInterval !== null && `Ogni ${r.monthsInterval} mes${r.monthsInterval === 1 ? 'e' : 'i'} (Ultima: il ${r.lastCompletedDate ? new Date(r.lastCompletedDate).toLocaleDateString("it-IT") : 'mai'})`}
+                                                  </div>
+                                                  {r.notes && (
+                                                    <div style={{ fontSize: "0.8rem", color: "var(--muted)", fontStyle: "italic", marginTop: 4 }}>
+                                                      Note: {r.notes}
+                                                    </div>
+                                                  )}
+                                                  {r.covers && r.covers.length > 0 && (
+                                                    <div style={{ fontSize: "0.8rem", color: "var(--primary-strong)", marginTop: 6, display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+                                                      <span style={{ fontSize: "11px", backgroundColor: "rgba(2, 132, 199, 0.1)", color: "#0284c7", padding: "2px 6px", borderRadius: 4, fontWeight: 500 }}>
+                                                        Copre anche:
+                                                      </span>
+                                                      {r.covers.map((c: any) => (
+                                                        <span key={c.id} className="pill" style={{ fontSize: "11px", padding: "2px 6px" }}>
+                                                          {c.description}
+                                                        </span>
+                                                      ))}
+                                                    </div>
+                                                  )}
+                                                  {r.coveredBy && r.coveredBy.length > 0 && (
+                                                    <div style={{ fontSize: "0.8rem", color: "var(--muted)", marginTop: 6, display: "flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+                                                      <span style={{ fontSize: "11px", backgroundColor: "var(--bg)", color: "var(--text)", padding: "2px 6px", borderRadius: 4, fontWeight: 500 }}>
+                                                        Coperto da:
+                                                      </span>
+                                                      {r.coveredBy.map((c: any) => (
+                                                        <span key={c.id} className="pill" style={{ fontSize: "11px", padding: "2px 6px" }}>
+                                                          {c.description}
+                                                        </span>
+                                                      ))}
+                                                    </div>
+                                                  )}
+                                                </div>
+                                                <div className="row" style={{ gap: 12 }}>
+                                                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                                                    <span style={{ 
+                                                      fontSize: "0.8rem", 
+                                                      fontWeight: 600, 
+                                                      padding: "4px 8px", 
+                                                      borderRadius: 8, 
+                                                      color: statusColor, 
+                                                      backgroundColor: statusBg 
+                                                    }}>
+                                                      {statusText}
+                                                    </span>
+                                                    <span style={{ fontSize: "0.75rem", color: "var(--muted)" }}>
+                                                      {detailStatus}
+                                                    </span>
+                                                  </div>
+                                                  {isAdmin && (
+                                                    <div className="row" style={{ gap: 8 }}>
+                                                      <button 
+                                                        className="btn secondary" 
+                                                        style={{ padding: "4px 8px", fontSize: 11 }}
+                                                        type="button"
+                                                        onClick={() => setLoggingReminderId(loggingReminderId === r.id ? null : r.id)}
+                                                      >
+                                                        Registra Esecuzione
+                                                      </button>
+                                                      <button 
+                                                        className="btn secondary" 
+                                                        style={{ padding: "4px 8px", fontSize: 11 }}
+                                                        type="button"
+                                                        onClick={() => setEditingReminderId(editingReminderId === r.id ? null : r.id)}
+                                                      >
+                                                        Modifica
+                                                      </button>
+                                                      <form 
+                                                        action={deleteAircraftReminder.bind(null, partnership.id, r.id)}
+                                                        onSubmit={(e) => {
+                                                          if (!confirm("Sei sicuro di voler eliminare questa scadenza?")) {
+                                                            e.preventDefault();
+                                                          }
+                                                        }}
+                                                      >
+                                                        <button className="btn secondary" style={{ padding: "4px 8px", fontSize: 11, color: "var(--danger)" }} type="submit">
+                                                          Elimina
+                                                        </button>
+                                                      </form>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </div>
+
+                                              {loggingReminderId === r.id && (
+                                                <form action={async (fd) => {
+                                                  await logAircraftMaintenance(partnership.id, r.id, fd);
+                                                  setLoggingReminderId(null);
+                                                }} className="grid" style={{ gap: 8, marginTop: 12, padding: 12, border: "1px solid var(--border)", borderRadius: 8, backgroundColor: "var(--bg)" }}>
+                                                  <div style={{ fontWeight: 600, fontSize: "0.8rem" }}>Registra manutenzione effettuata: {r.description}</div>
+                                                  <div className="grid grid-3" style={{ gap: 12 }}>
+                                                    <div className="field">
+                                                      <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Ore aereo all'esecuzione</label>
+                                                      <input className="input" name="performedAtHours" type="number" step="0.1" min="0" defaultValue={a.totalHours.toFixed(1)} required style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                                    </div>
+                                                    <div className="field">
+                                                      <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Data esecuzione</label>
+                                                      <input className="input" name="date" type="date" defaultValue={new Date().toISOString().substring(0, 10)} required style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                                    </div>
+                                                    <div className="field">
+                                                      <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Note / Intervento</label>
+                                                      <input className="input" name="notes" placeholder="Es. olio 15W50" style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                                    </div>
+                                                  </div>
+                                                  <div className="row" style={{ justifyContent: "flex-end", gap: 8, marginTop: 4 }}>
+                                                    <button className="btn secondary" style={{ padding: "4px 8px", fontSize: 11 }} type="button" onClick={() => setLoggingReminderId(null)}>
+                                                      Annulla
+                                                    </button>
+                                                    <SubmitButton style={{ padding: "4px 8px", fontSize: 11 }}>Salva</SubmitButton>
+                                                  </div>
+                                                </form>
+                                              )}
+                                            </>
                                           )}
                                         </div>
                                       );
@@ -550,22 +796,71 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                 </div>
 
                                 {isAdmin && (
-                                  <form action={addAircraftReminder.bind(null, partnership.id, a.id)} className="grid" style={{ gap: 12, padding: 12, border: "1px dashed var(--border)", borderRadius: 12, background: "white" }}>
+                                  <form 
+                                    action={addAircraftReminder.bind(null, partnership.id, a.id)} 
+                                    onSubmit={(e) => {
+                                      const target = e.currentTarget;
+                                      const hoursVal = target.hoursInterval.value;
+                                      const monthsVal = target.monthsInterval.value;
+                                      if (!hoursVal && !monthsVal) {
+                                        e.preventDefault();
+                                        alert("Inserisci almeno una frequenza (ore di volo o temporale).");
+                                      }
+                                    }}
+                                    className="grid" 
+                                    style={{ gap: 12, padding: 12, border: "1px dashed var(--border)", borderRadius: 12, background: "white" }}
+                                  >
                                     <div style={{ fontWeight: 600, fontSize: "0.85rem" }}>➕ Nuova scadenza manutenzione</div>
-                                    <div className="grid grid-3" style={{ gap: 12 }}>
+                                    <div className="grid grid-2" style={{ gap: 12 }}>
                                       <div className="field">
-                                        <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Descrizione</label>
+                                        <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Descrizione/Titolo</label>
                                         <input className="input" name="description" placeholder="Es. Cambio Olio (50h)" required style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
                                       </div>
                                       <div className="field">
+                                        <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Note / Istruzioni</label>
+                                        <input className="input" name="notes" placeholder="Dettagli aggiuntivi" style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                      </div>
+                                    </div>
+                                    <div className="grid grid-4" style={{ gap: 12 }}>
+                                      <div className="field">
                                         <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Frequenza (ore di volo)</label>
-                                        <input className="input" name="hoursInterval" type="number" step="1" min="1" placeholder="Es. 50" required style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                        <input className="input" name="hoursInterval" type="number" step="1" min="1" placeholder="Es. 50" style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                      </div>
+                                      <div className="field">
+                                        <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Frequenza (mesi)</label>
+                                        <input className="input" name="monthsInterval" type="number" step="1" min="1" placeholder="Es. 12" style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
                                       </div>
                                       <div className="field">
                                         <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Ultimo eseguito a (ore)</label>
                                         <input className="input" name="lastCompletedHours" type="number" step="0.1" min="0" placeholder={`Opzionale (default: ${a.totalHours.toFixed(1)})`} style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
                                       </div>
+                                      <div className="field">
+                                        <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Ultimo eseguito il</label>
+                                        <input className="input" name="lastCompletedDate" type="date" defaultValue={new Date().toISOString().substring(0, 10)} style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                      </div>
                                     </div>
+
+                                    {a.reminders && a.reminders.length > 0 && (
+                                      <div style={{ marginTop: 8 }}>
+                                        <label style={{ fontSize: "0.75rem", fontWeight: 600, display: "block", marginBottom: 6, color: "var(--muted)" }}>
+                                          Questa manutenzione ne copre altre?
+                                        </label>
+                                        <div style={{ display: "flex", flexWrap: "wrap", gap: 16, backgroundColor: "var(--bg)", padding: "8px 12px", borderRadius: 8, border: "1px solid var(--border)" }}>
+                                          {a.reminders.map((rem: any) => (
+                                            <label key={rem.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "0.8rem", cursor: "pointer", userSelect: "none" }}>
+                                              <input 
+                                                type="checkbox" 
+                                                name="covers" 
+                                                value={rem.id} 
+                                                onChange={(e) => handleCheckboxChange(e, a.reminders)}
+                                              />
+                                              <span>{rem.description}</span>
+                                            </label>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    )}
+
                                     <div className="row" style={{ justifyContent: "flex-end" }}>
                                       <SubmitButton style={{ padding: "6px 12px", fontSize: 12 }}>Aggiungi scadenza</SubmitButton>
                                     </div>

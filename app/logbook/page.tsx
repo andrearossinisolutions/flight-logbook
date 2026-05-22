@@ -67,10 +67,9 @@ export default async function DashboardPage({
     partnershipName: string;
     aircraftRegistration: string;
     reminderDescription: string;
-    remainingHours: number;
-    nextDeadline: number;
-    hoursInterval: number;
     isOverdue: boolean;
+    labelText: string;
+    detailsText: string;
   }> = [];
 
   for (const p of partnerships) {
@@ -79,19 +78,87 @@ export default async function DashboardPage({
       const totalHours = Number(a.initialHours) + (flightMinutes / 60);
       
       for (const r of a.reminders) {
-        const nextDeadline = Number(r.lastCompletedHours) + Number(r.hoursInterval);
-        const remaining = nextDeadline - totalHours;
+        let isOverdue = false;
+        let isWarning = false;
         
-        if (remaining <= 10) {
+        let hoursRemainingNum = Infinity;
+        let daysRemainingNum = Infinity;
+        
+        const detailsParts: string[] = [];
+        
+        if (r.hoursInterval !== null && r.hoursInterval !== undefined) {
+          const hoursInt = Number(r.hoursInterval);
+          const nextDeadlineHours = Number(r.lastCompletedHours) + hoursInt;
+          const remainingHours = nextDeadlineHours - totalHours;
+          hoursRemainingNum = remainingHours;
+          
+          if (remainingHours <= 10) {
+            isWarning = true;
+          }
+          if (remainingHours <= 0) {
+            isOverdue = true;
+          }
+          
+          detailsParts.push(`Scadenza a ${nextDeadlineHours.toFixed(1)}h (ogni ${hoursInt}h)`);
+        }
+        
+        if (r.monthsInterval !== null && r.monthsInterval !== undefined && r.lastCompletedDate) {
+          const monthsInt = Number(r.monthsInterval);
+          const nextDeadlineDate = new Date(r.lastCompletedDate);
+          nextDeadlineDate.setMonth(nextDeadlineDate.getMonth() + monthsInt);
+          
+          const today = new Date();
+          const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          const deadlineStart = new Date(nextDeadlineDate.getFullYear(), nextDeadlineDate.getMonth(), nextDeadlineDate.getDate());
+          
+          const remainingDays = Math.ceil((deadlineStart.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
+          daysRemainingNum = remainingDays;
+          
+          if (remainingDays <= 30) {
+            isWarning = true;
+          }
+          if (remainingDays <= 0) {
+            isOverdue = true;
+          }
+          
+          const formattedDate = nextDeadlineDate.toLocaleDateString("it-IT", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric"
+          });
+          detailsParts.push(`Scadenza il ${formattedDate} (ogni ${monthsInt} mesi)`);
+        }
+        
+        if (isWarning || isOverdue) {
+          let labelText = "";
+          const hasHours = r.hoursInterval !== null && r.hoursInterval !== undefined;
+          const hasMonths = r.monthsInterval !== null && r.monthsInterval !== undefined && r.lastCompletedDate;
+          
+          const isHoursMoreUrgent = hasHours && (!hasMonths || (hoursRemainingNum / 10 <= daysRemainingNum / 30));
+          
+          if (isHoursMoreUrgent) {
+            if (hoursRemainingNum <= 0) {
+              labelText = `SCADUTO da ${Math.abs(hoursRemainingNum).toFixed(1)} ore!`;
+            } else {
+              labelText = `In scadenza! Mancano solo ${hoursRemainingNum.toFixed(1)} ore.`;
+            }
+          } else if (hasMonths) {
+            if (daysRemainingNum <= 0) {
+              const absDays = Math.abs(daysRemainingNum);
+              labelText = `SCADUTO da ${absDays} giorn${absDays === 1 ? 'o' : 'i'}!`;
+            } else {
+              labelText = `In scadenza! Mancano solo ${daysRemainingNum} giorn${daysRemainingNum === 1 ? 'o' : 'i'}.`;
+            }
+          }
+          
           alerts.push({
             partnershipId: p.id,
             partnershipName: p.name,
             aircraftRegistration: a.registration,
             reminderDescription: r.description,
-            remainingHours: remaining,
-            nextDeadline,
-            hoursInterval: Number(r.hoursInterval),
-            isOverdue: remaining <= 0,
+            isOverdue,
+            labelText,
+            detailsText: `${r.description} · ${detailsParts.join(" o ")}`
           });
         }
       }
@@ -296,9 +363,6 @@ export default async function DashboardPage({
             const border = isOverdue ? "1px solid var(--danger)" : "1px solid #b45309";
             const color = isOverdue ? "var(--danger)" : "#b45309";
             const icon = isOverdue ? "🚨" : "⚠️";
-            const label = isOverdue 
-              ? `SCADUTO da ${Math.abs(alert.remainingHours).toFixed(1)} ore!` 
-              : `In scadenza! Mancano solo ${alert.remainingHours.toFixed(1)} ore.`;
 
             return (
               <div 
@@ -322,7 +386,7 @@ export default async function DashboardPage({
                       Manutenzione {alert.aircraftRegistration} ({alert.partnershipName})
                     </div>
                     <div style={{ fontSize: "0.85rem", marginTop: 2, opacity: 0.9 }}>
-                      {alert.reminderDescription} · {label} (Scadenza a {alert.nextDeadline.toFixed(1)}h, intervallo ogni {alert.hoursInterval.toFixed(0)}h)
+                      {alert.labelText} · {alert.detailsText}
                     </div>
                   </div>
                 </div>

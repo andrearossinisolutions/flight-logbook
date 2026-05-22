@@ -33,6 +33,10 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
             }
           },
           reminders: {
+            include: {
+              covers: true,
+              coveredBy: true
+            },
             orderBy: {
               hoursInterval: 'asc'
             }
@@ -121,8 +125,12 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
         totalHours,
         reminders: (a.reminders || []).map(r => ({
           ...r,
-          hoursInterval: Number(r.hoursInterval),
+          hoursInterval: r.hoursInterval ? Number(r.hoursInterval) : null,
           lastCompletedHours: Number(r.lastCompletedHours),
+          monthsInterval: r.monthsInterval ? Number(r.monthsInterval) : null,
+          lastCompletedDate: r.lastCompletedDate ? r.lastCompletedDate.toISOString() : null,
+          covers: (r.covers || []).map((c: any) => ({ id: c.id, description: c.description })),
+          coveredBy: (r.coveredBy || []).map((c: any) => ({ id: c.id, description: c.description })),
           createdAt: r.createdAt.toISOString(),
           updatedAt: r.updatedAt.toISOString(),
         })),

@@ -178,8 +178,14 @@ model PartnershipAircraftReminder {
   aircraftId         String
   aircraft           PartnershipAircraft @relation(fields: [aircraftId], references: [id], onDelete: Cascade)
   description        String
-  hoursInterval      Decimal
+  notes              String?
+  hoursInterval      Decimal?
+  monthsInterval     Int?
   lastCompletedHours Decimal             @default(0)
+  lastCompletedDate  DateTime?           @default(now())
+  
+  covers             PartnershipAircraftReminder[] @relation("ReminderCovers")
+  coveredBy          PartnershipAircraftReminder[] @relation("ReminderCovers")
   
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt

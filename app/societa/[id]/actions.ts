@@ -606,9 +606,18 @@ export async function addAircraftReminder(partnershipId: string, aircraftId: str
   if (membership?.role !== "ADMIN") return;
 
   const description = String(formData.get("description") || "").trim();
-  const hoursInterval = Number(formData.get("hoursInterval") || 0);
+  const notes = String(formData.get("notes") || "").trim();
   
-  if (!description || hoursInterval <= 0) return;
+  const hoursIntervalRaw = formData.get("hoursInterval");
+  const hoursInterval = hoursIntervalRaw && hoursIntervalRaw !== "" ? Number(hoursIntervalRaw) : null;
+
+  const monthsIntervalRaw = formData.get("monthsInterval");
+  const monthsInterval = monthsIntervalRaw && monthsIntervalRaw !== "" ? Number(monthsIntervalRaw) : null;
+
+  if (!description) return;
+  if ((hoursInterval === null || hoursInterval <= 0) && (monthsInterval === null || monthsInterval <= 0)) {
+    throw new Error("Specificare almeno un intervallo orario o temporale.");
+  }
 
   // Calculate default lastCompletedHours from aircraft current hours if not specified
   const lastCompletedHoursInput = formData.get("lastCompletedHours");
@@ -630,12 +639,76 @@ export async function addAircraftReminder(partnershipId: string, aircraftId: str
     lastCompletedHoursNum = Number(aircraft.initialHours) + (flightMinutes / 60);
   }
 
+  const lastCompletedDateInput = formData.get("lastCompletedDate");
+  const lastCompletedDate = lastCompletedDateInput && lastCompletedDateInput !== "" 
+    ? new Date(String(lastCompletedDateInput)) 
+    : new Date();
+
+  const coversIds = formData.getAll("covers").map(String);
+
   await prisma.partnershipAircraftReminder.create({
     data: {
       aircraftId,
       description,
-      hoursInterval,
+      notes: notes || null,
+      hoursInterval: hoursInterval || null,
+      monthsInterval: monthsInterval || null,
       lastCompletedHours: lastCompletedHoursNum,
+      lastCompletedDate,
+      covers: {
+        connect: coversIds.map(id => ({ id }))
+      }
+    }
+  });
+
+  revalidatePath(`/societa/${partnershipId}`);
+}
+
+export async function updateAircraftReminder(partnershipId: string, reminderId: string, formData: FormData) {
+  const user = await requireUser();
+  const membership = await prisma.partnershipMember.findUnique({
+    where: { partnershipId_userId: { partnershipId, userId: user.id } }
+  });
+  if (membership?.role !== "ADMIN") return;
+
+  const description = String(formData.get("description") || "").trim();
+  const notes = String(formData.get("notes") || "").trim();
+  
+  const hoursIntervalRaw = formData.get("hoursInterval");
+  const hoursInterval = hoursIntervalRaw && hoursIntervalRaw !== "" ? Number(hoursIntervalRaw) : null;
+
+  const monthsIntervalRaw = formData.get("monthsInterval");
+  const monthsInterval = monthsIntervalRaw && monthsIntervalRaw !== "" ? Number(monthsIntervalRaw) : null;
+
+  if (!description) return;
+  if ((hoursInterval === null || hoursInterval <= 0) && (monthsInterval === null || monthsInterval <= 0)) {
+    throw new Error("Specificare almeno un intervallo orario o temporale.");
+  }
+
+  const lastCompletedHoursInput = formData.get("lastCompletedHours");
+  const lastCompletedHoursNum = lastCompletedHoursInput && lastCompletedHoursInput !== "" 
+    ? Number(lastCompletedHoursInput) 
+    : 0;
+
+  const lastCompletedDateInput = formData.get("lastCompletedDate");
+  const lastCompletedDate = lastCompletedDateInput && lastCompletedDateInput !== "" 
+    ? new Date(String(lastCompletedDateInput)) 
+    : new Date();
+
+  const coversIds = formData.getAll("covers").map(String);
+
+  await prisma.partnershipAircraftReminder.update({
+    where: { id: reminderId },
+    data: {
+      description,
+      notes: notes || null,
+      hoursInterval: hoursInterval || null,
+      monthsInterval: monthsInterval || null,
+      lastCompletedHours: lastCompletedHoursNum,
+      lastCompletedDate,
+      covers: {
+        set: coversIds.map(id => ({ id }))
+      }
     }
   });
 
@@ -665,9 +738,32 @@ export async function logAircraftMaintenance(partnershipId: string, reminderId: 
 
   const reminder = await prisma.partnershipAircraftReminder.findUnique({
     where: { id: reminderId },
-    include: { aircraft: true }
+    include: { 
+      aircraft: true
+    }
   });
   if (!reminder) return;
+
+  // Collect all covered reminders transitively (recursive)
+  const allCoveredReminders: { id: string; description: string }[] = [];
+  const visited = new Set<string>([reminderId]);
+
+  async function collectCovers(id: string) {
+    const r = await prisma.partnershipAircraftReminder.findUnique({
+      where: { id },
+      include: { covers: true }
+    });
+    if (!r) return;
+    for (const c of r.covers) {
+      if (!visited.has(c.id)) {
+        visited.add(c.id);
+        allCoveredReminders.push({ id: c.id, description: c.description });
+        await collectCovers(c.id);
+      }
+    }
+  }
+
+  await collectCovers(reminderId);
 
   const performedAtHours = Number(formData.get("performedAtHours") || 0);
   const dateInput = String(formData.get("date") || "");
@@ -675,10 +771,13 @@ export async function logAircraftMaintenance(partnershipId: string, reminderId: 
   const notes = String(formData.get("notes") || "").trim();
 
   await prisma.$transaction(async (tx) => {
-    // 1. Update reminder last completed hours
+    // 1. Update reminder last completed hours & date
     await tx.partnershipAircraftReminder.update({
       where: { id: reminderId },
-      data: { lastCompletedHours: performedAtHours }
+      data: { 
+        lastCompletedHours: performedAtHours,
+        lastCompletedDate: date
+      }
     });
 
     // 2. Create history log
@@ -691,6 +790,28 @@ export async function logAircraftMaintenance(partnershipId: string, reminderId: 
         notes: notes || null,
       }
     });
+
+    // 3. Update all covered reminders
+    for (const covered of allCoveredReminders) {
+      await tx.partnershipAircraftReminder.update({
+        where: { id: covered.id },
+        data: {
+          lastCompletedHours: performedAtHours,
+          lastCompletedDate: date
+        }
+      });
+
+      // Create history log for the covered reminder
+      await tx.partnershipAircraftMaintenanceLog.create({
+        data: {
+          aircraftId: reminder.aircraftId,
+          description: `Esecuzione: ${covered.description} (coperta da ${reminder.description})`,
+          performedAtHours,
+          date,
+          notes: notes ? `Tramite ${reminder.description}. Note: ${notes}` : `Eseguita tramite ${reminder.description}`,
+        }
+      });
+    }
   });
 
   revalidatePath(`/societa/${partnershipId}`);
