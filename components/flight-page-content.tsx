@@ -7,14 +7,16 @@ import { requireUser } from "@/lib/require-user";
 import {
   buildFlightInitialValues,
   parseFlightFormData,
+  splitMinutes,
   type FlightFormValues,
 } from "@/lib/flight-form";
-import { defaultWarmupMinutesForDate } from "@/lib/utils";
+import { defaultWarmupMinutesForDate, formatDateTimeInput } from "@/lib/utils";
 import { MovementType } from "@prisma/client";
 
 type FlightPageContentProps =
   | {
       mode: "create";
+      bookingId?: string;
     }
   | {
       mode: "edit";
@@ -26,6 +28,16 @@ export default async function FlightPageContent(
 ) {
   const user = await requireUser();
   const settings = user.settings;
+
+  const booking = (props.mode === "create" && props.bookingId)
+    ? await prisma.partnershipBooking.findUnique({
+        where: { id: props.bookingId },
+        include: {
+          aircraft: true,
+          partnership: true,
+        },
+      })
+    : null;
 
   const movements = await prisma.movement.findMany({
     where: { userId: user.id },
@@ -92,6 +104,7 @@ export default async function FlightPageContent(
 
     const user = await requireUser();
     const parsed = parseFlightFormData(formData);
+    const bookingId = formData.get("bookingId") ? String(formData.get("bookingId")).trim() : null;
 
     if (props.mode === "create") {
       await prisma.$transaction(async (tx) => {
@@ -135,6 +148,20 @@ export default async function FlightPageContent(
             partnershipAircraftId: partnershipAircraft ? partnershipAircraft.id : null,
           },
         });
+
+        if (bookingId) {
+          const b = await tx.partnershipBooking.findFirst({
+            where: {
+              id: bookingId,
+              userId: user.id
+            }
+          });
+          if (b) {
+            await tx.partnershipBooking.delete({
+              where: { id: bookingId }
+            });
+          }
+        }
       });
     } else {
       const movementId = String(formData.get("movementId") ?? "");
@@ -223,6 +250,33 @@ export default async function FlightPageContent(
   };
   let movementId: string | undefined = undefined;
 
+  if (props.mode === "create" && booking) {
+    title = "Registra volo da prenotazione";
+    subtitle = "Completa la registrazione del volo effettuato con l'aereo della società.";
+    
+    const durationMinutes = Math.round((booking.endTime.getTime() - booking.startTime.getTime()) / 60000);
+    const manualPrefill = splitMinutes(durationMinutes);
+    
+    const hourlyFuelCost = Number(booking.aircraft.hourlyFuelCost);
+    const hourlyMaintCost = Number(booking.aircraft.hourlyMaintCost);
+    const hourlyEngineFund = Number(booking.aircraft.hourlyEngineFund);
+    const totalHourlyCost = hourlyFuelCost + hourlyMaintCost + hourlyEngineFund;
+
+    initialValues = {
+      date: formatDateTimeInput(booking.startTime),
+      aircraftRegistration: booking.aircraft.registration,
+      aircraftType: booking.aircraft.type,
+      takeoffPlace: settings?.defaultBase ?? "",
+      isDraft: booking.startTime > new Date(),
+      inputMode: "MANUAL",
+      manualHours: String(manualPrefill.hours),
+      manualMinutes: String(manualPrefill.minutes),
+      rentalRateApplied: String(totalHourlyCost),
+      instructorRateApplied: String(Number(settings?.instructorRatePerHour ?? 80)),
+      notes: booking.notes ? `Prenotazione: ${booking.notes}` : "Volo societario prenotato",
+    };
+  }
+
   if (props.mode === "edit" && movementToEdit?.flight) {
     title = "Modifica volo";
     subtitle = "Stesso form del nuovo volo, con dati precompilati.";
@@ -264,6 +318,7 @@ export default async function FlightPageContent(
         mode={props.mode}
         action={saveFlight}
         movementId={movementId}
+        bookingId={booking?.id}
         currentBalance={currentBalance}
         totalFlightMinutes={totalFlightMinutes}
         dateBipoExam={settings?.dateBipoExam ?? null}

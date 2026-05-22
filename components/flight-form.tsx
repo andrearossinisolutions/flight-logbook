@@ -19,6 +19,7 @@ type FlightFormProps = {
   dateBipoExam: Date | null;
   initialValues?: Partial<FlightFormValues>;
   movementId?: string;
+  bookingId?: string;
   submitLabel?: string;
   partnershipAircrafts?: Array<{
     id: string;
@@ -78,6 +79,7 @@ export default function FlightForm({
   dateBipoExam,
   initialValues,
   movementId,
+  bookingId,
   partnershipAircrafts = [],
   rentalAircrafts = [],
 }: FlightFormProps) {
@@ -226,6 +228,9 @@ export default function FlightForm({
       <form action={action} className="grid">
         {mode === "edit" && movementId ? (
           <input type="hidden" name="movementId" value={movementId} />
+        ) : null}
+        {bookingId ? (
+          <input type="hidden" name="bookingId" value={bookingId} />
         ) : null}
 
         <div className="card">

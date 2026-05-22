@@ -14,6 +14,7 @@ import {
   CalendarPlusIcon,
   MoneyBillIcon,
   PencilIcon,
+  PlusIcon,
 } from "@/components/icons";
 import { requireUser } from "@/lib/require-user";
 import { eur, formatDateDisplay, formatTimeDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate, daysToDate } from "@/lib/utils";
@@ -35,6 +36,15 @@ export default async function DashboardPage({
     where: { userId: user.id },
     include: { flight: true },
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
+  });
+
+  const bookings = await prisma.partnershipBooking.findMany({
+    where: { userId: user.id },
+    include: {
+      aircraft: true,
+      partnership: true,
+    },
+    orderBy: { startTime: "asc" },
   });
 
   type MovementItem = (typeof allMovements)[number];
@@ -309,6 +319,54 @@ export default async function DashboardPage({
     }
   });
 
+  const filteredBookings = bookings.filter((booking) => {
+    if (!filterVal) return true;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    switch (filterVal) {
+      case "pianificazioni":
+        return booking.startTime >= today;
+      case "voli-passati":
+        return false;
+      case "pagamenti":
+        return false;
+      case "promemoria-futuri":
+        return false;
+      default:
+        return true;
+    }
+  });
+
+  type CombinedItem =
+    | {
+        isBooking: true;
+        id: string;
+        date: Date;
+        booking: (typeof bookings)[number];
+      }
+    | {
+        isBooking: false;
+        id: string;
+        date: Date;
+        movement: MovementItem;
+      };
+
+  const combinedItems: CombinedItem[] = [
+    ...movements.map((m) => ({
+      isBooking: false as const,
+      id: m.id,
+      date: m.date,
+      movement: m,
+    })),
+    ...filteredBookings.map((b) => ({
+      isBooking: true as const,
+      id: b.id,
+      date: b.startTime,
+      booking: b,
+    })),
+  ].sort((a, b) => b.date.getTime() - a.date.getTime());
+
   async function deleteMovement(formData: FormData) {
     "use server";
 
@@ -553,55 +611,129 @@ export default async function DashboardPage({
             </tr>
           </thead>
           <tbody>
-            {movements.length === 0 ? (
+            {combinedItems.length === 0 ? (
               <tr>
                 <td colSpan={5} className="muted">
-                  Nessun movimento inserito.
+                  Nessun movimento o prenotazione trovato.
                 </td>
               </tr>
             ) : null}
 
-            {movements.map((item: MovementItem) => {
-              const now = new Date()
+            {combinedItems.map((item) => {
+              const now = new Date();
               const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
               const isFutureMovement = item.date > now;
+
+              if (item.isBooking) {
+                const booking = item.booking;
+                return (
+                  <tr key={booking.id}>
+                    <td>
+                      <div className={"inline-meta" + (isFutureMovement ? " future-movement" : "")}>
+                        <CalendarIcon />
+                        <span>{formatDateDisplay(item.date)}</span>
+                      </div><br />
+                      <div className={"inline-meta" + (isFutureMovement ? " future-movement" : "")}>
+                        🕒 <span>{formatTimeDisplay(item.date)}</span>
+                      </div>
+                    </td>
+
+                    <td>
+                      <div className="inline-meta">
+                        <span style={{ fontSize: "16px", display: "inline-block", lineHeight: 1 }}>📅</span>
+                        <span className={isFutureMovement ? "future-movement" : undefined}>
+                          Prenotazione
+                        </span>
+                      </div>
+                    </td>
+
+                    <td>
+                      <div className="grid grid-2">
+                        <div>
+                          <div className={"muted" + (isFutureMovement ? " future-movement" : "")}>
+                            ✈️ {booking.aircraft.registration} ({booking.aircraft.type})
+                          </div>
+                          <div className={isFutureMovement ? "future-movement" : undefined} style={{ fontSize: "0.8rem", marginTop: 2 }}>
+                            Società: <span className="pill" style={{ fontSize: "0.72rem", backgroundColor: "var(--border)", padding: "2px 6px", borderRadius: 6 }}>{booking.partnership.name}</span>
+                          </div>
+                        </div>
+                        <div>
+                          {booking.notes && <div className={isFutureMovement ? "future-movement" : undefined} style={{ fontSize: "0.85rem" }}>Note: <i>{booking.notes}</i></div>}
+                        </div>
+                      </div>
+                    </td>
+
+                    <td style={{ fontWeight: 700 }} className="muted">
+                      —
+                    </td>
+
+                    <td>
+                      <div className="row" style={{ gap: 8, flexWrap: "nowrap", whiteSpace: "nowrap" }}>
+                        <Link
+                          href={`/new-flight?bookingId=${booking.id}`}
+                          className="btn"
+                          style={{
+                            padding: !isFutureMovement ? "6px 12px" : "8px",
+                            fontSize: "0.8rem",
+                            lineHeight: 1,
+                            borderRadius: 8,
+                            backgroundColor: !isFutureMovement ? "#16a34a" : "var(--border)",
+                            borderColor: !isFutureMovement ? "#16a34a" : "var(--border)",
+                            color: !isFutureMovement ? "white" : "var(--text)",
+                            fontWeight: 600,
+                            textDecoration: "none",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center"
+                          }}
+                          title={isFutureMovement ? "Precompila volo" : "Registra volo"}
+                        >
+                          {!isFutureMovement ? "Registra volo" : <PlusIcon size={16} />}
+                        </Link>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              }
+
+              const m = item.movement;
               return (
-                <tr key={item.id}>
+                <tr key={m.id}>
                   <td>
                     <div className={"inline-meta" + (isFutureMovement ? " future-movement" : "")}>
                       <CalendarIcon />
-                      <span>{formatDateDisplay(item.date)}</span>
+                      <span>{formatDateDisplay(m.date)}</span>
                     </div><br />
-                    {((item.type === "FLIGHT") || (item.type === "REMINDER" && (item.date.getHours() !== 0 || item.date.getMinutes() !== 0))) &&
+                    {((m.type === "FLIGHT") || (m.type === "REMINDER" && (m.date.getHours() !== 0 || m.date.getMinutes() !== 0))) &&
                       <div className={"inline-meta" + (isFutureMovement ? " future-movement" : "")}>
-                        🕒 <span>{formatTimeDisplay(item.date)}</span>
+                        🕒 <span>{formatTimeDisplay(m.date)}</span>
                       </div>
                     }
                   </td>
 
                   <td>
                     <div className="inline-meta">
-                      {item.type === "FLIGHT" ? (
+                      {m.type === "FLIGHT" ? (
                         <AirplaneIcon />
-                      ) : item.type === "REMINDER" ? (
+                      ) : m.type === "REMINDER" ? (
                         <span style={{ fontSize: "16px", display: "inline-block", lineHeight: 1 }}>🔔</span>
                       ) : (
                         <MoneyBillIcon />
                       )}
                       <span className={isFutureMovement ? "future-movement" : undefined}>
-                        {item.type === "FLIGHT"
-                          ? item.isDraft
-                            ? item.date < now
+                        {m.type === "FLIGHT"
+                          ? m.isDraft
+                            ? m.date < now
                               ? <span style={{ color: "#b91c1c" }}>Pianificazione<br />da confermare</span>
                               : "Pianificazione"
-                            : flightType(item.flight)
-                          : item.type === "REMINDER"
+                            : flightType(m.flight)
+                          : m.type === "REMINDER"
                             ? "Promemoria"
-                            : item.isDraft
-                              ? item.date < today
+                            : m.isDraft
+                              ? m.date < today
                                 ? <span style={{ color: "#b91c1c" }}>Pagamento<br />da confermare</span>
                                 : "Scadenza"
-                              : item.type === "TOPUP" && Number(item.amount) < 0
+                              : m.type === "TOPUP" && Number(m.amount) < 0
                                 ? "Rettifica saldo"
                                 : "Pagamento"}
                       </span>
@@ -609,19 +741,19 @@ export default async function DashboardPage({
                   </td>
 
                   <td>
-                    {dashboardItem(item, allMovements, isFutureMovement)}
+                    {dashboardItem(m, allMovements, isFutureMovement)}
                   </td>
 
                   <td style={{ fontWeight: 700 }}>
-                    {item.type === "REMINDER" ? "—" : eur(Number(item.amount))}
+                    {m.type === "REMINDER" ? "—" : eur(Number(m.amount))}
                   </td>
 
                   <td>
                     <div className="row" style={{ gap: 8, flexWrap: "nowrap", whiteSpace: "nowrap" }}>
-                      {((item.isDraft && item.date >= today) || (item.type === "REMINDER" && item.date >= today)) ? (
+                      {((m.isDraft && m.date >= today) || (m.type === "REMINDER" && m.date >= today)) ? (
                         <a
                           className="btn secondary icon-btn"
-                          href={buildCalendarLink(item)}
+                          href={buildCalendarLink(m)}
                           aria-label="Aggiungi al calendario"
                           title="Aggiungi al calendario"
                           target="_blank"
@@ -633,7 +765,7 @@ export default async function DashboardPage({
 
                       <Link
                         className="btn secondary icon-btn"
-                        href={item.type === "FLIGHT" ? `/edit-flight/${item.id}` : item.type === "REMINDER" ? `/edit-reminder/${item.id}` : `/edit-payment/${item.id}`}
+                        href={m.type === "FLIGHT" ? `/edit-flight/${m.id}` : m.type === "REMINDER" ? `/edit-reminder/${m.id}` : `/edit-payment/${m.id}`}
                         aria-label="Modifica"
                         title="Modifica"
                       >
@@ -641,7 +773,7 @@ export default async function DashboardPage({
                       </Link>
 
                       <form action={deleteMovement}>
-                        <input type="hidden" name="movementId" value={item.id} />
+                        <input type="hidden" name="movementId" value={m.id} />
                         <DeleteMovementButton iconOnly />
                       </form>
                     </div>
