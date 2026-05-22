@@ -1054,4 +1054,81 @@ export async function deleteBooking(partnershipId: string, bookingId: string) {
   revalidatePath(`/societa/${partnershipId}`);
 }
 
+export async function updateBooking(partnershipId: string, bookingId: string, formData: FormData) {
+  const user = await requireUser();
+  
+  const membership = await prisma.partnershipMember.findUnique({
+    where: { partnershipId_userId: { partnershipId, userId: user.id } }
+  });
+  if (!membership) {
+    throw new Error("Non hai i permessi per questa società.");
+  }
+
+  const booking = await prisma.partnershipBooking.findUnique({
+    where: { id: bookingId }
+  });
+
+  if (!booking) {
+    throw new Error("Prenotazione non trovata.");
+  }
+
+  if (booking.userId !== user.id && membership.role !== "ADMIN") {
+    throw new Error("Non hai i permessi per modificare questa prenotazione.");
+  }
+
+  const aircraftId = String(formData.get("aircraftId") || "").trim();
+  const startTimeRaw = String(formData.get("startTime") || "").trim();
+  const endTimeRaw = String(formData.get("endTime") || "").trim();
+  const notes = String(formData.get("notes") || "").trim();
+
+  if (!aircraftId || !startTimeRaw || !endTimeRaw) {
+    throw new Error("Tutti i campi obbligatori devono essere compilati.");
+  }
+
+  const startDateTime = new Date(startTimeRaw);
+  const endDateTime = new Date(endTimeRaw);
+
+  if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+    throw new Error("Date inserite non valide.");
+  }
+
+  if (startDateTime >= endDateTime) {
+    throw new Error("La data di inizio deve essere precedente alla data di fine.");
+  }
+
+  // Check overlap for the same aircraft (excluding this booking)
+  const overlappingBooking = await prisma.partnershipBooking.findFirst({
+    where: {
+      aircraftId,
+      id: { not: bookingId },
+      startTime: {
+        lt: endDateTime
+      },
+      endTime: {
+        gt: startDateTime
+      }
+    },
+    include: {
+      user: true
+    }
+  });
+
+  if (overlappingBooking) {
+    const occupantName = overlappingBooking.user.fullName || overlappingBooking.user.email;
+    throw new Error(`L'aereo è già prenotato da ${occupantName} nel periodo selezionato.`);
+  }
+
+  await prisma.partnershipBooking.update({
+    where: { id: bookingId },
+    data: {
+      aircraftId,
+      startTime: startDateTime,
+      endTime: endDateTime,
+      notes: notes || null
+    }
+  });
+
+  revalidatePath(`/societa/${partnershipId}`);
+}
+
 

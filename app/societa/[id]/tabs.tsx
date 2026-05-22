@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog, addRecommendedReminders, addBooking, deleteBooking } from "./actions";
+import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog, addRecommendedReminders, addBooking, deleteBooking, updateBooking } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateDisplay, daysFromDate } from "@/lib/utils";
 import {
@@ -212,6 +212,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
   const [bookingSuccess, setBookingSuccess] = useState<string | null>(null);
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
   const [isDeletingBookingId, setIsDeletingBookingId] = useState<string | null>(null);
+  const [editingBooking, setEditingBooking] = useState<any | null>(null);
 
   const now = new Date();
   const upcomingBookings = (partnership.bookings || [])
@@ -232,6 +233,26 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
       form.reset();
     } catch (err: any) {
       setBookingError(err.message || "Errore durante l'inserimento della prenotazione.");
+    } finally {
+      setIsSubmittingBooking(false);
+    }
+  }
+
+  async function handleUpdateBooking(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (!editingBooking) return;
+    setBookingError(null);
+    setBookingSuccess(null);
+    setIsSubmittingBooking(true);
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    try {
+      await updateBooking(partnership.id, editingBooking.id, fd);
+      setBookingSuccess("Prenotazione modificata con successo!");
+      setEditingBooking(null);
+      form.reset();
+    } catch (err: any) {
+      setBookingError(err.message || "Errore durante la modifica della prenotazione.");
     } finally {
       setIsSubmittingBooking(false);
     }
@@ -986,22 +1007,56 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                       )}
                                     </div>
                                     {canDelete && (
-                                      <button
-                                        type="button"
-                                        className="btn secondary danger"
-                                        style={{
-                                          padding: "6px 12px",
-                                          fontSize: "0.8rem",
-                                          borderRadius: 10,
-                                          color: "var(--danger)",
-                                          borderColor: "rgba(180, 35, 24, 0.2)",
-                                          background: "rgba(180, 35, 24, 0.05)"
-                                        }}
-                                        disabled={isDeletingBookingId === b.id}
-                                        onClick={() => handleDeleteBooking(b.id)}
-                                      >
-                                        {isDeletingBookingId === b.id ? "Eliminazione..." : "Elimina"}
-                                      </button>
+                                      <div style={{ display: "flex", gap: 8 }}>
+                                        <button
+                                          type="button"
+                                          className="btn secondary"
+                                          style={{
+                                            padding: "6px 12px",
+                                            fontSize: "0.8rem",
+                                            borderRadius: 10,
+                                            fontWeight: 600
+                                          }}
+                                          onClick={() => {
+                                            const start = new Date(b.startTime);
+                                            const end = new Date(b.endTime);
+                                            const pad = (n: number) => String(n).padStart(2, '0');
+                                            const startLocal = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}T${pad(start.getHours())}:${pad(start.getMinutes())}`;
+                                            const endLocal = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}T${pad(end.getHours())}:${pad(end.getMinutes())}`;
+                                            
+                                            setEditingBooking({
+                                              id: b.id,
+                                              aircraftId: b.aircraftId,
+                                              startTime: startLocal,
+                                              endTime: endLocal,
+                                              notes: b.notes || ""
+                                            });
+                                            
+                                            const formCol = document.querySelector(".bookings-form-col");
+                                            if (formCol) {
+                                              formCol.scrollIntoView({ behavior: "smooth" });
+                                            }
+                                          }}
+                                        >
+                                          Modifica
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="btn secondary danger"
+                                          style={{
+                                            padding: "6px 12px",
+                                            fontSize: "0.8rem",
+                                            borderRadius: 10,
+                                            color: "var(--danger)",
+                                            borderColor: "rgba(180, 35, 24, 0.2)",
+                                            background: "rgba(180, 35, 24, 0.05)"
+                                          }}
+                                          disabled={isDeletingBookingId === b.id}
+                                          onClick={() => handleDeleteBooking(b.id)}
+                                        >
+                                          {isDeletingBookingId === b.id ? "Eliminazione..." : "Elimina"}
+                                        </button>
+                                      </div>
                                     )}
                                   </div>
                                 );
@@ -1032,7 +1087,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               <div className="bookings-form-col">
                 <div className="card" style={{ margin: 0 }}>
                   <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: "1.15rem", borderBottom: "1px solid var(--border)", paddingBottom: 10 }}>
-                    ➕ Nuova Prenotazione
+                    {editingBooking ? "✏️ Modifica Prenotazione" : "➕ Nuova Prenotazione"}
                   </h3>
 
                   {partnership.aircrafts.length === 0 ? (
@@ -1040,10 +1095,21 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                       ⚠️ Non ci sono aerei registrati in questa società. Aggiungine uno nel tab <strong>Aerei e Costi</strong> prima di prenotare.
                     </div>
                   ) : (
-                    <form key={selectedFormDate} onSubmit={handleAddBooking} className="grid" style={{ gap: 16 }}>
+                    <form
+                      key={editingBooking ? editingBooking.id : selectedFormDate}
+                      onSubmit={editingBooking ? handleUpdateBooking : handleAddBooking}
+                      className="grid"
+                      style={{ gap: 16 }}
+                    >
                       <div className="field">
                         <label style={{ fontWeight: 600, fontSize: "0.88rem" }}>Seleziona Aereo</label>
-                        <select name="aircraftId" className="select" required style={{ borderRadius: 12 }}>
+                        <select
+                          name="aircraftId"
+                          className="select"
+                          required
+                          defaultValue={editingBooking ? editingBooking.aircraftId : undefined}
+                          style={{ borderRadius: 12 }}
+                        >
                           {partnership.aircrafts.map((a: any) => (
                             <option key={a.id} value={a.id}>
                               {a.registration} ({a.type})
@@ -1060,7 +1126,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                             name="startTime"
                             className="input"
                             required
-                            defaultValue={`${selectedFormDate}T09:00`}
+                            defaultValue={editingBooking ? editingBooking.startTime : `${selectedFormDate}T09:00`}
                             style={{ borderRadius: 12 }}
                           />
                         </div>
@@ -1071,7 +1137,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                             name="endTime"
                             className="input"
                             required
-                            defaultValue={`${selectedFormDate}T11:00`}
+                            defaultValue={editingBooking ? editingBooking.endTime : `${selectedFormDate}T11:00`}
                             style={{ borderRadius: 12 }}
                           />
                         </div>
@@ -1083,13 +1149,26 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                           name="notes"
                           className="textarea"
                           placeholder="Es: volo locale con passeggero, addestramento, ecc."
+                          defaultValue={editingBooking ? editingBooking.notes : ""}
                           style={{ minHeight: 60, borderRadius: 12 }}
                         />
                       </div>
 
-                      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                      <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 8 }}>
+                        {editingBooking && (
+                          <button
+                            type="button"
+                            className="btn secondary"
+                            style={{ borderRadius: 12 }}
+                            onClick={() => setEditingBooking(null)}
+                          >
+                            Annulla
+                          </button>
+                        )}
                         <SubmitButton disabled={isSubmittingBooking}>
-                          {isSubmittingBooking ? "Prenotazione in corso..." : "Prenota Aereo"}
+                          {editingBooking
+                            ? (isSubmittingBooking ? "Salvataggio..." : "Salva Modifiche")
+                            : (isSubmittingBooking ? "Prenotazione in corso..." : "Prenota Aereo")}
                         </SubmitButton>
                       </div>
                     </form>
