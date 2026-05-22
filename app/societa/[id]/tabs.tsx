@@ -210,6 +210,11 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
   const [isDeletingBookingId, setIsDeletingBookingId] = useState<string | null>(null);
 
+  const now = new Date();
+  const upcomingBookings = (partnership.bookings || [])
+    .filter((b: any) => new Date(b.endTime) >= now)
+    .slice(0, 3);
+
   const handlePrevBookingMonth = () => {
     if (bookingMonth === 0) {
       setBookingMonth(11);
@@ -479,8 +484,101 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
           )}
 
           <div className="bacheca-layout">
-          {/* Colonna Sinistra: Ultimi Utilizzi / Statistiche */}
-          <div className="bacheca-sidebar">
+          {/* Colonna Sinistra: Ultimi Utilizzi / Prenotazioni */}
+          <div className="bacheca-sidebar" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            {/* Widget Prossime Prenotazioni */}
+            <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <h2 style={{ marginTop: 0, marginBottom: 8, fontSize: "1.25rem", display: "flex", alignItems: "center", gap: 8 }}>
+                  📅 Prossime prenotazioni
+                </h2>
+                <p className="muted" style={{ margin: 0, fontSize: "0.9rem" }}>
+                  Le prenotazioni future degli aerei societari.
+                </p>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {upcomingBookings.length === 0 ? (
+                  <div className="muted" style={{ 
+                    padding: 20, 
+                    border: "1px dashed var(--border)", 
+                    borderRadius: 16,
+                    textAlign: "center",
+                    fontSize: "0.95rem"
+                  }}>
+                    Nessuna prenotazione futura.
+                  </div>
+                ) : (
+                  upcomingBookings.map((b: any) => {
+                    const isOwnBooking = b.userId === currentUserId;
+                    const start = new Date(b.startTime);
+                    const end = new Date(b.endTime);
+                    
+                    const formattedDate = start.toLocaleDateString("it-IT", {
+                      day: "2-digit",
+                      month: "short"
+                    });
+                    const formattedStartTime = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`;
+                    const formattedEndTime = `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
+                    const isSameDay = start.toDateString() === end.toDateString();
+                    
+                    return (
+                      <div key={b.id} style={{
+                        background: "var(--bg, #f6f8fb)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 16,
+                        padding: 12,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 6
+                      }}>
+                        <div className="between" style={{ alignItems: "center" }}>
+                          <span className="pill" style={{ backgroundColor: "#ecf5f2", color: "var(--primary-strong)", fontSize: "0.75rem", padding: "2px 8px" }}>
+                            {b.aircraft.registration}
+                          </span>
+                          <span className="muted" style={{ fontSize: "0.8rem", fontWeight: 600 }}>
+                            {formattedDate} · {formattedStartTime} - {isSameDay ? formattedEndTime : `${end.toLocaleDateString("it-IT", { day: "2-digit", month: "short" })} ${formattedEndTime}`}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: "0.9rem", fontWeight: 700, color: "var(--text)" }}>
+                          {b.user.fullName || b.user.email} {isOwnBooking && <span className="muted" style={{ fontSize: "0.75rem", fontWeight: 500 }}>(tu)</span>}
+                        </div>
+                        {b.notes && (
+                          <div style={{ 
+                            fontSize: "0.78rem", 
+                            fontStyle: "italic", 
+                            color: "var(--muted)",
+                            borderLeft: "2px solid var(--primary)",
+                            paddingLeft: 6,
+                            marginTop: 2,
+                            whiteSpace: "nowrap",
+                            textOverflow: "ellipsis",
+                            overflow: "hidden"
+                          }} title={b.notes}>
+                            "{b.notes}"
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+              <button 
+                type="button" 
+                className="btn secondary" 
+                style={{ width: "100%", borderRadius: 12, fontSize: "0.85rem", padding: "8px 12px" }}
+                onClick={() => {
+                  setActiveTab("BOOKINGS");
+                  setSelectedDay(new Date().getDate());
+                  setBookingMonth(new Date().getMonth());
+                  setBookingYear(new Date().getFullYear());
+                }}
+              >
+                Vai al calendario prenotazioni
+              </button>
+            </div>
+
+            {/* Card: Ultimi utilizzi */}
             <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16, height: "fit-content" }}>
               <div>
               <h2 style={{ marginTop: 0, marginBottom: 8, fontSize: "1.25rem", display: "flex", alignItems: "center", gap: 8 }}>
