@@ -31,6 +31,7 @@ model User {
   rentalAircrafts       RentalAircraft[]
   resetToken          String?    @unique
   resetTokenExpiresAt DateTime?
+  bookings              PartnershipBooking[]
   createdAt             DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
@@ -137,6 +138,7 @@ model Partnership {
   transactions PartnershipTransaction[]
   invitations  PartnershipInvitation[]
   messages     PartnershipMessage[]
+  bookings     PartnershipBooking[]
 }
 
 model PartnershipMember {
@@ -168,6 +170,7 @@ model PartnershipAircraft {
   flights          Flight[]
   reminders        PartnershipAircraftReminder[]
   maintenanceLogs  PartnershipAircraftMaintenanceLog[]
+  bookings         PartnershipBooking[]
 
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
@@ -264,3 +267,23 @@ model PartnershipInvitation {
 
   @@unique([partnershipId, email])
 }
+
+model PartnershipBooking {
+  id            String              @id @default(cuid())
+  partnershipId String
+  partnership   Partnership         @relation(fields: [partnershipId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aircraftId    String
+  aircraft      PartnershipAircraft @relation(fields: [aircraftId], references: [id], onDelete: Cascade)
+  startTime     DateTime
+  endTime       DateTime
+  notes         String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([partnershipId])
+  @@index([aircraftId])
+  @@index([userId])
+}
+

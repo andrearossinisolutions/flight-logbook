@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog, addRecommendedReminders } from "./actions";
+import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog, addRecommendedReminders, addBooking, deleteBooking } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateDisplay, daysFromDate } from "@/lib/utils";
 import {
@@ -10,7 +10,8 @@ import {
   UsersIcon,
   FileTextIcon,
   WalletIcon,
-  SettingsIcon
+  SettingsIcon,
+  CalendarIcon
 } from "@/components/icons";
 
 function formatMinutes(minutes: number) {
@@ -200,6 +201,126 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
   const [reportData, setReportData] = useState<any>(null);
   const [isLoadingReport, setIsLoadingReport] = useState(false);
 
+  // Booking calendar state
+  const [bookingMonth, setBookingMonth] = useState(new Date().getMonth());
+  const [bookingYear, setBookingYear] = useState(new Date().getFullYear());
+  const [selectedDay, setSelectedDay] = useState<number | null>(new Date().getDate());
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const [bookingSuccess, setBookingSuccess] = useState<string | null>(null);
+  const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
+  const [isDeletingBookingId, setIsDeletingBookingId] = useState<string | null>(null);
+
+  const handlePrevBookingMonth = () => {
+    if (bookingMonth === 0) {
+      setBookingMonth(11);
+      setBookingYear(prev => prev - 1);
+    } else {
+      setBookingMonth(prev => prev - 1);
+    }
+    setSelectedDay(null);
+    setBookingError(null);
+    setBookingSuccess(null);
+  };
+
+  const handleNextBookingMonth = () => {
+    if (bookingMonth === 11) {
+      setBookingMonth(0);
+      setBookingYear(prev => prev + 1);
+    } else {
+      setBookingMonth(prev => prev + 1);
+    }
+    setSelectedDay(null);
+    setBookingError(null);
+    setBookingSuccess(null);
+  };
+
+  async function handleAddBooking(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setBookingError(null);
+    setBookingSuccess(null);
+    setIsSubmittingBooking(true);
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    try {
+      await addBooking(partnership.id, fd);
+      setBookingSuccess("Prenotazione inserita con successo!");
+      form.reset();
+    } catch (err: any) {
+      setBookingError(err.message || "Errore durante l'inserimento della prenotazione.");
+    } finally {
+      setIsSubmittingBooking(false);
+    }
+  }
+
+  async function handleDeleteBooking(bookingId: string) {
+    if (!window.confirm("Sei sicuro di voler eliminare questa prenotazione?")) return;
+    setBookingError(null);
+    setBookingSuccess(null);
+    setIsDeletingBookingId(bookingId);
+    try {
+      await deleteBooking(partnership.id, bookingId);
+      setBookingSuccess("Prenotazione eliminata con successo.");
+    } catch (err: any) {
+      setBookingError(err.message || "Errore durante l'eliminazione della prenotazione.");
+    } finally {
+      setIsDeletingBookingId(null);
+    }
+  }
+
+  // Booking calendar helpers
+  const bookingMonthNames = [
+    "Gennaio", "Febbraio", "Marzo", "Aprile", "Maggio", "Giugno",
+    "Luglio", "Agosto", "Settembre", "Ottobre", "Novembre", "Dicembre"
+  ];
+
+  const getBookingsForDay = (day: number) => {
+    const dayStart = new Date(bookingYear, bookingMonth, day, 0, 0, 0);
+    const dayEnd = new Date(bookingYear, bookingMonth, day, 23, 59, 59);
+
+    return (partnership.bookings || []).filter((b: any) => {
+      const bStart = new Date(b.startTime);
+      const bEnd = new Date(b.endTime);
+      return bStart <= dayEnd && bEnd >= dayStart;
+    });
+  };
+
+  const formatTime = (dateStr: string) => {
+    const d = new Date(dateStr);
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  };
+
+  const formatDateShort = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const months = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
+    return `${String(d.getDate()).padStart(2, '0')} ${months[d.getMonth()]}`;
+  };
+
+  const formatBookingRange = (startStr: string, endStr: string, currentDayNum: number) => {
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+    
+    const isStartToday = start.getDate() === currentDayNum && start.getMonth() === bookingMonth && start.getFullYear() === bookingYear;
+    const isEndToday = end.getDate() === currentDayNum && end.getMonth() === bookingMonth && end.getFullYear() === bookingYear;
+    
+    const startTimeStr = formatTime(startStr);
+    const endTimeStr = formatTime(endStr);
+    
+    if (isStartToday && isEndToday) {
+      return `${startTimeStr} - ${endTimeStr}`;
+    } else if (isStartToday) {
+      return `oggi ${startTimeStr} - ${formatDateShort(endStr)} ${endTimeStr}`;
+    } else if (isEndToday) {
+      return `${formatDateShort(startStr)} ${startTimeStr} - oggi ${endTimeStr}`;
+    } else {
+      return `${formatDateShort(startStr)} ${startTimeStr} - ${formatDateShort(endStr)} ${endTimeStr}`;
+    }
+  };
+
+  const getPrefilledDateTime = (dayNum: number, hour: number) => {
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${bookingYear}-${pad(bookingMonth + 1)}-${pad(dayNum)}T${pad(hour)}:00`;
+  };
+
   useEffect(() => {
     if (activeTab === "REPORT") {
       loadReport();
@@ -231,6 +352,16 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
           >
             <DashboardIcon size={18} />
             <span className="navbar-tab-text">Bacheca</span>
+          </button>
+          <button
+            type="button"
+            className={`navbar-tab ${activeTab === "BOOKINGS" ? "active" : ""}`}
+            style={{ border: "none", cursor: "pointer", background: activeTab === "BOOKINGS" ? "white" : "transparent" }}
+            onClick={() => setActiveTab("BOOKINGS")}
+            title="Prenotazioni"
+          >
+            <CalendarIcon size={18} />
+            <span className="navbar-tab-text">Prenotazioni</span>
           </button>
           <button
             type="button"
@@ -527,6 +658,406 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
       </div>
     </div>
   )}
+
+      {activeTab === "BOOKINGS" && (() => {
+        const daysOfWeek = ["Lun", "Mar", "Mer", "Gio", "Ven", "Sab", "Dom"];
+        const firstDay = new Date(bookingYear, bookingMonth, 1);
+        const lastDay = new Date(bookingYear, bookingMonth + 1, 0);
+        const totalDays = lastDay.getDate();
+        const startDayIndex = (firstDay.getDay() + 6) % 7; // Monday = 0
+
+        const calendarCells = [];
+        for (let i = 0; i < startDayIndex; i++) {
+          calendarCells.push({ day: null, key: `empty-${i}` });
+        }
+        for (let d = 1; d <= totalDays; d++) {
+          calendarCells.push({ day: d, key: `day-${d}` });
+        }
+
+        const selectedDayBookings = selectedDay ? getBookingsForDay(selectedDay) : [];
+        const isSelectedDayValid = selectedDay !== null && selectedDay <= totalDays;
+
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            <style dangerouslySetInnerHTML={{ __html: `
+              .calendar-grid {
+                display: grid;
+                grid-template-columns: repeat(7, 1fr);
+                gap: 8px;
+                background: var(--bg);
+                border-radius: 16px;
+                padding: 12px;
+                border: 1px solid var(--border);
+              }
+              .calendar-header-cell {
+                text-align: center;
+                font-weight: 700;
+                font-size: 0.85rem;
+                color: var(--muted);
+                padding: 8px 0;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+              }
+              .calendar-day-cell {
+                background: var(--card);
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                min-height: 95px;
+                padding: 10px;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                cursor: pointer;
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                position: relative;
+              }
+              .calendar-day-cell:hover:not(.empty) {
+                border-color: var(--primary);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(20, 32, 51, 0.05);
+              }
+              .calendar-day-cell.empty {
+                background: transparent;
+                border-color: transparent;
+                cursor: default;
+              }
+              .calendar-day-cell.today {
+                border: 2px solid var(--primary-strong);
+                background: rgba(31, 111, 91, 0.04);
+              }
+              .calendar-day-cell.selected {
+                background: var(--primary);
+                border-color: var(--primary);
+                color: white;
+                box-shadow: 0 4px 12px rgba(31, 111, 91, 0.25);
+              }
+              .calendar-day-cell.selected .calendar-day-number {
+                color: white;
+              }
+              .calendar-day-cell.selected .calendar-booking-badge {
+                background: rgba(255, 255, 255, 0.22);
+                color: white;
+                border: 1px solid rgba(255, 255, 255, 0.15);
+              }
+              .calendar-day-number {
+                font-weight: 800;
+                font-size: 1rem;
+                color: var(--text);
+              }
+              .calendar-bookings-container {
+                display: flex;
+                flex-direction: column;
+                gap: 4px;
+                margin-top: 6px;
+                overflow: hidden;
+              }
+              .calendar-booking-badge {
+                font-size: 0.72rem;
+                font-weight: 700;
+                padding: 3px 6px;
+                border-radius: 6px;
+                background: #ecf5f2;
+                color: var(--primary-strong);
+                white-space: nowrap;
+                text-overflow: ellipsis;
+                overflow: hidden;
+                display: block;
+                border: 1px solid rgba(31, 111, 91, 0.08);
+              }
+              .booking-card-item {
+                background: white;
+                border: 1px solid var(--border);
+                border-radius: 16px;
+                padding: 16px;
+                margin-bottom: 12px;
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                gap: 16px;
+                transition: transform 0.2s, box-shadow 0.2s;
+              }
+              .booking-card-item:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(20, 32, 51, 0.04);
+              }
+              @media (max-width: 768px) {
+                .calendar-grid {
+                  gap: 4px;
+                  padding: 6px;
+                }
+                .calendar-day-cell {
+                  min-height: 55px;
+                  justify-content: center;
+                  align-items: center;
+                  padding: 4px;
+                  border-radius: 8px;
+                }
+                .calendar-day-number {
+                  font-size: 0.9rem;
+                }
+                .calendar-bookings-container {
+                  flex-direction: row;
+                  justify-content: center;
+                  gap: 3px;
+                  margin-top: 4px;
+                }
+                .calendar-booking-badge {
+                  padding: 0;
+                  width: 6px;
+                  height: 6px;
+                  border-radius: 50%;
+                  background: var(--primary);
+                  border: none;
+                  text-indent: -9999px;
+                }
+                .calendar-day-cell.selected .calendar-booking-badge {
+                  background: white;
+                }
+              }
+            ` }} />
+
+            {bookingError && (
+              <div className="error" style={{
+                backgroundColor: "rgba(180, 35, 24, 0.08)",
+                border: "1px solid rgba(220, 38, 38, 0.2)",
+                borderRadius: 16,
+                padding: "12px 20px",
+                fontWeight: 600,
+                fontSize: "0.95rem"
+              }}>
+                ⚠️ {bookingError}
+              </div>
+            )}
+            {bookingSuccess && (
+              <div className="success" style={{
+                backgroundColor: "rgba(31, 111, 91, 0.08)",
+                border: "1px solid rgba(31, 111, 91, 0.2)",
+                borderRadius: 16,
+                padding: "12px 20px",
+                fontWeight: 600,
+                fontSize: "0.95rem"
+              }}>
+                ✅ {bookingSuccess}
+              </div>
+            )}
+
+            <div className="card">
+              <div className="between" style={{ marginBottom: 20 }}>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: "1.35rem" }}>Calendario Prenotazioni</h2>
+                  <p className="muted" style={{ margin: "4px 0 0 0", fontSize: "0.9rem" }}>
+                    Visualizza e inserisci le prenotazioni per gli aerei della società.
+                  </p>
+                </div>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <button type="button" className="btn secondary" style={{ padding: "8px 16px", borderRadius: 12 }} onClick={handlePrevBookingMonth}>
+                    &larr; Prec
+                  </button>
+                  <span style={{ fontWeight: 800, fontSize: "1.1rem", minWidth: 140, textAlign: "center", color: "var(--text)" }}>
+                    {bookingMonthNames[bookingMonth]} {bookingYear}
+                  </span>
+                  <button type="button" className="btn secondary" style={{ padding: "8px 16px", borderRadius: 12 }} onClick={handleNextBookingMonth}>
+                    Succ &rarr;
+                  </button>
+                </div>
+              </div>
+
+              <div className="calendar-grid">
+                {daysOfWeek.map((dayName, idx) => (
+                  <div key={idx} className="calendar-header-cell">
+                    {dayName}
+                  </div>
+                ))}
+                {calendarCells.map((cell) => {
+                  if (cell.day === null) {
+                    return <div key={cell.key} className="calendar-day-cell empty" />;
+                  }
+
+                  const dayBookings = getBookingsForDay(cell.day);
+                  const isSelected = selectedDay === cell.day;
+                  
+                  const today = new Date();
+                  const isToday = cell.day === today.getDate() && 
+                                  bookingMonth === today.getMonth() && 
+                                  bookingYear === today.getFullYear();
+
+                  return (
+                    <div
+                      key={cell.key}
+                      className={`calendar-day-cell ${isToday ? "today" : ""} ${isSelected ? "selected" : ""}`}
+                      onClick={() => {
+                        setSelectedDay(cell.day);
+                        setBookingError(null);
+                        setBookingSuccess(null);
+                      }}
+                    >
+                      <span className="calendar-day-number">{cell.day}</span>
+                      
+                      {dayBookings.length > 0 && (
+                        <div className="calendar-bookings-container">
+                          {dayBookings.map((b: any) => (
+                            <span 
+                              key={b.id} 
+                              className="calendar-booking-badge"
+                              title={`${b.aircraft.registration} - ${b.user.fullName || b.user.email}`}
+                            >
+                              {b.user.fullName || b.user.email}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {isSelectedDayValid && (
+              <div className="grid grid-2" style={{ gap: 24, alignItems: "start" }}>
+                <div className="card">
+                  <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: "1.15rem", borderBottom: "1px solid var(--border)", paddingBottom: 10 }}>
+                    📅 Prenotazioni di {selectedDay} {bookingMonthNames[bookingMonth]} {bookingYear}
+                  </h3>
+
+                  {selectedDayBookings.length === 0 ? (
+                    <div className="muted" style={{
+                      padding: "32px 16px",
+                      border: "1px dashed var(--border)",
+                      borderRadius: 16,
+                      textAlign: "center",
+                      fontSize: "0.95rem"
+                    }}>
+                      Nessuna prenotazione per questa giornata.
+                    </div>
+                  ) : (
+                    <div>
+                      {selectedDayBookings.map((b: any) => {
+                        const isOwnBooking = b.userId === currentUserId;
+                        const canDelete = isOwnBooking || isAdmin;
+
+                        return (
+                          <div key={b.id} className="booking-card-item">
+                            <div style={{ flex: 1 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                                <span className="pill" style={{ backgroundColor: "#ecf5f2", color: "var(--primary-strong)" }}>
+                                  {b.aircraft.registration} ({b.aircraft.type})
+                                </span>
+                              </div>
+                              <div style={{ fontWeight: 700, fontSize: "0.92rem", marginBottom: 2 }}>
+                                {b.user.fullName || b.user.email} {isOwnBooking && <span className="muted" style={{ fontSize: "0.8rem", fontWeight: 500 }}>(tu)</span>}
+                              </div>
+                              <div style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: 6 }}>
+                                ⏱ {formatBookingRange(b.startTime, b.endTime, selectedDay)}
+                              </div>
+                              {b.notes && (
+                                <div style={{
+                                  fontSize: "0.85rem",
+                                  fontStyle: "italic",
+                                  color: "var(--muted)",
+                                  borderLeft: "2px solid var(--primary)",
+                                  paddingLeft: 8,
+                                  marginTop: 4,
+                                  wordBreak: "break-word"
+                                }}>
+                                  "{b.notes}"
+                                </div>
+                              )}
+                            </div>
+                            {canDelete && (
+                              <button
+                                type="button"
+                                className="btn secondary danger"
+                                style={{
+                                  padding: "6px 12px",
+                                  fontSize: "0.8rem",
+                                  borderRadius: 10,
+                                  color: "var(--danger)",
+                                  borderColor: "rgba(180, 35, 24, 0.2)",
+                                  background: "rgba(180, 35, 24, 0.05)"
+                                }}
+                                disabled={isDeletingBookingId === b.id}
+                                onClick={() => handleDeleteBooking(b.id)}
+                              >
+                                {isDeletingBookingId === b.id ? "Eliminazione..." : "Elimina"}
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="card">
+                  <h3 style={{ marginTop: 0, marginBottom: 16, fontSize: "1.15rem", borderBottom: "1px solid var(--border)", paddingBottom: 10 }}>
+                    ➕ Nuova Prenotazione
+                  </h3>
+
+                  {partnership.aircrafts.length === 0 ? (
+                    <div className="muted" style={{ fontSize: "0.92rem", padding: "16px 0" }}>
+                      ⚠️ Non ci sono aerei registrati in questa società. Aggiungine uno nel tab <strong>Aerei e Costi</strong> prima di prenotare.
+                    </div>
+                  ) : (
+                    <form onSubmit={handleAddBooking} className="grid" style={{ gap: 16 }}>
+                      <div className="field">
+                        <label style={{ fontWeight: 600, fontSize: "0.88rem" }}>Seleziona Aereo</label>
+                        <select name="aircraftId" className="select" required style={{ borderRadius: 12 }}>
+                          {partnership.aircrafts.map((a: any) => (
+                            <option key={a.id} value={a.id}>
+                              {a.registration} ({a.type})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="grid grid-2" style={{ gap: 16 }}>
+                        <div className="field">
+                          <label style={{ fontWeight: 600, fontSize: "0.88rem" }}>Inizio (Data e Ora)</label>
+                          <input
+                            type="datetime-local"
+                            name="startTime"
+                            className="input"
+                            required
+                            defaultValue={getPrefilledDateTime(selectedDay, 9)}
+                            style={{ borderRadius: 12 }}
+                          />
+                        </div>
+                        <div className="field">
+                          <label style={{ fontWeight: 600, fontSize: "0.88rem" }}>Fine (Data e Ora)</label>
+                          <input
+                            type="datetime-local"
+                            name="endTime"
+                            className="input"
+                            required
+                            defaultValue={getPrefilledDateTime(selectedDay, 11)}
+                            style={{ borderRadius: 12 }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="field">
+                        <label style={{ fontWeight: 600, fontSize: "0.88rem" }}>Note (Opzionale)</label>
+                        <textarea
+                          name="notes"
+                          className="textarea"
+                          placeholder="Es: volo locale con passeggero, addestramento, ecc."
+                          style={{ minHeight: 60, borderRadius: 12 }}
+                        />
+                      </div>
+
+                      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 8 }}>
+                        <SubmitButton disabled={isSubmittingBooking}>
+                          {isSubmittingBooking ? "Prenotazione in corso..." : "Prenota Aereo"}
+                        </SubmitButton>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {activeTab === "AIRCRAFTS" && (
         <div className="grid grid-2">

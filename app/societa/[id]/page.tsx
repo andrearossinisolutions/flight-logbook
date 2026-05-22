@@ -57,6 +57,15 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
       messages: {
         include: { user: true },
         orderBy: { createdAt: 'desc' }
+      },
+      bookings: {
+        include: {
+          user: true,
+          aircraft: true,
+        },
+        orderBy: {
+          startTime: 'asc'
+        }
       }
     }
   });
@@ -163,6 +172,23 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
       createdAt: m.createdAt.toISOString(),
       updatedAt: m.updatedAt.toISOString(),
       user: m.user ? { fullName: m.user.fullName, email: m.user.email } : null,
+    })),
+    bookings: (partnership.bookings || []).map(b => ({
+      ...b,
+      startTime: b.startTime.toISOString(),
+      endTime: b.endTime.toISOString(),
+      createdAt: b.createdAt.toISOString(),
+      updatedAt: b.updatedAt.toISOString(),
+      user: {
+        id: b.user.id,
+        fullName: b.user.fullName,
+        email: b.user.email,
+      },
+      aircraft: {
+        id: b.aircraft.id,
+        registration: b.aircraft.registration,
+        type: b.aircraft.type,
+      }
     }))
   };
 
