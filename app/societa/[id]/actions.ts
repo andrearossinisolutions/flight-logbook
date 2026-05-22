@@ -8,6 +8,98 @@ import type { Route } from "next";
 import { sendEmail } from "@/lib/mail";
 import { renderBoardMessageEmail } from "@/lib/board-message-email";
 
+async function createRecommendedRemindersDb(tx: any, aircraftId: string) {
+  // 1. Sostituzione gomme
+  const rGomme = await tx.partnershipAircraftReminder.create({
+    data: {
+      aircraftId,
+      description: "Sostituzione gomme",
+      hoursInterval: null,
+      monthsInterval: 60,
+      lastCompletedHours: 0.0,
+      lastCompletedDate: new Date(),
+      notes: "Sostituzione tassativa di tutte le parti in gomma (tubi carburante, manicotti dell'acqua, membrane dei carburatori, tubi dell'olio)",
+    }
+  });
+
+  // 2. 50h
+  const r50 = await tx.partnershipAircraftReminder.create({
+    data: {
+      aircraftId,
+      description: "50h",
+      hoursInterval: 50,
+      monthsInterval: 12,
+      lastCompletedHours: 0.0,
+      lastCompletedDate: new Date(),
+      notes: "Cambio olio e filtro dell'olio",
+    }
+  });
+
+  // 3. 100h
+  const r100 = await tx.partnershipAircraftReminder.create({
+    data: {
+      aircraftId,
+      description: "100h",
+      hoursInterval: 100,
+      monthsInterval: null,
+      lastCompletedHours: 0.0,
+      lastCompletedDate: null,
+      notes: "50h + sostituzione candele, pulizia filtro carburante, controllo gioco valvole, verifica allineamento e bilanciamento carburatori, test di compressione dei cilindri, e controllo stato manicotti e serraggi generali",
+      covers: {
+        connect: [{ id: r50.id }]
+      }
+    }
+  });
+
+  // 4. 200h
+  const r200 = await tx.partnershipAircraftReminder.create({
+    data: {
+      aircraftId,
+      description: "200h",
+      hoursInterval: 200,
+      monthsInterval: null,
+      lastCompletedHours: 0.0,
+      lastCompletedDate: null,
+      notes: "100h + controlli specifici impianto elettrico (es. alternatore, cavi candele), e verifiche approfondite carburatori",
+      covers: {
+        connect: [{ id: r50.id }, { id: r100.id }]
+      }
+    }
+  });
+
+  // 5. 600h
+  const r600 = await tx.partnershipAircraftReminder.create({
+    data: {
+      aircraftId,
+      description: "600h",
+      hoursInterval: 600,
+      monthsInterval: null,
+      lastCompletedHours: 0.7,
+      lastCompletedDate: null,
+      notes: "200h + Controllo approfondito scatola di riduzione (riduttore dell'elica) e frizione parastrappi",
+      covers: {
+        connect: [{ id: r50.id }, { id: r100.id }, { id: r200.id }]
+      }
+    }
+  });
+
+  // 6. 1000h / 1200h
+  await tx.partnershipAircraftReminder.create({
+    data: {
+      aircraftId,
+      description: "1000h / 1200h",
+      hoursInterval: 1200,
+      monthsInterval: null,
+      lastCompletedHours: 0.7,
+      lastCompletedDate: null,
+      notes: "600h + Controllo generale stato usura passaggi interni e componenti critici, con eventuale revisione dei carburatori",
+      covers: {
+        connect: [{ id: r50.id }, { id: r100.id }, { id: r200.id }, { id: r600.id }]
+      }
+    }
+  });
+}
+
 export async function addAircraft(partnershipId: string, formData: FormData) {
   const user = await requireUser();
   const registration = String(formData.get("registration") || "").trim();
@@ -16,6 +108,7 @@ export async function addAircraft(partnershipId: string, formData: FormData) {
   const hourlyMaintCost = Number(formData.get("hourlyMaintCost") || 0);
   const hourlyEngineFund = Number(formData.get("hourlyEngineFund") || 0);
   const initialHours = Number(formData.get("initialHours") || 0);
+  const addRecommended = formData.get("addRecommended") === "on";
 
   if (!registration || !type) return;
 
@@ -26,15 +119,21 @@ export async function addAircraft(partnershipId: string, formData: FormData) {
 
   if (membership?.role !== "ADMIN") return;
 
-  await prisma.partnershipAircraft.create({
-    data: {
-      partnershipId,
-      registration,
-      type,
-      hourlyFuelCost,
-      hourlyMaintCost,
-      hourlyEngineFund,
-      initialHours,
+  await prisma.$transaction(async (tx) => {
+    const aircraft = await tx.partnershipAircraft.create({
+      data: {
+        partnershipId,
+        registration,
+        type,
+        hourlyFuelCost,
+        hourlyMaintCost,
+        hourlyEngineFund,
+        initialHours,
+      }
+    });
+
+    if (addRecommended) {
+      await createRecommendedRemindersDb(tx, aircraft.id);
     }
   });
 
@@ -826,6 +925,20 @@ export async function deleteMaintenanceLog(partnershipId: string, logId: string)
 
   await prisma.partnershipAircraftMaintenanceLog.delete({
     where: { id: logId }
+  });
+
+  revalidatePath(`/societa/${partnershipId}`);
+}
+
+export async function addRecommendedReminders(partnershipId: string, aircraftId: string) {
+  const user = await requireUser();
+  const membership = await prisma.partnershipMember.findUnique({
+    where: { partnershipId_userId: { partnershipId, userId: user.id } }
+  });
+  if (membership?.role !== "ADMIN") return;
+
+  await prisma.$transaction(async (tx) => {
+    await createRecommendedRemindersDb(tx, aircraftId);
   });
 
   revalidatePath(`/societa/${partnershipId}`);

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog } from "./actions";
+import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog, addRecommendedReminders } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateDisplay, daysFromDate } from "@/lib/utils";
 import {
@@ -493,8 +493,21 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                           <tr key={`${a.id}-reminders`} className="aircraft-reminders-row">
                             <td colSpan={isAdmin ? 4 : 3} style={{ padding: "12px 24px 24px 24px", backgroundColor: "var(--bg)", borderTop: "none" }}>
                               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                                <div className="between" style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
-                                  <h4 style={{ margin: 0, fontSize: "0.95rem", color: "var(--primary-strong)" }}>🔔 Scadenze Manutenzione ({a.registration})</h4>
+                                <div className="between" style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8, alignItems: "center" }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                    <h4 style={{ margin: 0, fontSize: "0.95rem", color: "var(--primary-strong)" }}>🔔 Scadenze Manutenzione ({a.registration})</h4>
+                                    {isAdmin && (
+                                      <form action={addRecommendedReminders.bind(null, partnership.id, a.id)} onSubmit={(e) => {
+                                        if (!confirm("Caricare le scadenze consigliate Rotax (gomme, 50h, 100h, 200h, 600h, 1200h)?")) {
+                                          e.preventDefault();
+                                        }
+                                      }}>
+                                        <SubmitButton className="btn secondary" style={{ padding: "4px 8px", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}>
+                                          ⚙️ Carica consigliate
+                                        </SubmitButton>
+                                      </form>
+                                    )}
+                                  </div>
                                   <span className="muted" style={{ fontSize: "0.85rem" }}>
                                     Stato motore: <strong>{a.totalHours.toFixed(1)} h</strong> (Base: {a.initialHours.toFixed(1)}h)
                                   </span>
@@ -958,6 +971,12 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                       <label>Fondo motore (€/h)</label>
                       <input className="input" name="hourlyEngineFund" type="number" step="0.01" min="0" required />
                     </div>
+                  </div>
+                  <div style={{ marginTop: 8, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+                    <input type="checkbox" name="addRecommended" id="addRecommended" style={{ width: "auto", cursor: "pointer" }} />
+                    <label htmlFor="addRecommended" style={{ fontSize: "0.85rem", fontWeight: 500, cursor: "pointer", userSelect: "none", color: "var(--text)" }}>
+                      Pre-popola con le scadenze consigliate Rotax (gomme, 50h, 100h, 200h, 600h, 1200h)
+                    </label>
                   </div>
                   <SubmitButton>Aggiungi aereo</SubmitButton>
                 </form>
