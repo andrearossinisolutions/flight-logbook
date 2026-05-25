@@ -1933,8 +1933,8 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                     <td>Rata annuale</td>
                     <td>
                       € {partnership.fixedCosts.reduce((acc: number, c: any) => {
-                        if (c.period === 'MONTHLY') return acc + Number(c.amount);
                         if (c.period === 'YEARLY_ONCE') return acc + Number(c.amount);
+                        return acc;
                       }, 0).toFixed(2)}
                       <div className="muted" style={{ fontSize: 11, fontWeight: "normal", marginTop: 4 }}>(non include le rate mensili fisse)</div>
                     </td>
