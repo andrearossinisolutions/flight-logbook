@@ -778,29 +778,6 @@ export default function FlightForm({
               </span>
             </div>
 
-            {/* Split Balance if passenger split applies */}
-            {!instructorName && instructorMinutesNumber === 0 && dateBipoExam != null && !isPartnershipAircraft && (
-              <div style={{ 
-                background: "rgba(31, 111, 91, 0.05)", 
-                border: "1px solid rgba(31, 111, 91, 0.15)",
-                borderRadius: "10px", 
-                padding: "8px 10px",
-                display: "flex",
-                flexDirection: "column",
-                gap: "4px"
-              }}>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", alignItems: "center" }}>
-                  <span style={{ color: "var(--primary-strong)", fontWeight: 600 }}>Nuovo saldo con divisione:</span>
-                  <span style={{ fontWeight: 800, color: "var(--primary-strong)" }}>
-                    € {(currentBalance - deductedAmount / 2).toFixed(2)}
-                  </span>
-                </div>
-                <div style={{ fontSize: "0.72rem", color: "var(--muted)", fontStyle: "italic" }}>
-                  Ipotizzando il rimborso in contanti/cassa da parte del passeggero.
-                </div>
-              </div>
-            )}
-
             {/* Top up warning if negative */}
             {currentBalance - deductedAmount < 0 && (
               <div style={{ 
