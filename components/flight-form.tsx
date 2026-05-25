@@ -661,95 +661,221 @@ export default function FlightForm({
         </div>
       </form>
 
-      <div className="card">
-        <h3 style={{ marginTop: 0 }}>Anteprima costi</h3>
+      <div className="card" style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: "1px solid var(--border)", paddingBottom: "12px", marginBottom: "4px" }}>
+          <h3 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 700, display: "flex", alignItems: "center", gap: "8px" }}>
+            <span>📊</span> Anteprima Volo
+          </h3>
+          <span className="pill" style={{ fontSize: "0.75rem", padding: "2px 8px" }}>
+            {insertMode === "PAST" ? "Consuntivo" : "Stima Pianificata"}
+          </span>
+        </div>
 
-        <div className="grid">
-          <div className="field">
-            <label>{isPartnershipAircraft ? "Tariffa societaria applicata" : "Tariffa noleggio applicata"}</label>
-            <div>
+        {/* METRICS GRID */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "10px" }}>
+          <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "12px", padding: "10px" }}>
+            <div style={{ fontSize: "0.75rem", color: "var(--muted)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>
+              {isPartnershipAircraft ? "Tariffa Societaria" : "Tariffa Noleggio"}
+            </div>
+            <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text)" }}>
               € {Number.isFinite(effectiveRentalRate) ? effectiveRentalRate.toFixed(2) : "0.00"}/h
             </div>
           </div>
 
+          <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "12px", padding: "10px" }}>
+            <div style={{ fontSize: "0.75rem", color: "var(--muted)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>
+              Durata Volo
+            </div>
+            <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text)" }}>
+              {Math.floor(durationMinutes / 60)}h {durationMinutes % 60}m
+            </div>
+          </div>
+
           {instructorMinutesNumber > 0 && (
-            <div className="field">
-              <label>Tariffa istruttore applicata</label>
-              <div>
-                €{" "}
-                {Number.isFinite(instructorRateNumber)
-                  ? instructorRateNumber.toFixed(2)
-                  : "0.00"}
-                /h
+            <div style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: "12px", padding: "10px", gridColumn: "span 2" }}>
+              <div style={{ fontSize: "0.75rem", color: "var(--muted)", fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "4px" }}>
+                Istruttore ({instructorMinutesNumber} min a € {instructorRateNumber.toFixed(2)}/h)
+              </div>
+              <div style={{ fontSize: "0.95rem", fontWeight: 700, color: "var(--text)" }}>
+                Tariffa: € {instructorRateNumber.toFixed(2)}/h
               </div>
             </div>
           )}
         </div>
 
-        <div style={{ marginTop: 16 }}>
-          <div className="muted">Durata calcolata</div>
-          <div className="big-number">
-            {Math.floor(durationMinutes / 60)}:
-            {durationMinutes % 60 < 10 ? `0${durationMinutes % 60}` : durationMinutes % 60}
-          </div>
-        </div>
-
+        {/* COST CARD */}
         {totalCost > 0 && (
-          <div style={{ marginTop: 16 }}>
-            <div className="muted">Costo {insertMode === "PAST" ? "del volo" : "stimato"}</div>
-            <div className="big-number">€ {totalCost.toFixed(2)}</div>
+          <div style={{ 
+            background: "linear-gradient(135deg, rgba(31, 111, 91, 0.08) 0%, rgba(20, 82, 66, 0.03) 100%)", 
+            border: "1px solid rgba(31, 111, 91, 0.25)", 
+            borderRadius: "14px", 
+            padding: "16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px"
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span style={{ fontSize: "0.85rem", color: "var(--primary-strong)", fontWeight: 600 }}>
+                Costo {insertMode === "PAST" ? "del volo" : "stimato"}
+              </span>
+              <span style={{ fontSize: "1.4rem", fontWeight: 800, color: "var(--primary-strong)" }}>
+                € {totalCost.toFixed(2)}
+              </span>
+            </div>
+
+            {/* PASSENGER SPLIT SECTION */}
+            {!instructorName && instructorMinutesNumber === 0 && dateBipoExam != null && (
+              <div style={{ 
+                borderTop: "1px dashed rgba(31, 111, 91, 0.2)", 
+                paddingTop: "10px", 
+                marginTop: "4px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "6px"
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "0.8rem", color: "var(--primary-strong)", fontWeight: 600 }}>
+                  <span>👥</span> Divisione Costi Passeggero (Biposto)
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px", fontSize: "0.8rem" }}>
+                  <div style={{ background: "rgba(255, 255, 255, 0.6)", borderRadius: "8px", padding: "6px 8px" }}>
+                    <div style={{ color: "var(--muted)", fontSize: "0.7rem" }}>Quota Pilota (50%)</div>
+                    <div style={{ fontWeight: 700, color: "var(--text)" }}>€ {(totalCost / 2).toFixed(2)}</div>
+                  </div>
+                  <div style={{ background: "rgba(255, 255, 255, 0.6)", borderRadius: "8px", padding: "6px 8px" }}>
+                    <div style={{ color: "var(--muted)", fontSize: "0.7rem" }}>Quota Passeggero (50%)</div>
+                    <div style={{ fontWeight: 700, color: "var(--text)" }}>€ {(totalCost / 2).toFixed(2)}</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
+        {/* BALANCE ACCOUNT IMPACT */}
         {deductedAmount > 0 && (
-          <div style={{ marginTop: 16 }}>
-            <div className="muted">Nuovo saldo{insertMode === "PAST" ? "" : " stimato"}</div>
-            <div className="big-number">€ {(currentBalance - deductedAmount).toFixed(2)}</div>
+          <div style={{ 
+            background: "var(--bg)", 
+            border: "1px solid var(--border)", 
+            borderRadius: "14px", 
+            padding: "16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "10px"
+          }}>
+            <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text)", borderBottom: "1px solid var(--border)", paddingBottom: "6px", marginBottom: "2px" }}>
+              💳 Saldo Personale AeroClub
+            </div>
+            
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
+              <span style={{ color: "var(--muted)" }}>Saldo attuale:</span>
+              <span style={{ fontWeight: 600 }}>€ {currentBalance.toFixed(2)}</span>
+            </div>
 
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", alignItems: "center" }}>
+              <span style={{ color: "var(--text)", fontWeight: 500 }}>Nuovo saldo {insertMode === "PAST" ? "" : "stimato"}:</span>
+              <span style={{ fontWeight: 700, color: (currentBalance - deductedAmount < 0) ? "var(--danger)" : "var(--text)" }}>
+                € {(currentBalance - deductedAmount).toFixed(2)}
+              </span>
+            </div>
+
+            {/* Split Balance if passenger split applies */}
             {!instructorName && instructorMinutesNumber === 0 && dateBipoExam != null && !isPartnershipAircraft && (
-              <div style={{ marginTop: 8 }}>
-                € {(currentBalance - deductedAmount / 2).toFixed(2)} se dividi i costi con il passeggero
+              <div style={{ 
+                background: "rgba(31, 111, 91, 0.05)", 
+                border: "1px solid rgba(31, 111, 91, 0.15)",
+                borderRadius: "10px", 
+                padding: "8px 10px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "4px"
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", alignItems: "center" }}>
+                  <span style={{ color: "var(--primary-strong)", fontWeight: 600 }}>Nuovo saldo con divisione:</span>
+                  <span style={{ fontWeight: 800, color: "var(--primary-strong)" }}>
+                    € {(currentBalance - deductedAmount / 2).toFixed(2)}
+                  </span>
+                </div>
+                <div style={{ fontSize: "0.72rem", color: "var(--muted)", fontStyle: "italic" }}>
+                  Ipotizzando il rimborso in contanti/cassa da parte del passeggero.
+                </div>
               </div>
             )}
 
-            <div style={{ marginTop: 8 }}>
-              Saldo attuale: € {currentBalance.toFixed(2)}.
-            </div>
+            {/* Top up warning if negative */}
+            {currentBalance - deductedAmount < 0 && (
+              <div style={{ 
+                background: "rgba(180, 35, 24, 0.05)", 
+                border: "1px solid rgba(180, 35, 24, 0.15)",
+                borderRadius: "10px", 
+                padding: "8px 10px",
+                marginTop: "4px"
+              }}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", alignItems: "center" }}>
+                  <span style={{ color: "var(--danger)", fontWeight: 600 }}>Ricarica necessaria {insertMode === "PAST" ? "" : "stimata"}:</span>
+                  <span style={{ fontWeight: 800, color: "var(--danger)" }}>
+                    € {(deductedAmount - currentBalance).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
+        {/* PARTNERSHIP AIRCRAFT NOTICE */}
         {totalCost > 0 && isPartnershipAircraft && (
-          <div style={{ marginTop: 16 }}>
-            <div className="muted" style={{ color: "#0284c7" }}>Volo in società</div>
-            <div style={{ marginTop: 8 }}>
-              {instructorMinutesNumber > 0 ? (
-                <>
-                  Il costo dell'aereo (<strong>€ {(totalCost - deductedAmount).toFixed(2)}</strong>) verrà rendicontato in società.
-                  <br />
-                  Il costo dell'istruttore (<strong>€ {deductedAmount.toFixed(2)}</strong>) verrà sottratto dal tuo saldo personale AeroClub.
-                </>
-              ) : (
-                "Questo volo non ridurrà il tuo saldo personale presso l'AeroClub. Il costo verrà rendicontato in società."
-              )}
+          <div style={{ 
+            background: "rgba(2, 132, 199, 0.06)", 
+            border: "1px solid rgba(2, 132, 199, 0.2)", 
+            borderRadius: "14px", 
+            padding: "14px",
+            fontSize: "0.85rem",
+            color: "#0369a1",
+            lineHeight: "1.4"
+          }}>
+            <div style={{ fontWeight: 700, display: "flex", alignItems: "center", gap: "6px", marginBottom: "6px" }}>
+              <span>✈️</span> Volo Società
             </div>
+            {instructorMinutesNumber > 0 ? (
+              <>
+                Il costo dell'aereo (<strong>€ {(totalCost - deductedAmount).toFixed(2)}</strong>) verrà addebitato sulla cassa societaria.
+                <br />
+                Il costo dell'istruttore (<strong>€ {deductedAmount.toFixed(2)}</strong>) sarà prelevato dal tuo saldo personale AeroClub.
+              </>
+            ) : (
+              "Questo volo non ridurrà il tuo saldo AeroClub. Il costo dell'aereo verrà registrato e rendicontato nel report mensile della società."
+            )}
+            {/* If passenger split is active, add a minor note */}
+            {!instructorName && instructorMinutesNumber === 0 && dateBipoExam != null && (
+              <div style={{ marginTop: "6px", borderTop: "1px solid rgba(2, 132, 199, 0.15)", paddingTop: "6px", fontSize: "0.78rem", fontStyle: "italic" }}>
+                Nota: La quota societaria a tuo carico rimarrà comunque registrata a tuo nome prima dell'eventuale divisione privata col passeggero.
+              </div>
+            )}
           </div>
         )}
 
-        {currentBalance - deductedAmount < 0 && (
-          <div style={{ marginTop: 16 }}>
-            <div className="muted">Ricarica necessaria{insertMode === "PAST" ? "" : " stimata"}</div>
-            <div className="big-number">€ {(deductedAmount - currentBalance).toFixed(2)}</div>
-          </div>
-        )}
-
+        {/* FLIGHT HOURS CARD */}
         {durationMinutes > 0 && (
-          <div style={{ marginTop: 16 }}>
-            <div className="muted">Nuove ore {insertMode === "PAST" ? "totali" : "stimate"}</div>
-            <div className="big-number">
-              {minutesToHoursMinutes(totalFlightMinutes + durationMinutes)}
+          <div style={{ 
+            background: "var(--bg)", 
+            border: "1px solid var(--border)", 
+            borderRadius: "14px", 
+            padding: "16px",
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px"
+          }}>
+            <div style={{ fontSize: "0.85rem", fontWeight: 600, color: "var(--text)", borderBottom: "1px solid var(--border)", paddingBottom: "6px", marginBottom: "2px" }}>
+              📈 Progressione Ore Volo
             </div>
-            <div style={{ marginTop: 8 }}>
-              Ore totali attuali: {minutesToHoursMinutes(totalFlightMinutes)}.
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem" }}>
+              <span style={{ color: "var(--muted)" }}>Ore attuali:</span>
+              <span style={{ fontWeight: 600 }}>{minutesToHoursMinutes(totalFlightMinutes)}</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.9rem", alignItems: "center" }}>
+              <span style={{ color: "var(--text)", fontWeight: 500 }}>Nuove ore {insertMode === "PAST" ? "totali" : "stimate"}:</span>
+              <span style={{ fontWeight: 700, color: "var(--primary-strong)" }}>
+                {minutesToHoursMinutes(totalFlightMinutes + durationMinutes)}
+              </span>
             </div>
           </div>
         )}
