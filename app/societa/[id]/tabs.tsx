@@ -11,7 +11,8 @@ import {
   FileTextIcon,
   WalletIcon,
   SettingsIcon,
-  CalendarIcon
+  CalendarIcon,
+  AirplaneIcon
 } from "@/components/icons";
 
 function formatMinutes(minutes: number) {
@@ -90,8 +91,13 @@ function handleCheckboxChange(
   }
 }
 
-export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFlights = [] }: any) {
+export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFlights = [], partnershipFlights = [] }: any) {
   const [activeTab, setActiveTab] = useState("BACHECA");
+
+  // Stato filtri per la scheda Logbook
+  const [logbookAircraft, setLogbookAircraft] = useState("");
+  const [logbookPilot, setLogbookPilot] = useState("");
+  const [logbookSearch, setLogbookSearch] = useState("");
 
   // Calcolo scadenze manutenzione per Bacheca
   const alerts: any[] = [];
@@ -326,6 +332,16 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
           >
             <CalendarIcon size={18} />
             <span className="navbar-tab-text">Prenotazioni</span>
+          </button>
+          <button
+            type="button"
+            className={`navbar-tab ${activeTab === "LOGBOOK" ? "active" : ""}`}
+            style={{ border: "none", cursor: "pointer", background: activeTab === "LOGBOOK" ? "white" : "transparent" }}
+            onClick={() => setActiveTab("LOGBOOK")}
+            title="Logbook"
+          >
+            <AirplaneIcon size={18} />
+            <span className="navbar-tab-text">Logbook</span>
           </button>
           <button
             type="button"
@@ -1175,6 +1191,194 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                   )}
                 </div>
               </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {activeTab === "LOGBOOK" && (() => {
+        const filteredFlights = partnershipFlights.filter((flight: any) => {
+          if (logbookAircraft && flight.aircraftRegistration !== logbookAircraft) {
+            return false;
+          }
+          if (logbookPilot && flight.movement.user.id !== logbookPilot) {
+            return false;
+          }
+          if (logbookSearch) {
+            const q = logbookSearch.toLowerCase();
+            const pilotName = (flight.movement.user.fullName || "").toLowerCase();
+            const pilotEmail = (flight.movement.user.email || "").toLowerCase();
+            const notes = (flight.movement.notes || "").toLowerCase();
+            const takeoff = (flight.takeoffPlace || "").toLowerCase();
+            const arrival = (flight.arrivalPlace || "").toLowerCase();
+            const reg = (flight.aircraftRegistration || "").toLowerCase();
+            const type = (flight.aircraftType || "").toLowerCase();
+            const instr = (flight.instructorName || "").toLowerCase();
+            const pass = (flight.passengerName || "").toLowerCase();
+
+            if (
+              !pilotName.includes(q) &&
+              !pilotEmail.includes(q) &&
+              !notes.includes(q) &&
+              !takeoff.includes(q) &&
+              !arrival.includes(q) &&
+              !reg.includes(q) &&
+              !type.includes(q) &&
+              !instr.includes(q) &&
+              !pass.includes(q)
+            ) {
+              return false;
+            }
+          }
+          return true;
+        });
+
+        return (
+          <div className="card">
+            <div style={{ marginBottom: 24 }}>
+              <h2 style={{ marginTop: 0, marginBottom: 8 }}>Logbook Voli</h2>
+              <div className="muted">Registro storico di tutti i voli effettuati con gli aeromobili della società.</div>
+            </div>
+
+            {/* Barra dei Filtri */}
+            <div className="row" style={{ gap: 12, marginBottom: 24, flexWrap: "wrap", alignItems: "flex-end" }}>
+              <div style={{ flex: "1 1 200px" }}>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: 6 }}>Velivolo</label>
+                <select 
+                  className="select" 
+                  value={logbookAircraft} 
+                  onChange={e => setLogbookAircraft(e.target.value)}
+                  style={{ width: "100%", height: "40px" }}
+                >
+                  <option value="">Tutti i velivoli</option>
+                  {partnership.aircrafts?.map((a: any) => (
+                    <option key={a.id} value={a.registration}>{a.registration} ({a.type})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ flex: "1 1 200px" }}>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: 6 }}>Pilota</label>
+                <select 
+                  className="select" 
+                  value={logbookPilot} 
+                  onChange={e => setLogbookPilot(e.target.value)}
+                  style={{ width: "100%", height: "40px" }}
+                >
+                  <option value="">Tutti i piloti</option>
+                  {partnership.members?.map((m: any) => (
+                    <option key={m.id} value={m.user.id}>{m.user.fullName || m.user.email}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ flex: "2 1 300px" }}>
+                <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: 6 }}>Cerca nelle note o dettagli</label>
+                <input 
+                  type="text" 
+                  className="input" 
+                  placeholder="Cerca per note, aeroporto, pilota..." 
+                  value={logbookSearch} 
+                  onChange={e => setLogbookSearch(e.target.value)}
+                  style={{ width: "100%", height: "40px" }}
+                />
+              </div>
+            </div>
+
+            {/* Tabella Voli */}
+            <div style={{ overflowX: "auto" }}>
+              <table className="table logbook-table">
+                <thead>
+                  <tr>
+                    <th>Data</th>
+                    <th>Pilota</th>
+                    <th>Dettagli</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredFlights.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="muted" style={{ textAlign: "center", padding: 32 }}>
+                        Nessun volo trovato con i filtri selezionati.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredFlights.map((flight: any) => {
+                      const pilotName = flight.movement.user.fullName || flight.movement.user.email;
+                      const dateObj = new Date(flight.movement.date);
+                      return (
+                        <tr key={flight.id}>
+                          {/* 1. DATA */}
+                          <td style={{ whiteSpace: "nowrap" }}>
+                            <div className="inline-meta" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                              <CalendarIcon size={16} />
+                              <span>{formatDateDisplay(flight.movement.date)}</span>
+                            </div>
+                            <br />
+                            <div className="inline-meta" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                              <span>🕒</span>
+                              <span>{dateObj.toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}</span>
+                            </div>
+                          </td>
+
+                          {/* 2. PILOTA */}
+                          <td style={{ fontWeight: 600 }}>
+                            {pilotName}
+                          </td>
+
+                          {/* 3. DETTAGLI CARD */}
+                          <td>
+                            <div className="grid grid-2">
+                              {/* Left column: aircraft and route */}
+                              <div>
+                                <div style={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+                                  <span>✈️ {flight.aircraftRegistration}</span>
+                                  <span style={{ color: "var(--border)" }}>•</span>
+                                  <span>⏱️ {formatMinutes(flight.durationMinutes)}</span>
+                                </div>
+                                <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                                  <span>🛫 {flight.takeoffPlace || "?"}</span>
+                                  <span className="muted">·</span>
+                                  <span>🛬 {flight.arrivalPlace || "?"}</span>
+                                </div>
+                              </div>
+
+                              {/* Right column: hobbs and crew */}
+                              <div>
+                                {flight.hobbsStartMinutes != null && flight.hobbsEndMinutes != null && (
+                                  <div className="muted" style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                                    Oram.: {(flight.hobbsStartMinutes / 60).toFixed(1)} ➔ {(flight.hobbsEndMinutes / 60).toFixed(1)}
+                                  </div>
+                                )}
+                                {(flight.instructorName || flight.passengerName) && (
+                                  <div className="muted" style={{ fontSize: "0.85rem", marginTop: 4 }}>
+                                    {flight.instructorName ? `👨‍✈️ Istr. ${flight.instructorName}` : `👤 Pass. ${flight.passengerName}`}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Notes at the bottom */}
+                            {flight.movement.notes && (
+                              <div style={{ 
+                                fontSize: "0.85rem", 
+                                fontStyle: "italic", 
+                                color: "var(--muted)",
+                                borderLeft: "2px solid var(--primary)",
+                                paddingLeft: 8,
+                                marginTop: 10,
+                                wordBreak: "break-word"
+                              }}>
+                                Note: {flight.movement.notes}
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         );

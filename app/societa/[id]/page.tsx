@@ -98,6 +98,29 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
     take: 3,
   });
 
+  const partnershipFlights = await prisma.flight.findMany({
+    where: {
+      partnershipAircraft: {
+        partnershipId: id,
+      },
+      movement: {
+        isDraft: false,
+      },
+    },
+    include: {
+      movement: {
+        include: {
+          user: true,
+        },
+      },
+    },
+    orderBy: {
+      movement: {
+        date: "desc",
+      },
+    },
+  });
+
   const isAdmin = partnership.members.find(m => m.userId === user.id)?.role === "ADMIN";
 
   const memberships = await prisma.partnershipMember.findMany({
@@ -213,6 +236,34 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
     }
   }));
 
+  const serializedPartnershipFlights = partnershipFlights.map(f => ({
+    id: f.id,
+    aircraftRegistration: f.aircraftRegistration,
+    aircraftType: f.aircraftType,
+    durationMinutes: f.durationMinutes,
+    takeoffPlace: f.takeoffPlace,
+    arrivalPlace: f.arrivalPlace,
+    hobbsStartMinutes: f.hobbsStartMinutes,
+    hobbsEndMinutes: f.hobbsEndMinutes,
+    passengerName: f.passengerName,
+    instructorName: f.instructorName,
+    instructorMinutes: f.instructorMinutes,
+    engineOn: f.engineOn ? f.engineOn.toISOString() : null,
+    engineOff: f.engineOff ? f.engineOff.toISOString() : null,
+    totalCost: Number(f.totalCost),
+    createdAt: f.createdAt.toISOString(),
+    movement: {
+      id: f.movement.id,
+      date: f.movement.date.toISOString(),
+      notes: f.movement.notes,
+      user: {
+        id: f.movement.user.id,
+        fullName: f.movement.user.fullName,
+        email: f.movement.user.email,
+      }
+    }
+  }));
+
   return (
     <AppShell title={partnership.name} subtitle="Gestione società">
       <div className="between" style={{ marginBottom: 24, alignItems: "center", gap: 16 }}>
@@ -227,6 +278,7 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
         isAdmin={isAdmin} 
         currentUserId={user.id} 
         lastFlights={serializedLastFlights} 
+        partnershipFlights={serializedPartnershipFlights}
       />
     </AppShell>
   );

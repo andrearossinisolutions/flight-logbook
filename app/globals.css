@@ -1511,6 +1511,78 @@ textarea {
   .members-table tr td:nth-child(4):not(:has(button)) {
     display: none !important;
   }
+
+  /* Logbook Table Mobile View */
+  .logbook-table {
+    display: block;
+    width: 100%;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .logbook-table thead {
+    display: none;
+  }
+  .logbook-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+  .logbook-table tr {
+    display: grid !important;
+    grid-template-areas: 
+      "pilot date"
+      "details details";
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 16px;
+    box-shadow: 0 4px 15px rgba(20, 32, 51, 0.02);
+    margin-bottom: 0;
+  }
+  .logbook-table tr td {
+    display: block;
+    padding: 0 !important;
+    border: none !important;
+  }
+  
+  /* 1. Date Field */
+  .logbook-table tr td:nth-child(1) {
+    grid-area: date;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: flex-end;
+    color: var(--muted);
+    font-size: 0.88rem;
+    margin-bottom: 4px;
+  }
+  .logbook-table tr td:nth-child(1) br {
+    display: none; /* Hide line breaks so date and time stay inline */
+  }
+  
+  /* 2. Pilot Field */
+  .logbook-table tr td:nth-child(2) {
+    grid-area: pilot;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text);
+  }
+  
+  /* 3. Details Card Field */
+  .logbook-table tr td:nth-child(3) {
+    grid-area: details;
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 12px !important;
+    font-size: 0.9rem;
+    border: 1px solid rgba(217, 224, 234, 0.5) !important;
+    margin-top: 4px;
+  }
 }
 
 
