@@ -1731,10 +1731,10 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
       })()}
 
       {activeTab === "SETTINGS" && (
-        <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-          {/* Gestione Aerei e Costi */}
-          <div className="grid grid-2">
-          <div className="card">
+        <div className="grid grid-2" style={{ alignItems: "flex-start" }}>
+          {/* Colonna Sinistra: Aerei */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            <div className="card">
             <h2 style={{ marginTop: 0 }}>Aerei della Società</h2>
             {partnership.aircrafts.length === 0 ? (
               <div className="muted">Nessun aereo inserito.</div>
@@ -2338,9 +2338,12 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                 </form>
               </div>
             )}
+            </div>
           </div>
 
-          <div className="card">
+          {/* Colonna Destra: Costi Fissi e Altro */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            <div className="card">
             <h2 style={{ marginTop: 0 }}>Costi Fissi</h2>
             {partnership.fixedCosts.length === 0 ? (
               <div className="muted">Nessun costo fisso inserito.</div>
@@ -2625,13 +2628,11 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               </div>
             )}
           </div>
-        </div>
 
-          {/* Impostazioni Società e Zona Pericolo */}
-          {isAdmin && (
-            <div className="grid grid-2" style={{ alignItems: "flex-start" }}>
-          {/* Card Cambio Nome */}
-          <div className="card">
+
+            {/* Impostazioni Generali (solo Admin) */}
+            {isAdmin && (
+              <div className="card">
             <h2 style={{ marginTop: 0, marginBottom: 8 }}>Impostazioni Società</h2>
             <p className="muted" style={{ fontSize: "0.9rem", marginTop: 0, marginBottom: 16 }}>
               Modifica i dettagli principali della tua società di volo.
@@ -2657,8 +2658,12 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             </form>
           </div>
 
-          {/* Card Zona Pericolo/Destruttiva */}
-          <div className="card" style={{ borderColor: "var(--danger)" }}>
+
+            )}
+
+            {/* Zona Pericolo (solo Admin) */}
+            {isAdmin && (
+              <div className="card" style={{ borderColor: "var(--danger)" }}>
             <div
               style={{
                 background: "rgba(239, 68, 68, 0.05)",
@@ -2700,8 +2705,9 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               Elimina società
             </button>
           </div>
-        </div>
-          )}
+
+            )}
+          </div>
         </div>
       )}
     </div>
