@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { Route } from "next";
 import { useState } from "react";
-import { AirplaneIcon, PlaneIcon, LogOutIcon, SettingsIcon, UsersIcon } from "./icons";
+import { AirplaneIcon, LogOutIcon, SettingsIcon, UsersIcon } from "./icons";
 import { version } from "../package.json";
 
 export function Navbar() {
@@ -20,7 +20,7 @@ export function Navbar() {
   }
 
   const navItems = [
-    { name: "Logbook", href: "/logbook", icon: PlaneIcon },
+    { name: "Logbook", href: "/logbook", icon: AirplaneIcon },
     { name: "Società", href: "/societa", icon: UsersIcon },
     { name: "Impostazioni", href: "/settings", icon: SettingsIcon },
   ];
