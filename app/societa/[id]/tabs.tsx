@@ -6,7 +6,6 @@ import { SubmitButton } from "@/components/submit-button";
 import { formatDateDisplay, daysFromDate } from "@/lib/utils";
 import {
   DashboardIcon,
-  PlaneIcon,
   UsersIcon,
   FileTextIcon,
   WalletIcon,
@@ -343,16 +342,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             <AirplaneIcon size={18} />
             <span className="navbar-tab-text">Logbook</span>
           </button>
-          <button
-            type="button"
-            className={`navbar-tab ${activeTab === "AIRCRAFTS" ? "active" : ""}`}
-            style={{ border: "none", cursor: "pointer", background: activeTab === "AIRCRAFTS" ? "white" : "transparent" }}
-            onClick={() => setActiveTab("AIRCRAFTS")}
-            title="Aerei e Costi"
-          >
-            <PlaneIcon size={18} />
-            <span className="navbar-tab-text">Aerei e Costi</span>
-          </button>
+
           <button
             type="button"
             className={`navbar-tab ${activeTab === "MEMBERS" ? "active" : ""}`}
@@ -383,18 +373,16 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             <WalletIcon size={18} />
             <span className="navbar-tab-text">Cassa</span>
           </button>
-          {isAdmin && (
-            <button
-              type="button"
-              className={`navbar-tab ${activeTab === "SETTINGS" ? "active" : ""}`}
-              style={{ border: "none", cursor: "pointer", background: activeTab === "SETTINGS" ? "white" : "transparent" }}
-              onClick={() => setActiveTab("SETTINGS")}
-              title="Impostazioni"
-            >
-              <SettingsIcon size={18} />
-              <span className="navbar-tab-text">Impostazioni</span>
-            </button>
-          )}
+          <button
+            type="button"
+            className={`navbar-tab ${activeTab === "SETTINGS" ? "active" : ""}`}
+            style={{ border: "none", cursor: "pointer", background: activeTab === "SETTINGS" ? "white" : "transparent" }}
+            onClick={() => setActiveTab("SETTINGS")}
+            title="Impostazioni"
+          >
+            <SettingsIcon size={18} />
+            <span className="navbar-tab-text">Impostazioni</span>
+          </button>
         </div>
       </div>
 
@@ -436,7 +424,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                       </div>
                     </div>
                     <button 
-                      onClick={() => setActiveTab("AIRCRAFTS")}
+                      onClick={() => setActiveTab("SETTINGS")}
                       className="btn"
                       style={{ 
                         backgroundColor: isOverdue ? "var(--danger)" : "#b45309", 
@@ -1384,8 +1372,368 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
         );
       })()}
 
-      {activeTab === "AIRCRAFTS" && (
+      
+
+      {activeTab === "MEMBERS" && (
         <div className="grid grid-2">
+          <div className="card">
+            <h2 style={{ marginTop: 0 }}>Elenco Soci</h2>
+            <table className="table members-table">
+              <thead>
+                <tr>
+                  <th>Nome</th>
+                  <th>Email</th>
+                  <th>Ruolo</th>
+                  {isAdmin && <th>Azioni</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {partnership.members.map((m: any) => (
+                  <tr key={m.id}>
+                    <td>{m.user.fullName || "Utente senza nome"} {m.user.id === currentUserId ? "(Tu)" : ""}</td>
+                    <td>{m.user.email}</td>
+                    <td>{m.role === "ADMIN" ? "Amministratore" : "Socio"}</td>
+                    {isAdmin && (
+                      <td>
+                        {m.user.id !== currentUserId && (
+                          <button
+                            className="btn secondary"
+                            style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
+                            onClick={() => {
+                              if (confirm(`Sei sicuro di voler rimuovere l'utente ${m.user.email}?`)) {
+                                removeMember(partnership.id, m.userId);
+                              }
+                            }}
+                          >
+                            Rimuovi
+                          </button>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+                {partnership.invitations && partnership.invitations.map((inv: any) => (
+                  <tr key={inv.id} style={{ opacity: 0.75 }}>
+                    <td><span className="muted" style={{ fontStyle: "italic" }}>Invito in attesa</span></td>
+                    <td>{inv.email}</td>
+                    <td>Socio (in attesa)</td>
+                    {isAdmin && (
+                      <td>
+                        <button
+                          className="btn secondary"
+                          style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
+                          onClick={async () => {
+                            if (confirm(`Sei sicuro di voler annullare l'invito per ${inv.email}?`)) {
+                              await cancelInvitation(partnership.id, inv.id);
+                            }
+                          }}
+                        >
+                          Annulla
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {isAdmin && (
+            <div className="card">
+              <h2 style={{ marginTop: 0 }}>Aggiungi Socio</h2>
+              <p className="muted">Se l'utente non è registrato, riceverà un invito email per creare un account.</p>
+              <form action={addMember.bind(null, partnership.id)} className="grid">
+                <div className="field">
+                  <label>Email utente</label>
+                  <input className="input" type="email" name="email" required placeholder="email@esempio.it" />
+                </div>
+                <SubmitButton>Aggiungi alla società</SubmitButton>
+              </form>
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "REPORT" && (
+        <div className="card">
+          <div className="between" style={{ marginBottom: 24 }}>
+            <div>
+              <h2 style={{ marginTop: 0 }}>Rendiconto Mensile</h2>
+              <div className="muted">Contributo per costi fissi e ore volate.</div>
+            </div>
+
+            <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-start", width: "100%", maxWidth: "fit-content" }}>
+              {/* Gruppo Select */}
+              <div className="row" style={{ gap: 8, flexWrap: "nowrap", flexGrow: 1, minWidth: "250px" }}>
+                <select className="select" value={reportMonth} onChange={e => setReportMonth(Number(e.target.value))} style={{ flexGrow: 1, minWidth: "150px", height: "40px" }}>
+                  {Array.from({ length: 12 }).map((_, i) => {
+                    const mName = new Date(0, i).toLocaleString('it-IT', { month: 'long' });
+                    const capitalized = mName.charAt(0).toUpperCase() + mName.slice(1);
+                    const isCurrent = i === new Date().getMonth() && reportYear === new Date().getFullYear();
+                    return (
+                      <option key={i} value={i}>
+                        {capitalized}{isCurrent ? " (corrente)" : ""}
+                      </option>
+                    );
+                  })}
+                </select>
+
+                <select className="select" value={reportYear} onChange={e => setReportYear(Number(e.target.value))} style={{ width: "90px", height: "40px" }}>
+                  {Array.from({ length: 5 }).map((_, idx) => {
+                    const y = new Date().getFullYear() - 2 + idx;
+                    return (
+                      <option key={y} value={y}>{y}</option>
+                    );
+                  })}
+                  {reportYear < new Date().getFullYear() - 2 && (
+                    <option value={reportYear}>{reportYear}</option>
+                  )}
+                  {reportYear > new Date().getFullYear() + 2 && (
+                    <option value={reportYear}>{reportYear}</option>
+                  )}
+                </select>
+              </div>
+
+              {/* Gruppo Pulsanti */}
+              <div className="row" style={{ gap: 8, flexWrap: "nowrap", justifyContent: "center" }}>
+                <button 
+                  type="button" 
+                  className="btn secondary" 
+                  style={{ padding: "8px 12px", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "36px", height: "40px" }}
+                  onClick={() => {
+                    if (reportMonth === 0) {
+                      setReportMonth(11);
+                      setReportYear(reportYear - 1);
+                    } else {
+                      setReportMonth(reportMonth - 1);
+                    }
+                  }}
+                  title="Mese precedente"
+                >
+                  ◀
+                </button>
+
+                <button 
+                  type="button" 
+                  className="btn secondary" 
+                  style={{ padding: "8px 16px", fontWeight: 600, height: "40px", display: "flex", alignItems: "center" }}
+                  onClick={() => {
+                    setReportMonth(new Date().getMonth());
+                    setReportYear(new Date().getFullYear());
+                  }}
+                  title="Torna al mese corrente"
+                >
+                  Corrente
+                </button>
+
+                <button 
+                  type="button" 
+                  className="btn secondary" 
+                  style={{ padding: "8px 12px", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "36px", height: "40px" }}
+                  onClick={() => {
+                    if (reportMonth === 11) {
+                      setReportMonth(0);
+                      setReportYear(reportYear + 1);
+                    } else {
+                      setReportMonth(reportMonth + 1);
+                    }
+                  }}
+                  title="Mese successivo"
+                >
+                  ▶
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {isLoadingReport ? (
+            <div className="muted">Caricamento in corso...</div>
+          ) : reportData ? (
+            <>
+              <div className="grid grid-2" style={{ marginBottom: 24 }}>
+                <div className="card" style={{ background: "var(--bg-secondary)" }}>
+                  <div className="muted">Totale costi fissi (Mese)</div>
+                  <div className="big-number">€ {reportData.fixedCostTotal.toFixed(2)}</div>
+                </div>
+                <div className="card" style={{ background: "var(--bg-secondary)" }}>
+                  <div className="muted">Quota fissa per socio ({partnership.members.length == 1 ? `1 socio` : `${partnership.members.length} soci`})</div>
+                  <div className="big-number">€ {reportData.fixedCostPerMember.toFixed(2)}</div>
+                </div>
+              </div>
+
+              <table className="table report-table">
+                <thead>
+                  <tr>
+                    <th>Socio</th>
+                    <th>Voli effettuati</th>
+                    <th>Ore volate</th>
+                    <th>Costo orario voli</th>
+                    <th>Quota fissa</th>
+                    <th>Spese anticipate</th>
+                    <th>Totale da versare</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportData.reports.map((r: any) => (
+                    <tr key={r.userId} className="report-row">
+                      <td>
+                        <strong>{r.fullName}</strong>
+                        {r.userId === currentUserId && " (Tu)"}
+                      </td>
+                      <td>{r.flightsCount == 1 ? "1 volo" : `${r.flightsCount} voli`}</td>
+                      <td>{formatMinutes(r.durationMinutes)}</td>
+                      <td>€ {r.flightCost.toFixed(2)}</td>
+                      <td>€ {r.fixedCost.toFixed(2)}</td>
+                      <td style={{ color: r.advancedExpense > 0 ? "var(--success)" : "inherit" }}>
+                        {r.advancedExpense > 0 ? `- € ${r.advancedExpense.toFixed(2)}` : "-"}
+                      </td>
+                      <td>
+                        <strong style={{ fontSize: 18, color: r.totalCost < 0 ? "var(--success)" : "inherit" }}>
+                          € {r.totalCost.toFixed(2)}
+                        </strong>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </>
+          ) : (
+            <div className="error">Errore nel caricamento del rendiconto.</div>
+          )}
+        </div>
+      )}
+
+      {activeTab === "CASSA" && (() => {
+        const totalIncome = partnership.transactions.filter((t: any) => t.type === "INCOME").reduce((acc: number, t: any) => acc + t.amount, 0);
+        const totalExpense = partnership.transactions.filter((t: any) => t.type === "EXPENSE" || t.type === "MEMBER_EXPENSE").reduce((acc: number, t: any) => acc + t.amount, 0);
+        const balance = totalIncome - totalExpense;
+
+        return (
+          <div className="card">
+            <h2 style={{ marginTop: 0 }}>Cassa Società</h2>
+            <div className="grid grid-3" style={{ marginBottom: 24 }}>
+              <div className="card" style={{ background: "var(--bg-secondary)" }}>
+                <div className="muted">Totale Entrate</div>
+                <div className="big-number" style={{ color: "var(--success, #16a34a)" }}>€ {totalIncome.toFixed(2)}</div>
+              </div>
+              <div className="card" style={{ background: "var(--bg-secondary)" }}>
+                <div className="muted">Totale Uscite</div>
+                <div className="big-number" style={{ color: "var(--danger, #dc2626)" }}>€ {totalExpense.toFixed(2)}</div>
+              </div>
+              <div className="card" style={{ background: "var(--bg-secondary)", border: balance < 0 ? "2px solid var(--danger)" : "2px solid var(--success)" }}>
+                <div className="muted">Saldo Cassa</div>
+                <div className="big-number">€ {balance.toFixed(2)}</div>
+              </div>
+            </div>
+
+            <h3 style={{ marginTop: 24 }}>Riepilogo Crediti Versati / Anticipati dai Soci</h3>
+            <div className="grid grid-3" style={{ marginBottom: 24 }}>
+              {partnership.members.map((m: any) => {
+                const memberVersamenti = partnership.transactions.filter((t: any) => t.userId === m.user?.id && t.type === "INCOME").reduce((acc: number, t: any) => acc + t.amount, 0);
+                const memberAnticipi = partnership.transactions.filter((t: any) => t.userId === m.user?.id && t.type === "MEMBER_EXPENSE").reduce((acc: number, t: any) => acc + t.amount, 0);
+                const totalCredit = memberVersamenti + memberAnticipi;
+                return (
+                  <div key={m.user?.id} className="card" style={{ padding: 12, background: "var(--bg-secondary)" }}>
+                    <div className="muted" style={{ fontSize: 12 }}>{m.user?.fullName || m.user?.email}</div>
+                    <div style={{ fontSize: 16, fontWeight: "bold", marginTop: 4, color: totalCredit > 0 ? "var(--success)" : "inherit" }}>
+                      Credito Totale: € {totalCredit.toFixed(2)}
+                    </div>
+                    <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
+                      Ricariche: € {memberVersamenti.toFixed(2)} | Anticipi: € {memberAnticipi.toFixed(2)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ marginBottom: 24, padding: 16, background: "var(--bg-secondary)", borderRadius: 8 }}>
+              <h3 style={{ marginTop: 0 }}>Nuova Transazione</h3>
+              <form action={addTransaction.bind(null, partnership.id)} className="grid grid-5" style={{ gap: 8, alignItems: "end" }}>
+                <div>
+                  <label style={{ fontSize: 12 }}>Data</label>
+                  <input className="input" type="date" name="date" required defaultValue={new Date().toISOString().split('T')[0]} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12 }}>Tipo</label>
+                  <select className="select" name="type">
+                    <option value="INCOME">Ricarica / Versamento</option>
+                    <option value="MEMBER_EXPENSE">Spesa anticipata (Benzina / Altro)</option>
+                    {isAdmin && <option value="EXPENSE">Uscita Cassa Società</option>}
+                  </select>
+                </div>
+                <div style={{ gridColumn: "span 2" }}>
+                  <label style={{ fontSize: 12 }}>Descrizione</label>
+                  <input className="input" name="description" required placeholder="Es. Quota mese corrente..." />
+                </div>
+                <div>
+                  <label style={{ fontSize: 12 }}>Importo (€)</label>
+                  <input className="input" name="amount" type="number" step="0.01" min="0.01" required />
+                </div>
+                <SubmitButton style={{ gridColumn: "span 5" }}>Aggiungi Transazione</SubmitButton>
+              </form>
+            </div>
+
+            <table className="table transactions-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Utente / Tipo</th>
+                  <th>Descrizione</th>
+                  <th>Entrata</th>
+                  <th>Uscita</th>
+                  {isAdmin && <th>Azioni</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {partnership.transactions.map((t: any) => (
+                  <tr key={t.id} className="transaction-row">
+                    <td>{new Date(t.date).toLocaleDateString("it-IT")}</td>
+                    <td>
+                      {t.type === "INCOME" ? (
+                        <span style={{ color: "var(--success)" }}>Ricarica da: {t.user?.fullName || t.user?.email || "Utente sconosciuto"}</span>
+                      ) : t.type === "MEMBER_EXPENSE" ? (
+                        <span style={{ color: "var(--warning, #d97706)" }}>Anticipo da: {t.user?.fullName || t.user?.email || "Utente sconosciuto"}</span>
+                      ) : (
+                        <span style={{ color: "var(--danger)" }}>Uscita Cassa Società</span>
+                      )}
+                    </td>
+                    <td>{t.description}</td>
+                    <td>{t.type === "INCOME" ? `€ ${t.amount.toFixed(2)}` : "-"}</td>
+                    <td>{t.type === "EXPENSE" || t.type === "MEMBER_EXPENSE" ? `€ ${t.amount.toFixed(2)}` : "-"}</td>
+                    {isAdmin && (
+                      <td>
+                        <button
+                          className="btn secondary"
+                          style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
+                          onClick={() => {
+                            if (confirm(`Eliminare la transazione "${t.description}"?`)) {
+                              deleteTransaction(partnership.id, t.id);
+                            }
+                          }}
+                        >
+                          Elimina
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+                {partnership.transactions.length === 0 && (
+                  <tr>
+                    <td colSpan={isAdmin ? 6 : 5} style={{ textAlign: "center", padding: 24 }} className="muted">
+                      Nessuna transazione registrata.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        );
+      })()}
+
+      {activeTab === "SETTINGS" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+          {/* Gestione Aerei e Costi */}
+          <div className="grid grid-2">
           <div className="card">
             <h2 style={{ marginTop: 0 }}>Aerei della Società</h2>
             {partnership.aircrafts.length === 0 ? (
@@ -2278,366 +2626,10 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             )}
           </div>
         </div>
-      )}
 
-      {activeTab === "MEMBERS" && (
-        <div className="grid grid-2">
-          <div className="card">
-            <h2 style={{ marginTop: 0 }}>Elenco Soci</h2>
-            <table className="table members-table">
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>Email</th>
-                  <th>Ruolo</th>
-                  {isAdmin && <th>Azioni</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {partnership.members.map((m: any) => (
-                  <tr key={m.id}>
-                    <td>{m.user.fullName || "Utente senza nome"} {m.user.id === currentUserId ? "(Tu)" : ""}</td>
-                    <td>{m.user.email}</td>
-                    <td>{m.role === "ADMIN" ? "Amministratore" : "Socio"}</td>
-                    {isAdmin && (
-                      <td>
-                        {m.user.id !== currentUserId && (
-                          <button
-                            className="btn secondary"
-                            style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
-                            onClick={() => {
-                              if (confirm(`Sei sicuro di voler rimuovere l'utente ${m.user.email}?`)) {
-                                removeMember(partnership.id, m.userId);
-                              }
-                            }}
-                          >
-                            Rimuovi
-                          </button>
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                ))}
-                {partnership.invitations && partnership.invitations.map((inv: any) => (
-                  <tr key={inv.id} style={{ opacity: 0.75 }}>
-                    <td><span className="muted" style={{ fontStyle: "italic" }}>Invito in attesa</span></td>
-                    <td>{inv.email}</td>
-                    <td>Socio (in attesa)</td>
-                    {isAdmin && (
-                      <td>
-                        <button
-                          className="btn secondary"
-                          style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
-                          onClick={async () => {
-                            if (confirm(`Sei sicuro di voler annullare l'invito per ${inv.email}?`)) {
-                              await cancelInvitation(partnership.id, inv.id);
-                            }
-                          }}
-                        >
-                          Annulla
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
+          {/* Impostazioni Società e Zona Pericolo */}
           {isAdmin && (
-            <div className="card">
-              <h2 style={{ marginTop: 0 }}>Aggiungi Socio</h2>
-              <p className="muted">Se l'utente non è registrato, riceverà un invito email per creare un account.</p>
-              <form action={addMember.bind(null, partnership.id)} className="grid">
-                <div className="field">
-                  <label>Email utente</label>
-                  <input className="input" type="email" name="email" required placeholder="email@esempio.it" />
-                </div>
-                <SubmitButton>Aggiungi alla società</SubmitButton>
-              </form>
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeTab === "REPORT" && (
-        <div className="card">
-          <div className="between" style={{ marginBottom: 24 }}>
-            <div>
-              <h2 style={{ marginTop: 0 }}>Rendiconto Mensile</h2>
-              <div className="muted">Contributo per costi fissi e ore volate.</div>
-            </div>
-
-            <div className="row" style={{ gap: 8, flexWrap: "wrap", justifyContent: "flex-start", width: "100%", maxWidth: "fit-content" }}>
-              {/* Gruppo Select */}
-              <div className="row" style={{ gap: 8, flexWrap: "nowrap", flexGrow: 1, minWidth: "250px" }}>
-                <select className="select" value={reportMonth} onChange={e => setReportMonth(Number(e.target.value))} style={{ flexGrow: 1, minWidth: "150px", height: "40px" }}>
-                  {Array.from({ length: 12 }).map((_, i) => {
-                    const mName = new Date(0, i).toLocaleString('it-IT', { month: 'long' });
-                    const capitalized = mName.charAt(0).toUpperCase() + mName.slice(1);
-                    const isCurrent = i === new Date().getMonth() && reportYear === new Date().getFullYear();
-                    return (
-                      <option key={i} value={i}>
-                        {capitalized}{isCurrent ? " (corrente)" : ""}
-                      </option>
-                    );
-                  })}
-                </select>
-
-                <select className="select" value={reportYear} onChange={e => setReportYear(Number(e.target.value))} style={{ width: "90px", height: "40px" }}>
-                  {Array.from({ length: 5 }).map((_, idx) => {
-                    const y = new Date().getFullYear() - 2 + idx;
-                    return (
-                      <option key={y} value={y}>{y}</option>
-                    );
-                  })}
-                  {reportYear < new Date().getFullYear() - 2 && (
-                    <option value={reportYear}>{reportYear}</option>
-                  )}
-                  {reportYear > new Date().getFullYear() + 2 && (
-                    <option value={reportYear}>{reportYear}</option>
-                  )}
-                </select>
-              </div>
-
-              {/* Gruppo Pulsanti */}
-              <div className="row" style={{ gap: 8, flexWrap: "nowrap", justifyContent: "center" }}>
-                <button 
-                  type="button" 
-                  className="btn secondary" 
-                  style={{ padding: "8px 12px", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "36px", height: "40px" }}
-                  onClick={() => {
-                    if (reportMonth === 0) {
-                      setReportMonth(11);
-                      setReportYear(reportYear - 1);
-                    } else {
-                      setReportMonth(reportMonth - 1);
-                    }
-                  }}
-                  title="Mese precedente"
-                >
-                  ◀
-                </button>
-
-                <button 
-                  type="button" 
-                  className="btn secondary" 
-                  style={{ padding: "8px 16px", fontWeight: 600, height: "40px", display: "flex", alignItems: "center" }}
-                  onClick={() => {
-                    setReportMonth(new Date().getMonth());
-                    setReportYear(new Date().getFullYear());
-                  }}
-                  title="Torna al mese corrente"
-                >
-                  Corrente
-                </button>
-
-                <button 
-                  type="button" 
-                  className="btn secondary" 
-                  style={{ padding: "8px 12px", display: "flex", alignItems: "center", justifyContent: "center", minWidth: "36px", height: "40px" }}
-                  onClick={() => {
-                    if (reportMonth === 11) {
-                      setReportMonth(0);
-                      setReportYear(reportYear + 1);
-                    } else {
-                      setReportMonth(reportMonth + 1);
-                    }
-                  }}
-                  title="Mese successivo"
-                >
-                  ▶
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {isLoadingReport ? (
-            <div className="muted">Caricamento in corso...</div>
-          ) : reportData ? (
-            <>
-              <div className="grid grid-2" style={{ marginBottom: 24 }}>
-                <div className="card" style={{ background: "var(--bg-secondary)" }}>
-                  <div className="muted">Totale costi fissi (Mese)</div>
-                  <div className="big-number">€ {reportData.fixedCostTotal.toFixed(2)}</div>
-                </div>
-                <div className="card" style={{ background: "var(--bg-secondary)" }}>
-                  <div className="muted">Quota fissa per socio ({partnership.members.length == 1 ? `1 socio` : `${partnership.members.length} soci`})</div>
-                  <div className="big-number">€ {reportData.fixedCostPerMember.toFixed(2)}</div>
-                </div>
-              </div>
-
-              <table className="table report-table">
-                <thead>
-                  <tr>
-                    <th>Socio</th>
-                    <th>Voli effettuati</th>
-                    <th>Ore volate</th>
-                    <th>Costo orario voli</th>
-                    <th>Quota fissa</th>
-                    <th>Spese anticipate</th>
-                    <th>Totale da versare</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reportData.reports.map((r: any) => (
-                    <tr key={r.userId} className="report-row">
-                      <td>
-                        <strong>{r.fullName}</strong>
-                        {r.userId === currentUserId && " (Tu)"}
-                      </td>
-                      <td>{r.flightsCount == 1 ? "1 volo" : `${r.flightsCount} voli`}</td>
-                      <td>{formatMinutes(r.durationMinutes)}</td>
-                      <td>€ {r.flightCost.toFixed(2)}</td>
-                      <td>€ {r.fixedCost.toFixed(2)}</td>
-                      <td style={{ color: r.advancedExpense > 0 ? "var(--success)" : "inherit" }}>
-                        {r.advancedExpense > 0 ? `- € ${r.advancedExpense.toFixed(2)}` : "-"}
-                      </td>
-                      <td>
-                        <strong style={{ fontSize: 18, color: r.totalCost < 0 ? "var(--success)" : "inherit" }}>
-                          € {r.totalCost.toFixed(2)}
-                        </strong>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
-          ) : (
-            <div className="error">Errore nel caricamento del rendiconto.</div>
-          )}
-        </div>
-      )}
-
-      {activeTab === "CASSA" && (() => {
-        const totalIncome = partnership.transactions.filter((t: any) => t.type === "INCOME").reduce((acc: number, t: any) => acc + t.amount, 0);
-        const totalExpense = partnership.transactions.filter((t: any) => t.type === "EXPENSE" || t.type === "MEMBER_EXPENSE").reduce((acc: number, t: any) => acc + t.amount, 0);
-        const balance = totalIncome - totalExpense;
-
-        return (
-          <div className="card">
-            <h2 style={{ marginTop: 0 }}>Cassa Società</h2>
-            <div className="grid grid-3" style={{ marginBottom: 24 }}>
-              <div className="card" style={{ background: "var(--bg-secondary)" }}>
-                <div className="muted">Totale Entrate</div>
-                <div className="big-number" style={{ color: "var(--success, #16a34a)" }}>€ {totalIncome.toFixed(2)}</div>
-              </div>
-              <div className="card" style={{ background: "var(--bg-secondary)" }}>
-                <div className="muted">Totale Uscite</div>
-                <div className="big-number" style={{ color: "var(--danger, #dc2626)" }}>€ {totalExpense.toFixed(2)}</div>
-              </div>
-              <div className="card" style={{ background: "var(--bg-secondary)", border: balance < 0 ? "2px solid var(--danger)" : "2px solid var(--success)" }}>
-                <div className="muted">Saldo Cassa</div>
-                <div className="big-number">€ {balance.toFixed(2)}</div>
-              </div>
-            </div>
-
-            <h3 style={{ marginTop: 24 }}>Riepilogo Crediti Versati / Anticipati dai Soci</h3>
-            <div className="grid grid-3" style={{ marginBottom: 24 }}>
-              {partnership.members.map((m: any) => {
-                const memberVersamenti = partnership.transactions.filter((t: any) => t.userId === m.user?.id && t.type === "INCOME").reduce((acc: number, t: any) => acc + t.amount, 0);
-                const memberAnticipi = partnership.transactions.filter((t: any) => t.userId === m.user?.id && t.type === "MEMBER_EXPENSE").reduce((acc: number, t: any) => acc + t.amount, 0);
-                const totalCredit = memberVersamenti + memberAnticipi;
-                return (
-                  <div key={m.user?.id} className="card" style={{ padding: 12, background: "var(--bg-secondary)" }}>
-                    <div className="muted" style={{ fontSize: 12 }}>{m.user?.fullName || m.user?.email}</div>
-                    <div style={{ fontSize: 16, fontWeight: "bold", marginTop: 4, color: totalCredit > 0 ? "var(--success)" : "inherit" }}>
-                      Credito Totale: € {totalCredit.toFixed(2)}
-                    </div>
-                    <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
-                      Ricariche: € {memberVersamenti.toFixed(2)} | Anticipi: € {memberAnticipi.toFixed(2)}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <div style={{ marginBottom: 24, padding: 16, background: "var(--bg-secondary)", borderRadius: 8 }}>
-              <h3 style={{ marginTop: 0 }}>Nuova Transazione</h3>
-              <form action={addTransaction.bind(null, partnership.id)} className="grid grid-5" style={{ gap: 8, alignItems: "end" }}>
-                <div>
-                  <label style={{ fontSize: 12 }}>Data</label>
-                  <input className="input" type="date" name="date" required defaultValue={new Date().toISOString().split('T')[0]} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12 }}>Tipo</label>
-                  <select className="select" name="type">
-                    <option value="INCOME">Ricarica / Versamento</option>
-                    <option value="MEMBER_EXPENSE">Spesa anticipata (Benzina / Altro)</option>
-                    {isAdmin && <option value="EXPENSE">Uscita Cassa Società</option>}
-                  </select>
-                </div>
-                <div style={{ gridColumn: "span 2" }}>
-                  <label style={{ fontSize: 12 }}>Descrizione</label>
-                  <input className="input" name="description" required placeholder="Es. Quota mese corrente..." />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12 }}>Importo (€)</label>
-                  <input className="input" name="amount" type="number" step="0.01" min="0.01" required />
-                </div>
-                <SubmitButton style={{ gridColumn: "span 5" }}>Aggiungi Transazione</SubmitButton>
-              </form>
-            </div>
-
-            <table className="table transactions-table">
-              <thead>
-                <tr>
-                  <th>Data</th>
-                  <th>Utente / Tipo</th>
-                  <th>Descrizione</th>
-                  <th>Entrata</th>
-                  <th>Uscita</th>
-                  {isAdmin && <th>Azioni</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {partnership.transactions.map((t: any) => (
-                  <tr key={t.id} className="transaction-row">
-                    <td>{new Date(t.date).toLocaleDateString("it-IT")}</td>
-                    <td>
-                      {t.type === "INCOME" ? (
-                        <span style={{ color: "var(--success)" }}>Ricarica da: {t.user?.fullName || t.user?.email || "Utente sconosciuto"}</span>
-                      ) : t.type === "MEMBER_EXPENSE" ? (
-                        <span style={{ color: "var(--warning, #d97706)" }}>Anticipo da: {t.user?.fullName || t.user?.email || "Utente sconosciuto"}</span>
-                      ) : (
-                        <span style={{ color: "var(--danger)" }}>Uscita Cassa Società</span>
-                      )}
-                    </td>
-                    <td>{t.description}</td>
-                    <td>{t.type === "INCOME" ? `€ ${t.amount.toFixed(2)}` : "-"}</td>
-                    <td>{t.type === "EXPENSE" || t.type === "MEMBER_EXPENSE" ? `€ ${t.amount.toFixed(2)}` : "-"}</td>
-                    {isAdmin && (
-                      <td>
-                        <button
-                          className="btn secondary"
-                          style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
-                          onClick={() => {
-                            if (confirm(`Eliminare la transazione "${t.description}"?`)) {
-                              deleteTransaction(partnership.id, t.id);
-                            }
-                          }}
-                        >
-                          Elimina
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-                {partnership.transactions.length === 0 && (
-                  <tr>
-                    <td colSpan={isAdmin ? 6 : 5} style={{ textAlign: "center", padding: 24 }} className="muted">
-                      Nessuna transazione registrata.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        );
-      })()}
-
-      {activeTab === "SETTINGS" && isAdmin && (
-        <div className="grid grid-2" style={{ alignItems: "flex-start" }}>
+            <div className="grid grid-2" style={{ alignItems: "flex-start" }}>
           {/* Card Cambio Nome */}
           <div className="card">
             <h2 style={{ marginTop: 0, marginBottom: 8 }}>Impostazioni Società</h2>
@@ -2708,6 +2700,8 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               Elimina società
             </button>
           </div>
+        </div>
+          )}
         </div>
       )}
     </div>
