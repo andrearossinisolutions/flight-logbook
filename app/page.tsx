@@ -148,7 +148,7 @@ export default async function HomePage() {
                       <div className="browser-dot yellow"></div>
                       <div className="browser-dot green"></div>
                     </div>
-                    <div className="browser-address">logbook.rossinisolutions.com/briefing</div>
+                    <div className="browser-address">/briefing</div>
                   </div>
                   <div className="browser-content">
                     <Image 
@@ -162,11 +162,11 @@ export default async function HomePage() {
                 </div>
               </div>
             </div>
-            
+
             {/* Feature 1 */}
             <div className="showcase-row">
               <div className="showcase-text">
-                <span className="showcase-badge">Dashboard & Registro</span>
+                <span className="showcase-badge">Logbook</span>
                 <h3>Tutti i tuoi voli a portata di mano</h3>
                 <p>
                   Un'interfaccia moderna per registrare le attività di volo personali e societarie. 
@@ -187,6 +187,11 @@ export default async function HomePage() {
                     <span>Stato avanzamento bozze e inserimento facilitato</span>
                   </li>
                 </ul>
+                <div style={{ marginTop: 24 }}>
+                  <Link href="/login" className="btn" style={{ display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+                    Accedi e inizia <ArrowRightIcon size={16} />
+                  </Link>
+                </div>
               </div>
               <div className="showcase-visual">
                 <div className="browser-mockup">
@@ -196,7 +201,7 @@ export default async function HomePage() {
                       <div className="browser-dot yellow"></div>
                       <div className="browser-dot green"></div>
                     </div>
-                    <div className="browser-address">logbook.rossinisolutions.com/dashboard</div>
+                    <div className="browser-address">/logbook</div>
                   </div>
                   <div className="browser-content">
                     <Image 
@@ -236,6 +241,11 @@ export default async function HomePage() {
                     <span>Gestione note per ogni sessione di volo pianificata</span>
                   </li>
                 </ul>
+                <div style={{ marginTop: 24 }}>
+                  <Link href="/login" className="btn" style={{ display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+                    Accedi e inizia <ArrowRightIcon size={16} />
+                  </Link>
+                </div>
               </div>
               <div className="showcase-visual">
                 <div className="browser-mockup">
@@ -245,7 +255,7 @@ export default async function HomePage() {
                       <div className="browser-dot yellow"></div>
                       <div className="browser-dot green"></div>
                     </div>
-                    <div className="browser-address">logbook.rossinisolutions.com/bookings</div>
+                    <div className="browser-address">/societa/booking</div>
                   </div>
                   <div className="browser-content">
                     <Image 
@@ -284,6 +294,11 @@ export default async function HomePage() {
                     <span>Avvisi immediati sulle manutenzioni flotta in corso</span>
                   </li>
                 </ul>
+                <div style={{ marginTop: 24 }}>
+                  <Link href="/login" className="btn" style={{ display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+                    Accedi e inizia <ArrowRightIcon size={16} />
+                  </Link>
+                </div>
               </div>
               <div className="showcase-visual">
                 <div className="browser-mockup">
@@ -293,7 +308,7 @@ export default async function HomePage() {
                       <div className="browser-dot yellow"></div>
                       <div className="browser-dot green"></div>
                     </div>
-                    <div className="browser-address">logbook.rossinisolutions.com/bulletin</div>
+                    <div className="browser-address">/societa</div>
                   </div>
                   <div className="browser-content">
                     <Image 
@@ -332,6 +347,11 @@ export default async function HomePage() {
                     <span>Allarmi visivi per manutenzioni urgenti o scadute</span>
                   </li>
                 </ul>
+                <div style={{ marginTop: 24 }}>
+                  <Link href="/login" className="btn" style={{ display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+                    Accedi e inizia <ArrowRightIcon size={16} />
+                  </Link>
+                </div>
               </div>
               <div className="showcase-visual">
                 <div className="browser-mockup">
@@ -341,12 +361,65 @@ export default async function HomePage() {
                       <div className="browser-dot yellow"></div>
                       <div className="browser-dot green"></div>
                     </div>
-                    <div className="browser-address">logbook.rossinisolutions.com/maintenance</div>
+                    <div className="browser-address">/societa/settings</div>
                   </div>
                   <div className="browser-content">
                     <Image 
                       src="/images/screenshots/maintenance.png" 
                       alt="Gestione Flotta e Manutenzioni" 
+                      width={800}
+                      height={500}
+                      className="browser-image"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 6 */}
+            <div className="showcase-row">
+              <div className="showcase-text">
+                <span className="showcase-badge">Noleggio in AeroClub</span>
+                <h3>Vola con semplicità presso il tuo AeroClub</h3>
+                <p>
+                  Configura i velivoli che noleggi regolarmente con le relative tariffe orarie e tieni traccia 
+                  delle scadenze dei tuoi attestati e delle visite mediche in un pannello impostazioni centralizzato 
+                  ed intuitivo.
+                </p>
+                <ul className="showcase-features-list">
+                  <li>
+                    <CheckIcon />
+                    <span>Gestione flotta a noleggio personale (marche, modello e costo orario)</span>
+                  </li>
+                  <li>
+                    <CheckIcon />
+                    <span>Monitoraggio scadenze per visita medica, attestati mono/biposto e fonia</span>
+                  </li>
+                  <li>
+                    <CheckIcon />
+                    <span>Dividi facilmente i costi di noleggio con i tuoi compagni di volo</span>
+                  </li>
+                </ul>
+                <div style={{ marginTop: 24 }}>
+                  <Link href="/login" className="btn" style={{ display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+                    Accedi e inizia <ArrowRightIcon size={16} />
+                  </Link>
+                </div>
+              </div>
+              <div className="showcase-visual">
+                <div className="browser-mockup">
+                  <div className="browser-header">
+                    <div className="browser-dots">
+                      <div className="browser-dot red"></div>
+                      <div className="browser-dot yellow"></div>
+                      <div className="browser-dot green"></div>
+                    </div>
+                    <div className="browser-address">/settings</div>
+                  </div>
+                  <div className="browser-content">
+                    <Image 
+                      src="/images/screenshots/settings.png" 
+                      alt="Impostazioni" 
                       width={800}
                       height={500}
                       className="browser-image"
