@@ -351,7 +351,7 @@ export default async function BriefingPage({
                             Q{metar.altim} <span style={{ fontSize: "0.9rem", fontWeight: 500 }}>hPa</span>
                           </div>
                           <div className="muted" style={{ fontSize: "0.85rem", marginTop: 4 }}>
-                            Standard: {(metar.altim / 1013.25).toFixed(2)} atm
+                            Standard: 1013 hPa
                           </div>
                         </div>
                       </div>
