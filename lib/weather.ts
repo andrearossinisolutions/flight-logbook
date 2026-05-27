@@ -566,11 +566,14 @@ export async function getCoordinatesFromName(name: string): Promise<{ lat: numbe
   }
 }
 
-export function findNearestIcao(lat: number, lon: number): string {
+export function findNearestIcao(lat: number, lon: number, excludeIcao?: string): string {
   let nearestIcao = "LIML";
   let minDist = Infinity;
   
   for (const [icao, apt] of Object.entries(ITALIAN_AIRPORTS)) {
+    if (excludeIcao && icao.toUpperCase() === excludeIcao.toUpperCase()) {
+      continue;
+    }
     const dy = apt.lat - lat;
     const dx = apt.lon - lon;
     const dist = dx * dx + dy * dy;

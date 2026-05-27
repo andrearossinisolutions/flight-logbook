@@ -12,7 +12,10 @@ import {
   formatVisibilityKm,
   decodeWeatherString,
   resolveQueryToIcaos,
-  getLocationWeatherDetails
+  getLocationWeatherDetails,
+  findNearestIcao,
+  getCoordinatesFromName,
+  ITALIAN_AIRPORTS
 } from "@/lib/weather";
 import Link from "next/link";
 import type { Route } from "next";
@@ -47,19 +50,61 @@ export default async function BriefingPage({
     // Risolve i nomi delle località/aviosuperfici in codici ICAO reali
     icaos = await resolveQueryToIcaos(targetIcao, defaultBase);
 
-    // Scarica in parallelo i dati per ciascuna stazione della rotta
+    // Scarica i dati per ciascuna stazione della rotta, risolvendo la stazione più vicina se necessario
     stationsData = await Promise.all(
       icaos.map(async (icaoCode) => {
+        const apt = ITALIAN_AIRPORTS[icaoCode];
         const [metar, taf] = await Promise.all([
           fetchMetar(icaoCode),
           fetchTaf(icaoCode)
         ]);
-        return { icao: icaoCode, metar, taf };
+
+        if (metar || taf) {
+          return {
+            icao: icaoCode,
+            name: apt?.name || metar?.name || taf?.name || "Aeroporto",
+            metar,
+            taf
+          };
+        }
+
+        // Se non c'è METAR/TAF per questa stazione, cerchiamo le sue coordinate e la stazione più vicina
+        let lat = apt?.lat;
+        let lon = apt?.lon;
+        let name = apt?.name || icaoCode;
+
+        if (lat === undefined || lon === undefined) {
+          const coords = await getCoordinatesFromName(icaoCode);
+          if (coords) {
+            lat = coords.lat;
+            lon = coords.lon;
+            name = coords.displayName || icaoCode;
+          }
+        }
+
+        const searchLat = lat ?? 45.461; // default Milano Linate
+        const searchLon = lon ?? 9.263;
+
+        const nearestIcao = findNearestIcao(searchLat, searchLon, icaoCode);
+        const [nearestMetar, nearestTaf] = await Promise.all([
+          fetchMetar(nearestIcao),
+          fetchTaf(nearestIcao)
+        ]);
+
+        return {
+          icao: icaoCode,
+          name,
+          metar: null,
+          taf: null,
+          nearestReportingIcao: nearestIcao,
+          nearestMetar,
+          nearestTaf
+        };
       })
     );
 
-    // Filtra le stazioni per cui abbiamo ricevuto almeno METAR o TAF
-    validStations = stationsData.filter(s => s.metar || s.taf);
+    // Consideriamo tutte le stazioni inserite come valide
+    validStations = stationsData;
 
     // Estrai i token di partenza e arrivo inseriti dall'utente
     const tokens = targetIcao.split(/[,/\-➔➔]/).map(t => t.trim()).filter(Boolean);
@@ -69,14 +114,14 @@ export default async function BriefingPage({
     if (departureName) {
       const depIcao = icaos[0];
       const depStation = stationsData.find(s => s.icao === depIcao);
-      const depQnh = depStation?.metar?.altim || 1013.25;
+      const depQnh = depStation?.metar?.altim || depStation?.nearestMetar?.altim || 1013.25;
       departureDetails = await getLocationWeatherDetails(departureName, depQnh);
     }
 
     if (arrivalName) {
       const arrIcao = icaos[icaos.length - 1];
       const arrStation = stationsData.find(s => s.icao === arrIcao);
-      const arrQnh = arrStation?.metar?.altim || 1013.25;
+      const arrQnh = arrStation?.metar?.altim || arrStation?.nearestMetar?.altim || 1013.25;
       arrivalDetails = await getLocationWeatherDetails(arrivalName, arrQnh);
     }
   }
@@ -216,7 +261,8 @@ export default async function BriefingPage({
               </h3>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                 {validStations.map((data: any, idx: number) => {
-                  const catStyle = data.metar ? getFltCatStyle(data.metar.fltCat) : null;
+                  const metarToUse = data.metar || data.nearestMetar;
+                  const catStyle = metarToUse ? getFltCatStyle(metarToUse.fltCat) : null;
                   return (
                     <div key={data.icao} style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       {idx > 0 && <span className="muted" style={{ fontSize: "1.2rem", fontWeight: "bold" }}>➔</span>}
@@ -234,7 +280,7 @@ export default async function BriefingPage({
                         fontSize: "0.95rem"
                       }}>
                         <span>{data.icao}</span>
-                        {data.metar && <span style={{ fontSize: "0.8rem", opacity: 0.85 }}>({data.metar.fltCat})</span>}
+                        {metarToUse && <span style={{ fontSize: "0.8rem", opacity: 0.85 }}>({metarToUse.fltCat})</span>}
                       </a>
                     </div>
                   );
@@ -390,8 +436,9 @@ export default async function BriefingPage({
 
           {/* PILA DEI METEO DI STAZIONE */}
           {validStations.map((station: any, sIdx: number) => {
-            const metar = station.metar;
-            const taf = station.taf;
+            const isUsingNearest = !station.metar && !station.taf && !!station.nearestReportingIcao;
+            const metar = isUsingNearest ? station.nearestMetar : station.metar;
+            const taf = isUsingNearest ? station.nearestTaf : station.taf;
             const fltCatStyle = metar ? getFltCatStyle(metar.fltCat) : null;
             const humidity = metar ? getRelativeHumidity(metar.temp, metar.dewp) : 0;
             const tempSpread = metar ? getSpread(metar.temp, metar.dewp) : 0;
@@ -419,16 +466,34 @@ export default async function BriefingPage({
                         Stazione {sIdx + 1} di {validStations.length}
                       </span>
                       <h2 style={{ margin: "4px 0 8px 0", fontSize: "1.6rem", fontWeight: 800 }}>
-                        {station.icao} - {metar?.name || taf?.name || "Aeroporto"}
+                        {station.icao} - {station.name || metar?.name || taf?.name || "Aeroporto"}
                       </h2>
+                      {isUsingNearest && (
+                        <div style={{ 
+                          backgroundColor: "rgba(245, 158, 11, 0.08)", 
+                          border: "1px solid rgba(245, 158, 11, 0.2)", 
+                          color: "#d97706",
+                          padding: "8px 12px",
+                          borderRadius: 8,
+                          fontSize: "0.85rem",
+                          fontWeight: 600,
+                          marginTop: 6,
+                          marginBottom: 10,
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6
+                        }}>
+                          ⚠️ Nessun bollettino meteo per {station.icao}. Vengono mostrati i dati della stazione più vicina: <strong>{station.nearestReportingIcao}</strong>
+                        </div>
+                      )}
                       <div className="row" style={{ gap: 16 }}>
                         {metar && (
                           <>
                             <span className="muted" style={{ fontSize: "0.9rem" }}>
-                              📍 Elevazione: <strong>{metar.elev !== undefined && metar.elev !== null ? `${metar.elev} m (~${Math.round(metar.elev * 3.28084)} ft)` : "N/D"}</strong>
+                              📍 Elevazione{isUsingNearest ? ` (${station.nearestReportingIcao})` : ""}: <strong>{metar.elev !== undefined && metar.elev !== null ? `${metar.elev} m (~${Math.round(metar.elev * 3.28084)} ft)` : "N/D"}</strong>
                             </span>
                             <span className="muted" style={{ fontSize: "0.9rem" }}>
-                              🕒 Rilevamento: <strong>{formatReportTime(metar.reportTime)}</strong> ({getTimeAgo(metar.obsTime)})
+                              🕒 Rilevamento{isUsingNearest ? ` (${station.nearestReportingIcao})` : ""}: <strong>{formatReportTime(metar.reportTime)}</strong> ({getTimeAgo(metar.obsTime)})
                             </span>
                           </>
                         )}
