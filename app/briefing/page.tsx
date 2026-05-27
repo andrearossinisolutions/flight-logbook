@@ -22,10 +22,11 @@ export default async function BriefingPage({
 }) {
   const user = await requireUser();
   const { icao } = await searchParams;
-  const targetIcao = (typeof icao === "string" ? icao.trim() : "LIML") || "LIML";
+  const defaultBase = user.settings?.defaultBase || "LIML";
+  const targetIcao = (typeof icao === "string" ? icao.trim() : defaultBase) || defaultBase;
 
   // Risolve i nomi delle località/aviosuperfici in codici ICAO reali
-  const icaos = await resolveQueryToIcaos(targetIcao, user.settings?.defaultBase || "LIML");
+  const icaos = await resolveQueryToIcaos(targetIcao, defaultBase);
 
   // Scarica in parallelo i dati per ciascuna stazione della rotta
   const stationsData = await Promise.all(
@@ -125,14 +126,16 @@ export default async function BriefingPage({
           
           <div className="row" style={{ gap: 8 }}>
             <span className="muted" style={{ fontSize: "0.9rem" }}>Preimpostati:</span>
-            <Link href="/briefing?icao=LIML" className={`pill ${targetIcao === "LIML" ? "active" : ""}`} style={{ cursor: "pointer", textDecoration: "none", backgroundColor: targetIcao === "LIML" ? "var(--primary)" : "var(--border)", color: targetIcao === "LIML" ? "white" : "var(--text)" }}>
-              Linate (LIML)
+            <Link href={`/briefing?icao=${defaultBase}`} className={`pill ${targetIcao === defaultBase ? "active" : ""}`} style={{ cursor: "pointer", textDecoration: "none", backgroundColor: targetIcao === defaultBase ? "var(--primary)" : "var(--border)", color: targetIcao === defaultBase ? "white" : "var(--text)" }}>
+              Base ({defaultBase})
             </Link>
+            {defaultBase !== "LIML" && (
+              <Link href="/briefing?icao=LIML" className={`pill ${targetIcao === "LIML" ? "active" : ""}`} style={{ cursor: "pointer", textDecoration: "none", backgroundColor: targetIcao === "LIML" ? "var(--primary)" : "var(--border)", color: targetIcao === "LIML" ? "white" : "var(--text)" }}>
+                Linate (LIML)
+              </Link>
+            )}
             <Link href="/briefing?icao=LIME" className={`pill ${targetIcao === "LIME" ? "active" : ""}`} style={{ cursor: "pointer", textDecoration: "none", backgroundColor: targetIcao === "LIME" ? "var(--primary)" : "var(--border)", color: targetIcao === "LIME" ? "white" : "var(--text)" }}>
               Bergamo (LIME)
-            </Link>
-            <Link href="/briefing?icao=LIML,LIME,LIPX,LIPZ" className={`pill ${targetIcao.includes(",") ? "active" : ""}`} style={{ cursor: "pointer", textDecoration: "none", backgroundColor: targetIcao.includes(",") ? "var(--primary)" : "var(--border)", color: targetIcao.includes(",") ? "white" : "var(--text)" }}>
-              Rotta Est (LIML-LIPZ)
             </Link>
           </div>
         </div>
@@ -147,8 +150,8 @@ export default async function BriefingPage({
             Non siamo riusciti a recuperare i dati meteo per le stazioni richieste: <strong>{targetIcao}</strong>. 
             Verifica che i codici ICAO siano corretti o riprova più tardi.
           </p>
-          <Link href="/briefing?icao=LIML" className="btn secondary">
-            Torna a Linate (LIML)
+          <Link href={`/briefing?icao=${defaultBase}`} className="btn secondary">
+            Torna al Campo Base ({defaultBase})
           </Link>
         </div>
       ) : (
