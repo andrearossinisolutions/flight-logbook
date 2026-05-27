@@ -58,7 +58,7 @@ export async function fetchMetar(icao: string): Promise<MetarResponse | null> {
   const cleanIcao = icao.trim().toUpperCase();
   try {
     const res = await fetch(`https://aviationweather.gov/api/data/metar?ids=${cleanIcao}&format=json`, {
-      next: { revalidate: 300 } // Cache for 5 minutes
+      cache: "no-store"
     });
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const data = await res.json();
@@ -77,7 +77,7 @@ export async function fetchTaf(icao: string): Promise<TafResponse | null> {
   const cleanIcao = icao.trim().toUpperCase();
   try {
     const res = await fetch(`https://aviationweather.gov/api/data/taf?ids=${cleanIcao}&format=json`, {
-      next: { revalidate: 300 } // Cache for 5 minutes
+      cache: "no-store"
     });
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     const data = await res.json();
@@ -813,7 +813,7 @@ export async function getLocationWeatherDetails(name: string, defaultQnh: number
   let tempC = 15; // default standard temperature
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current=temperature_2m`;
-    const res = await fetch(url, { next: { revalidate: 900 } }); // cache per 15 minuti
+    const res = await fetch(url, { cache: "no-store" });
     if (res.ok) {
       const data = await res.json();
       elevationM = data.elevation ?? 0;

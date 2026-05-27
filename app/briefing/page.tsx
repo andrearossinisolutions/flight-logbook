@@ -20,6 +20,8 @@ import {
 import Link from "next/link";
 import type { Route } from "next";
 
+export const dynamic = "force-dynamic";
+
 export default async function BriefingPage({
   searchParams,
 }: {
