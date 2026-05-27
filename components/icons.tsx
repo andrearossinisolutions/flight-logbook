@@ -223,3 +223,22 @@ export function PlusIcon(props: IconProps) {
     </BaseIcon>
   );
 }
+
+export function BriefingIcon(props: IconProps) {
+  const { size = 16, style, ...rest } = props as EmojiIconProps;
+
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        fontSize: size,
+        lineHeight: 1,
+        display: "inline-block",
+        ...(style as CSSProperties | undefined),
+      } as CSSProperties}
+      {...rest}
+    >
+      🌤️
+    </span>
+  );
+}
