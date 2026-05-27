@@ -751,3 +751,91 @@ export async function getBriefingRoute(text: string, defaultBase: string): Promi
 
   return [cleanBase];
 }
+
+export interface LocationWeatherDetails {
+  name: string;
+  lat: number;
+  lon: number;
+  elevationM: number;
+  elevationFt: number;
+  tempC: number;
+  nearestIcao: string;
+  qnhHpa: number;
+  pressureAltitudeFt: number;
+  densityAltitudeFt: number;
+}
+
+export async function getLocationWeatherDetails(name: string, defaultQnh: number = 1013.25): Promise<LocationWeatherDetails | null> {
+  if (!name) return null;
+  const cleanedName = cleanLocationName(name);
+  if (!cleanedName) return null;
+
+  let coords: { lat: number; lon: number } | null = null;
+  let nearestIcao = "LIML";
+
+  // Se è un ICAO noto
+  const upperName = cleanedName.toUpperCase();
+  if (ITALIAN_AIRPORTS[upperName]) {
+    coords = { lat: ITALIAN_AIRPORTS[upperName].lat, lon: ITALIAN_AIRPORTS[upperName].lon };
+    nearestIcao = upperName;
+  } else {
+    // Altrimenti risolvi la località all'ICAO più vicino
+    const resolvedIcao = await resolveLocationToIcao(cleanedName);
+    if (resolvedIcao) {
+      nearestIcao = resolvedIcao;
+    }
+    // E ottieni le coordinate esatte tramite Nominatim
+    coords = await getCoordinatesFromName(cleanedName);
+  }
+
+  // Se non troviamo coordinate per la località, usiamo le coordinate dell'aeroporto più vicino
+  if (!coords) {
+    const apt = ITALIAN_AIRPORTS[nearestIcao];
+    if (apt) {
+      coords = { lat: apt.lat, lon: apt.lon };
+    }
+  }
+
+  if (!coords) return null;
+
+  // Interroga Open-Meteo per elevazione e temperatura esatta
+  let elevationM = 0;
+  let tempC = 15; // default standard temperature
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current=temperature_2m`;
+    const res = await fetch(url, { next: { revalidate: 900 } }); // cache per 15 minuti
+    if (res.ok) {
+      const data = await res.json();
+      elevationM = data.elevation ?? 0;
+      tempC = data.current?.temperature_2m ?? 15;
+    }
+  } catch (err) {
+    console.warn(`Impossibile recuperare meteo Open-Meteo per ${cleanedName}:`, err);
+  }
+
+  const elevationFt = Math.round(elevationM * 3.28084);
+  
+  // PA = Elevation (ft) + (1013.25 - QNH) * 30
+  const qnh = defaultQnh;
+  const pressureAltitudeFt = Math.round(elevationFt + (1013.25 - qnh) * 30);
+  
+  // Standard ISA Temp at Pressure Altitude = 15 - 1.98 * (PA / 1000)
+  const isaTemp = 15 - 1.98 * (pressureAltitudeFt / 1000);
+  
+  // DA = PA + 120 * (OAT - ISA)
+  const densityAltitudeFt = Math.round(pressureAltitudeFt + 120 * (tempC - isaTemp));
+
+  return {
+    name: cleanedName,
+    lat: coords.lat,
+    lon: coords.lon,
+    elevationM,
+    elevationFt,
+    tempC,
+    nearestIcao,
+    qnhHpa: qnh,
+    pressureAltitudeFt,
+    densityAltitudeFt
+  };
+}
+

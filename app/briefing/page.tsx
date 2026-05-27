@@ -10,7 +10,8 @@ import {
   formatWind, 
   formatVisibilityKm,
   decodeWeatherString,
-  resolveQueryToIcaos
+  resolveQueryToIcaos,
+  getLocationWeatherDetails
 } from "@/lib/weather";
 import Link from "next/link";
 import type { Route } from "next";
@@ -41,6 +42,29 @@ export default async function BriefingPage({
 
   // Filtra le stazioni per cui abbiamo ricevuto almeno METAR o TAF
   const validStations = stationsData.filter(s => s.metar || s.taf);
+
+  // Estrai i token di partenza e arrivo inseriti dall'utente
+  const tokens = targetIcao.split(/[,/\-➔➔]/).map(t => t.trim()).filter(Boolean);
+  const departureName = tokens[0] || null;
+  const arrivalName = tokens.length > 1 ? tokens[tokens.length - 1] : null;
+
+  // Risolvi i dati meteo specifici della località (inclusa la Density Altitude)
+  let departureDetails = null;
+  let arrivalDetails = null;
+
+  if (departureName) {
+    const depIcao = icaos[0];
+    const depStation = stationsData.find(s => s.icao === depIcao);
+    const depQnh = depStation?.metar?.altim || 1013.25;
+    departureDetails = await getLocationWeatherDetails(departureName, depQnh);
+  }
+
+  if (arrivalName) {
+    const arrIcao = icaos[icaos.length - 1];
+    const arrStation = stationsData.find(s => s.icao === arrIcao);
+    const arrQnh = arrStation?.metar?.altim || 1013.25;
+    arrivalDetails = await getLocationWeatherDetails(arrivalName, arrQnh);
+  }
 
   // Formattatore per le date del bollettino
   function formatReportTime(isoString: string | undefined | null) {
@@ -192,6 +216,141 @@ export default async function BriefingPage({
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          )}
+
+          {/* DETTAGLI LOCALITA DI PARTENZA E DESTINAZIONE (Elevazione, OAT e Density Altitude esatti) */}
+          {(departureDetails || arrivalDetails) && (
+            <div style={{ marginBottom: 8 }}>
+              <div className="grid grid-2 stack-mobile" style={{ gap: 24 }}>
+                {/* PARTENZA */}
+                {departureDetails && (
+                  <div className="card" style={{ 
+                    borderLeft: "4px solid var(--primary)",
+                    background: "linear-gradient(135deg, var(--card) 0%, rgba(31, 111, 91, 0.02) 100%)",
+                    padding: "20px 24px"
+                  }}>
+                    <h3 style={{ margin: "0 0 16px 0", fontSize: "1.15rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8, color: "var(--primary-strong)" }}>
+                      <span>🛫</span> {departureDetails.name.toUpperCase()}
+                    </h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div className="between" style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
+                        <span className="muted" style={{ fontSize: "0.9rem" }}>Elevazione Reale:</span>
+                        <strong style={{ fontSize: "1rem" }}>
+                          {departureDetails.elevationM} m ({departureDetails.elevationFt} ft)
+                        </strong>
+                      </div>
+                      <div className="between" style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
+                        <span className="muted" style={{ fontSize: "0.9rem" }}>Temperatura (OAT) Reale:</span>
+                        <strong style={{ fontSize: "1rem", color: "#b45309" }}>
+                          {departureDetails.tempC}°C
+                        </strong>
+                      </div>
+                      <div className="between" style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
+                        <span className="muted" style={{ fontSize: "0.9rem" }}>QNH (Stazione meteo {departureDetails.nearestIcao}):</span>
+                        <strong style={{ fontSize: "1rem" }}>
+                          Q{departureDetails.qnhHpa} hPa
+                        </strong>
+                      </div>
+                      <div className="between" style={{ paddingBottom: 4 }}>
+                        <span className="muted" style={{ fontSize: "0.9rem" }}>Pressure Altitude (PA):</span>
+                        <strong style={{ fontSize: "1rem" }}>
+                          {departureDetails.pressureAltitudeFt.toLocaleString()} ft
+                        </strong>
+                      </div>
+                      <div className="card" style={{ 
+                        margin: "8px 0 0 0", 
+                        padding: "12px 14px", 
+                        backgroundColor: departureDetails.densityAltitudeFt > departureDetails.elevationFt + 1000 
+                          ? "rgba(220, 38, 38, 0.05)" 
+                          : "rgba(31, 111, 91, 0.05)",
+                        border: departureDetails.densityAltitudeFt > departureDetails.elevationFt + 1000 
+                          ? "1px solid rgba(220, 38, 38, 0.15)" 
+                          : "1px solid rgba(31, 111, 91, 0.15)",
+                        borderRadius: 10
+                      }}>
+                        <div className="between" style={{ alignItems: "center" }}>
+                          <span style={{ fontSize: "0.85rem", fontWeight: 700, color: departureDetails.densityAltitudeFt > departureDetails.elevationFt + 1000 ? "#b91c1c" : "var(--primary-strong)" }}>
+                            DENSITY ALTITUDE (DA):
+                          </span>
+                          <strong style={{ fontSize: "1.2rem", fontWeight: 900, color: departureDetails.densityAltitudeFt > departureDetails.elevationFt + 1000 ? "#dc2626" : "var(--primary)" }}>
+                            {departureDetails.densityAltitudeFt.toLocaleString()} ft
+                          </strong>
+                        </div>
+                        {departureDetails.densityAltitudeFt > departureDetails.elevationFt + 1000 && (
+                          <div style={{ fontSize: "0.75rem", color: "#b91c1c", marginTop: 6, fontWeight: 600 }}>
+                            ⚠️ Attenzione: DA elevata! Le prestazioni del motore e del velivolo (corsa di decollo, rateo di salita) sono ridotte.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* DESTINAZIONE */}
+                {arrivalDetails && (
+                  <div className="card" style={{ 
+                    borderLeft: "4px solid #3b82f6",
+                    background: "linear-gradient(135deg, var(--card) 0%, rgba(59, 130, 246, 0.02) 100%)",
+                    padding: "20px 24px"
+                  }}>
+                    <h3 style={{ margin: "0 0 16px 0", fontSize: "1.15rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8, color: "#1d4ed8" }}>
+                      <span>🛬</span> {arrivalDetails.name.toUpperCase()}
+                    </h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                      <div className="between" style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
+                        <span className="muted" style={{ fontSize: "0.9rem" }}>Elevazione Reale:</span>
+                        <strong style={{ fontSize: "1rem" }}>
+                          {arrivalDetails.elevationM} m ({arrivalDetails.elevationFt} ft)
+                        </strong>
+                      </div>
+                      <div className="between" style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
+                        <span className="muted" style={{ fontSize: "0.9rem" }}>Temperatura (OAT) Reale:</span>
+                        <strong style={{ fontSize: "1rem", color: "#b45309" }}>
+                          {arrivalDetails.tempC}°C
+                        </strong>
+                      </div>
+                      <div className="between" style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
+                        <span className="muted" style={{ fontSize: "0.9rem" }}>QNH (Stazione meteo {arrivalDetails.nearestIcao}):</span>
+                        <strong style={{ fontSize: "1rem" }}>
+                          Q{arrivalDetails.qnhHpa} hPa
+                        </strong>
+                      </div>
+                      <div className="between" style={{ paddingBottom: 4 }}>
+                        <span className="muted" style={{ fontSize: "0.9rem" }}>Pressure Altitude (PA):</span>
+                        <strong style={{ fontSize: "1rem" }}>
+                          {arrivalDetails.pressureAltitudeFt.toLocaleString()} ft
+                        </strong>
+                      </div>
+                      <div className="card" style={{ 
+                        margin: "8px 0 0 0", 
+                        padding: "12px 14px", 
+                        backgroundColor: arrivalDetails.densityAltitudeFt > arrivalDetails.elevationFt + 1000 
+                          ? "rgba(220, 38, 38, 0.05)" 
+                          : "rgba(59, 130, 246, 0.05)",
+                        border: arrivalDetails.densityAltitudeFt > arrivalDetails.elevationFt + 1000 
+                          ? "1px solid rgba(220, 38, 38, 0.15)" 
+                          : "1px solid rgba(59, 130, 246, 0.15)",
+                        borderRadius: 10
+                      }}>
+                        <div className="between" style={{ alignItems: "center" }}>
+                          <span style={{ fontSize: "0.85rem", fontWeight: 700, color: arrivalDetails.densityAltitudeFt > arrivalDetails.elevationFt + 1000 ? "#b91c1c" : "#1d4ed8" }}>
+                            DENSITY ALTITUDE (DA):
+                          </span>
+                          <strong style={{ fontSize: "1.2rem", fontWeight: 900, color: arrivalDetails.densityAltitudeFt > arrivalDetails.elevationFt + 1000 ? "#dc2626" : "#2563eb" }}>
+                            {arrivalDetails.densityAltitudeFt.toLocaleString()} ft
+                          </strong>
+                        </div>
+                        {arrivalDetails.densityAltitudeFt > arrivalDetails.elevationFt + 1000 && (
+                          <div style={{ fontSize: "0.75rem", color: "#b91c1c", marginTop: 6, fontWeight: 600 }}>
+                            ⚠️ Attenzione: DA elevata! La corsa di atterraggio sarà più lunga del normale a causa di una velocità all'aria vera (TAS) maggiore a parità di IAS.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
