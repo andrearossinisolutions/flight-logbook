@@ -545,98 +545,108 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             {/* Card: Ultimi utilizzi */}
             <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16, height: "fit-content" }}>
               <div>
-              <h2 style={{ marginTop: 0, marginBottom: 8, fontSize: "1.25rem", display: "flex", alignItems: "center", gap: 8 }}>
-                ✈️ Ultimi utilizzi
-              </h2>
-              <p className="muted" style={{ margin: 0, fontSize: "0.9rem" }}>
-                Ultimi 3 voli registrati dagli aerei societari.
-              </p>
-            </div>
+                <h2 style={{ marginTop: 0, marginBottom: 8, fontSize: "1.25rem", display: "flex", alignItems: "center", gap: 8 }}>
+                  ✈️ Ultimi utilizzi
+                </h2>
+                <p className="muted" style={{ margin: 0, fontSize: "0.9rem" }}>
+                  Ultimi 3 voli registrati dagli aerei societari.
+                </p>
+              </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {lastFlights.length === 0 ? (
-                <div className="muted" style={{ 
-                  padding: 20, 
-                  border: "1px dashed var(--border)", 
-                  borderRadius: 16,
-                  textAlign: "center",
-                  fontSize: "0.95rem"
-                }}>
-                  Nessun volo registrato di recente.
-                </div>
-              ) : (
-                lastFlights.map((flight: any) => (
-                  <div key={flight.id} style={{
-                    background: "var(--bg, #f6f8fb)",
-                    border: "1px solid var(--border)",
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {lastFlights.length === 0 ? (
+                  <div className="muted" style={{ 
+                    padding: 20, 
+                    border: "1px dashed var(--border)", 
                     borderRadius: 16,
-                    padding: 16,
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "space-between",
-                    transition: "transform 0.2s, box-shadow 0.2s",
-                    cursor: "default"
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = "translateY(-2px)";
-                    e.currentTarget.style.boxShadow = "0 6px 20px rgba(20, 32, 51, 0.06)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = "translateY(0)";
-                    e.currentTarget.style.boxShadow = "none";
+                    textAlign: "center",
+                    fontSize: "0.95rem"
                   }}>
-                    <div>
-                      <div className="between" style={{ marginBottom: 12 }}>
-                        <span className="pill">
-                          {flight.aircraftRegistration}
-                        </span>
-                        <span className="muted" style={{ fontSize: "0.8rem", fontWeight: 500 }} title={formatDateDisplay(flight.movement.date)}>
-                          {daysFromDate(flight.movement.date)}
-                        </span>
-                      </div>
-                      
-                      <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text)", marginBottom: 4 }}>
-                        {flight.movement.user.fullName || flight.movement.user.email}
-                      </div>
-                      
-                      <div style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: 8, display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
-                        <span>🛫 {flight.takeoffPlace || "?"} 🛬 {flight.arrivalPlace || "?"}</span>
-                        <span style={{ color: "var(--border)" }}>•</span>
-                        <span>⏱️ {formatMinutes(flight.durationMinutes)}</span>
-                        {flight.hobbsStartMinutes != null && flight.hobbsEndMinutes != null && (
-                          <>
-                            <span style={{ color: "var(--border)" }}>•</span>
-                            <span>Oram.: {(flight.hobbsStartMinutes / 60).toFixed(1)} ➔ {(flight.hobbsEndMinutes / 60).toFixed(1)}</span>
-                          </>
+                    Nessun volo registrato di recente.
+                  </div>
+                ) : (
+                  lastFlights.map((flight: any) => (
+                    <div key={flight.id} style={{
+                      background: "var(--bg, #f6f8fb)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 16,
+                      padding: 16,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      transition: "transform 0.2s, box-shadow 0.2s",
+                      cursor: "default"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "translateY(-2px)";
+                      e.currentTarget.style.boxShadow = "0 6px 20px rgba(20, 32, 51, 0.06)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "translateY(0)";
+                      e.currentTarget.style.boxShadow = "none";
+                    }}>
+                      <div>
+                        <div className="between" style={{ marginBottom: 12 }}>
+                          <span className="pill">
+                            {flight.aircraftRegistration}
+                          </span>
+                          <span className="muted" style={{ fontSize: "0.8rem", fontWeight: 500 }} title={formatDateDisplay(flight.movement.date)}>
+                            {daysFromDate(flight.movement.date)}
+                          </span>
+                        </div>
+                        
+                        <div style={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--text)", marginBottom: 4 }}>
+                          {flight.movement.user.fullName || flight.movement.user.email}
+                        </div>
+                        
+                        <div style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: 8, display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
+                          <span>🛫 {flight.takeoffPlace || "?"} 🛬 {flight.arrivalPlace || "?"}</span>
+                          <span style={{ color: "var(--border)" }}>•</span>
+                          <span>⏱️ {formatMinutes(flight.durationMinutes)}</span>
+                          {flight.hobbsStartMinutes != null && flight.hobbsEndMinutes != null && (
+                            <>
+                              <span style={{ color: "var(--border)" }}>•</span>
+                              <span>Oram.: {(flight.hobbsStartMinutes / 60).toFixed(1)} ➔ {(flight.hobbsEndMinutes / 60).toFixed(1)}</span>
+                            </>
+                          )}
+                        </div>
+
+                        {(flight.instructorName || flight.passengerName) && (
+                          <div style={{ fontSize: "0.8rem", color: "var(--muted)", marginBottom: 8 }}>
+                            {flight.instructorName ? `👨‍✈️ Istr. ${flight.instructorName}` : `👤 Pass. ${flight.passengerName}`}
+                          </div>
                         )}
                       </div>
 
-                      {(flight.instructorName || flight.passengerName) && (
-                        <div style={{ fontSize: "0.8rem", color: "var(--muted)", marginBottom: 8 }}>
-                          {flight.instructorName ? `👨‍✈️ Istr. ${flight.instructorName}` : `👤 Pass. ${flight.passengerName}`}
+                      {flight.movement.notes && (
+                        <div style={{ 
+                          fontSize: "0.8rem", 
+                          fontStyle: "italic", 
+                          color: "var(--muted)",
+                          borderLeft: "2px solid var(--primary)",
+                          paddingLeft: 8,
+                          marginTop: 4,
+                          wordBreak: "break-word"
+                        }}>
+                          "{flight.movement.notes}"
                         </div>
                       )}
                     </div>
-
-                    {flight.movement.notes && (
-                      <div style={{ 
-                        fontSize: "0.8rem", 
-                        fontStyle: "italic", 
-                        color: "var(--muted)",
-                        borderLeft: "2px solid var(--primary)",
-                        paddingLeft: 8,
-                        marginTop: 4,
-                        wordBreak: "break-word"
-                      }}>
-                        "{flight.movement.notes}"
-                      </div>
-                    )}
-                  </div>
-                ))
-              )}
+                  ))
+                )}
+              </div>
+              <button 
+                type="button" 
+                className="btn secondary" 
+                style={{ width: "100%", borderRadius: 12, fontSize: "0.85rem", padding: "8px 12px" }}
+                onClick={() => {
+                  setActiveTab("LOGBOOK");
+                }}
+              >
+                Vai al logbook societario
+              </button>
             </div>
           </div>
-        </div>
 
           {/* Colonna Destra: Bacheca Messaggi */}
           <div className="bacheca-content">
