@@ -783,7 +783,7 @@ export default async function DashboardPage({
 
                     <td>
                       <div className="row" style={{ gap: 8, flexWrap: "nowrap", whiteSpace: "nowrap" }}>
-                        {isToday(booking.startTime) && (
+                        {booking.startTime >= today && (
                           <Link
                             href={`/briefing?icao=${encodeURIComponent(booking.notes || settings?.defaultBase || "LIML")}`}
                             className="btn secondary"
@@ -883,7 +883,7 @@ export default async function DashboardPage({
 
                   <td>
                     <div className="row" style={{ gap: 8, flexWrap: "nowrap", whiteSpace: "nowrap" }}>
-                      {m.type === "FLIGHT" && m.isDraft && isToday(m.date) && (
+                      {m.type === "FLIGHT" && m.isDraft && m.date >= today && (
                         <Link
                           href={`/briefing?icao=${encodeURIComponent(
                             [m.flight?.takeoffPlace, m.flight?.arrivalPlace].filter(Boolean).join(" - ") || m.notes || settings?.defaultBase || "LIML"
