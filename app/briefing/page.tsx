@@ -230,7 +230,7 @@ export default async function BriefingPage({
                         {metar && (
                           <>
                             <span className="muted" style={{ fontSize: "0.9rem" }}>
-                              📍 Elevazione: <strong>{metar.elev} m (~{Math.round(metar.elev * 3.28084)} ft)</strong>
+                              📍 Elevazione: <strong>{metar.elev !== undefined && metar.elev !== null ? `${metar.elev} m (~${Math.round(metar.elev * 3.28084)} ft)` : "N/D"}</strong>
                             </span>
                             <span className="muted" style={{ fontSize: "0.9rem" }}>
                               🕒 Rilevamento: <strong>{formatReportTime(metar.reportTime)}</strong> ({getTimeAgo(metar.obsTime)})
@@ -313,10 +313,10 @@ export default async function BriefingPage({
                         </div>
                         <div style={{ marginTop: 6 }}>
                           <div style={{ fontSize: "1.4rem", fontWeight: 800 }}>
-                            {metar.temp}°C
+                            {metar.temp !== undefined && metar.temp !== null ? `${metar.temp}°C` : "N/D"}
                           </div>
                           <div className="muted" style={{ fontSize: "0.85rem", marginTop: 2 }}>
-                            Dewpoint: {metar.dewp}°C · Spread: {tempSpread}°C
+                            Dewpoint: {metar.dewp !== undefined && metar.dewp !== null ? `${metar.dewp}°C` : "N/D"} · Spread: {tempSpread !== undefined && tempSpread !== null ? `${tempSpread}°C` : "N/D"}
                           </div>
                           <div className="muted" style={{ fontSize: "0.85rem", marginTop: 2 }}>
                             Umidità Relativa: <strong>{humidity}%</strong>
@@ -348,7 +348,7 @@ export default async function BriefingPage({
                         </div>
                         <div style={{ marginTop: 6 }}>
                           <div style={{ fontSize: "1.4rem", fontWeight: 800 }}>
-                            Q{metar.altim} <span style={{ fontSize: "0.9rem", fontWeight: 500 }}>hPa</span>
+                            {metar.altim ? `Q${metar.altim} hPa` : "N/D"}
                           </div>
                           <div className="muted" style={{ fontSize: "0.85rem", marginTop: 4 }}>
                             Standard: 1013 hPa
@@ -412,7 +412,7 @@ export default async function BriefingPage({
                     </div>
 
                     <div className="timeline-container">
-                      {taf.fcsts.map((fcst, idx) => {
+                      {(taf.fcsts || []).map((fcst, idx) => {
                         const hasClouds = fcst.clouds && fcst.clouds.length > 0;
                         const changeLabel = formatChangeIndicator(fcst.fcstChange, fcst.probability);
                         

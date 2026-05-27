@@ -54,8 +54,10 @@ export interface TafForecast {
 }
 
 export async function fetchMetar(icao: string): Promise<MetarResponse | null> {
+  if (!icao || icao.trim().length !== 4) return null;
+  const cleanIcao = icao.trim().toUpperCase();
   try {
-    const res = await fetch(`https://aviationweather.gov/api/data/metar?ids=${icao}&format=json`, {
+    const res = await fetch(`https://aviationweather.gov/api/data/metar?ids=${cleanIcao}&format=json`, {
       next: { revalidate: 300 } // Cache for 5 minutes
     });
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -65,14 +67,16 @@ export async function fetchMetar(icao: string): Promise<MetarResponse | null> {
     }
     return null;
   } catch (error) {
-    console.error(`Errore nel recupero del METAR per ${icao}:`, error);
+    console.warn(`Avviso nel recupero del METAR per ${cleanIcao}:`, error);
     return null;
   }
 }
 
 export async function fetchTaf(icao: string): Promise<TafResponse | null> {
+  if (!icao || icao.trim().length !== 4) return null;
+  const cleanIcao = icao.trim().toUpperCase();
   try {
-    const res = await fetch(`https://aviationweather.gov/api/data/taf?ids=${icao}&format=json`, {
+    const res = await fetch(`https://aviationweather.gov/api/data/taf?ids=${cleanIcao}&format=json`, {
       next: { revalidate: 300 } // Cache for 5 minutes
     });
     if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -82,7 +86,7 @@ export async function fetchTaf(icao: string): Promise<TafResponse | null> {
     }
     return null;
   } catch (error) {
-    console.error(`Errore nel recupero del TAF per ${icao}:`, error);
+    console.warn(`Avviso nel recupero del TAF per ${cleanIcao}:`, error);
     return null;
   }
 }
@@ -183,7 +187,8 @@ export function formatCloudLayer(layer: { cover: string; base: number | null; ty
 
 export function formatWind(wdir: string | number | undefined | null, wspd: number | undefined | null, wgst?: number | null): string {
   if (wspd === undefined || wspd === null) return "Vento calmo";
-  if (wspd === 0) return "Calmo (0 kt)";
+  const speed = Number(wspd);
+  if (isNaN(speed) || speed === 0) return "Calmo (0 kt)";
   
   let dirStr = "";
   if (wdir === "VRB" || wdir === "VRB0" || wdir === undefined || wdir === null) {
@@ -192,14 +197,18 @@ export function formatWind(wdir: string | number | undefined | null, wspd: numbe
     dirStr = `${wdir}°`;
   }
 
-  let windStr = `${dirStr} a ${wspd} kt`;
-  if (wgst) {
-    windStr += ` (raffiche a ${wgst} kt)`;
+  let windStr = `${dirStr} a ${speed} kt`;
+  if (wgst !== undefined && wgst !== null) {
+    const gust = Number(wgst);
+    if (!isNaN(gust)) {
+      windStr += ` (raffiche a ${gust} kt)`;
+    }
   }
   
   // Aggiungi velocità in km/h per comodità dei piloti VFR italiani
-  const kmh = Math.round(wspd * 1.852);
-  const kmhGust = wgst ? Math.round(wgst * 1.852) : null;
+  const kmh = Math.round(speed * 1.852);
+  const gustValue = (wgst !== undefined && wgst !== null) ? Number(wgst) : null;
+  const kmhGust = gustValue && !isNaN(gustValue) ? Math.round(gustValue * 1.852) : null;
   windStr += ` ~ ${kmh} km/h`;
   if (kmhGust) {
     windStr += ` (raffiche a ${kmhGust} km/h)`;
@@ -378,15 +387,23 @@ export const ITALIAN_AIRPORTS: Record<string, AirportCoords> = {
   LIPA: { icao: "LIPA", name: "Aviano Air Base", lat: 46.032, lon: 12.597 },
 };
 
-export function getAirportsAlongRoute(depIcao: string, arrIcao: string): string[] {
-  const dep = ITALIAN_AIRPORTS[depIcao.toUpperCase()];
-  const arr = ITALIAN_AIRPORTS[arrIcao.toUpperCase()];
+export function getAirportsAlongRoute(depIcao: string | undefined | null, arrIcao: string | undefined | null): string[] {
+  if (!depIcao && !arrIcao) return [];
+  
+  const depClean = depIcao ? depIcao.trim().toUpperCase() : "";
+  const arrClean = arrIcao ? arrIcao.trim().toUpperCase() : "";
+  
+  if (!depClean && arrClean) return [arrClean];
+  if (depClean && !arrClean) return [depClean];
+  if (depClean === arrClean) return [depClean];
+
+  const dep = ITALIAN_AIRPORTS[depClean];
+  const arr = ITALIAN_AIRPORTS[arrClean];
   
   if (!dep || !arr) {
     const result: string[] = [];
-    if (depIcao) result.push(depIcao.toUpperCase());
-    const arrClean = arrIcao ? arrIcao.toUpperCase() : "";
-    if (arrClean && arrClean !== depIcao.toUpperCase()) {
+    if (depClean) result.push(depClean);
+    if (arrClean && arrClean !== depClean) {
       result.push(arrClean);
     }
     return result;
@@ -402,13 +419,13 @@ export function getAirportsAlongRoute(depIcao: string, arrIcao: string): string[
   const L2 = dx * dx + dy * dy;
   
   if (L2 === 0) {
-    return [depIcao.toUpperCase()];
+    return [depClean];
   }
   
   const candidates: { icao: string; t: number; dist: number }[] = [];
   
   for (const [icao, apt] of Object.entries(ITALIAN_AIRPORTS)) {
-    if (icao === depIcao.toUpperCase() || icao === arrIcao.toUpperCase()) {
+    if (icao === depClean || icao === arrClean) {
       continue;
     }
     
@@ -436,7 +453,7 @@ export function getAirportsAlongRoute(depIcao: string, arrIcao: string): string[
   // Max 3 intermediate stations to avoid calling the API excessively
   const intermediate = candidates.slice(0, 3).map(c => c.icao);
   
-  return [depIcao.toUpperCase(), ...intermediate, arrIcao.toUpperCase()];
+  return [depClean, ...intermediate, arrClean];
 }
 
 export const PLACE_TO_METAR: Record<string, string> = {
@@ -543,7 +560,7 @@ export async function getCoordinatesFromName(name: string): Promise<{ lat: numbe
     }
     return null;
   } catch (err) {
-    console.error("Errore geocodifica Nominatim:", name, err);
+    console.warn("Avviso geocodifica Nominatim:", name, err);
     return null;
   }
 }
