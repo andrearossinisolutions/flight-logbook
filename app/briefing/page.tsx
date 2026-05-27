@@ -257,6 +257,11 @@ export default async function BriefingPage({
                     <h3 style={{ margin: "0 0 16px 0", fontSize: "1.15rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8, color: "var(--primary-strong)" }}>
                       <span>🛫</span> {departureDetails.name.toUpperCase()}
                     </h3>
+                    {departureDetails.resolvedAddress && (
+                      <div className="muted" style={{ fontSize: "0.85rem", marginTop: -12, marginBottom: 16 }}>
+                        📍 {departureDetails.resolvedAddress}
+                      </div>
+                    )}
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                       <div className="between" style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
                         <span className="muted" style={{ fontSize: "0.9rem" }}>Elevazione Reale:</span>
@@ -321,6 +326,11 @@ export default async function BriefingPage({
                     <h3 style={{ margin: "0 0 16px 0", fontSize: "1.15rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8, color: "#1d4ed8" }}>
                       <span>🛬</span> {arrivalDetails.name.toUpperCase()}
                     </h3>
+                    {arrivalDetails.resolvedAddress && (
+                      <div className="muted" style={{ fontSize: "0.85rem", marginTop: -12, marginBottom: 16 }}>
+                        📍 {arrivalDetails.resolvedAddress}
+                      </div>
+                    )}
                     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                       <div className="between" style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8 }}>
                         <span className="muted" style={{ fontSize: "0.9rem" }}>Elevazione Reale:</span>

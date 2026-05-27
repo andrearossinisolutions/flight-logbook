@@ -539,7 +539,7 @@ export const PLACE_TO_METAR: Record<string, string> = {
   liqma: "LIRP", // Marina di Campo Elba
 };
 
-export async function getCoordinatesFromName(name: string): Promise<{ lat: number; lon: number } | null> {
+export async function getCoordinatesFromName(name: string): Promise<{ lat: number; lon: number; displayName?: string } | null> {
   try {
     const query = encodeURIComponent(`${name}, Italia`);
     const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`, {
@@ -554,8 +554,9 @@ export async function getCoordinatesFromName(name: string): Promise<{ lat: numbe
     if (Array.isArray(data) && data.length > 0) {
       const lat = parseFloat(data[0].lat);
       const lon = parseFloat(data[0].lon);
+      const displayName = data[0].display_name;
       if (!isNaN(lat) && !isNaN(lon)) {
-        return { lat, lon };
+        return { lat, lon, displayName };
       }
     }
     return null;
@@ -763,6 +764,7 @@ export interface LocationWeatherDetails {
   qnhHpa: number;
   pressureAltitudeFt: number;
   densityAltitudeFt: number;
+  resolvedAddress?: string;
 }
 
 export async function getLocationWeatherDetails(name: string, defaultQnh: number = 1013.25): Promise<LocationWeatherDetails | null> {
@@ -770,14 +772,16 @@ export async function getLocationWeatherDetails(name: string, defaultQnh: number
   const cleanedName = cleanLocationName(name);
   if (!cleanedName) return null;
 
-  let coords: { lat: number; lon: number } | null = null;
+  let coords: { lat: number; lon: number; displayName?: string } | null = null;
   let nearestIcao = "LIML";
+  let resolvedAddress: string | undefined = undefined;
 
   // Se è un ICAO noto
   const upperName = cleanedName.toUpperCase();
   if (ITALIAN_AIRPORTS[upperName]) {
     coords = { lat: ITALIAN_AIRPORTS[upperName].lat, lon: ITALIAN_AIRPORTS[upperName].lon };
     nearestIcao = upperName;
+    resolvedAddress = `${ITALIAN_AIRPORTS[upperName].name} (${upperName})`;
   } else {
     // Altrimenti risolvi la località all'ICAO più vicino
     const resolvedIcao = await resolveLocationToIcao(cleanedName);
@@ -786,6 +790,9 @@ export async function getLocationWeatherDetails(name: string, defaultQnh: number
     }
     // E ottieni le coordinate esatte tramite Nominatim
     coords = await getCoordinatesFromName(cleanedName);
+    if (coords && coords.displayName) {
+      resolvedAddress = coords.displayName;
+    }
   }
 
   // Se non troviamo coordinate per la località, usiamo le coordinate dell'aeroporto più vicino
@@ -835,7 +842,8 @@ export async function getLocationWeatherDetails(name: string, defaultQnh: number
     nearestIcao,
     qnhHpa: qnh,
     pressureAltitudeFt,
-    densityAltitudeFt
+    densityAltitudeFt,
+    resolvedAddress
   };
 }
 
