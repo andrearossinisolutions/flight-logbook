@@ -19,6 +19,14 @@ import {
 import { requireUser } from "@/lib/require-user";
 import { eur, formatDateDisplay, formatTimeDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate, daysToDate } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
+import { getBriefingRoute } from "@/lib/weather";
+
+function isToday(date: Date) {
+  const today = new Date();
+  return date.getDate() === today.getDate() &&
+         date.getMonth() === today.getMonth() &&
+         date.getFullYear() === today.getFullYear();
+}
 
 export default async function DashboardPage({
   searchParams,
@@ -669,6 +677,25 @@ export default async function DashboardPage({
 
                     <td>
                       <div className="row" style={{ gap: 8, flexWrap: "nowrap", whiteSpace: "nowrap" }}>
+                        {isToday(booking.startTime) && (
+                          <Link
+                            href={`/briefing?icao=${getBriefingRoute(booking.notes || "", settings?.defaultBase || "LIML").join(",")}`}
+                            className="btn secondary"
+                            style={{
+                              padding: "6px 8px",
+                              fontSize: "1.1rem",
+                              borderRadius: 8,
+                              lineHeight: 1,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              textDecoration: "none"
+                            }}
+                            title="Briefing Meteo"
+                          >
+                            🌤️
+                          </Link>
+                        )}
                         <Link
                           href={`/new-flight?bookingId=${booking.id}`}
                           className="btn"
@@ -750,6 +777,27 @@ export default async function DashboardPage({
 
                   <td>
                     <div className="row" style={{ gap: 8, flexWrap: "nowrap", whiteSpace: "nowrap" }}>
+                      {m.type === "FLIGHT" && m.isDraft && isToday(m.date) && (
+                        <Link
+                          href={`/briefing?icao=${getBriefingRoute(`${m.flight?.takeoffPlace || ""} - ${m.flight?.arrivalPlace || ""} - ${m.notes || ""}`, settings?.defaultBase || "LIML").join(",")}`}
+                          className="btn secondary icon-btn"
+                          style={{
+                            padding: 0,
+                            width: 40,
+                            height: 40,
+                            fontSize: "1.2rem",
+                            borderRadius: 14,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            textDecoration: "none"
+                          }}
+                          title="Briefing Meteo"
+                        >
+                          🌤️
+                        </Link>
+                      )}
+
                       {((m.isDraft && m.date >= today) || (m.type === "REMINDER" && m.date >= today)) ? (
                         <a
                           className="btn secondary icon-btn"
