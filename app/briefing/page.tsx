@@ -336,23 +336,23 @@ export default async function BriefingPage({
                       <div className="card" style={{ 
                         margin: "8px 0 0 0", 
                         padding: "12px 14px", 
-                        backgroundColor: departureDetails.densityAltitudeFt > departureDetails.elevationFt + 1000 
+                        backgroundColor: departureDetails.densityAltitudeFt > departureDetails.elevationFt + 2000 
                           ? "rgba(220, 38, 38, 0.05)" 
                           : "rgba(31, 111, 91, 0.05)",
-                        border: departureDetails.densityAltitudeFt > departureDetails.elevationFt + 1000 
+                        border: departureDetails.densityAltitudeFt > departureDetails.elevationFt + 2000 
                           ? "1px solid rgba(220, 38, 38, 0.15)" 
                           : "1px solid rgba(31, 111, 91, 0.15)",
                         borderRadius: 10
                       }}>
                         <div className="between" style={{ alignItems: "center" }}>
-                          <span style={{ fontSize: "0.85rem", fontWeight: 700, color: departureDetails.densityAltitudeFt > departureDetails.elevationFt + 1000 ? "#b91c1c" : "var(--primary-strong)" }}>
+                          <span style={{ fontSize: "0.85rem", fontWeight: 700, color: departureDetails.densityAltitudeFt > departureDetails.elevationFt + 2000 ? "#b91c1c" : "var(--primary-strong)" }}>
                             DENSITY ALTITUDE (DA):
                           </span>
-                          <strong style={{ fontSize: "1.2rem", fontWeight: 900, color: departureDetails.densityAltitudeFt > departureDetails.elevationFt + 1000 ? "#dc2626" : "var(--primary)" }}>
+                          <strong style={{ fontSize: "1.2rem", fontWeight: 900, color: departureDetails.densityAltitudeFt > departureDetails.elevationFt + 2000 ? "#dc2626" : "var(--primary)" }}>
                             {departureDetails.densityAltitudeFt.toLocaleString()} ft
                           </strong>
                         </div>
-                        {departureDetails.densityAltitudeFt > departureDetails.elevationFt + 1000 && (
+                        {departureDetails.densityAltitudeFt > departureDetails.elevationFt + 2000 && (
                           <div style={{ fontSize: "0.75rem", color: "#b91c1c", marginTop: 6, fontWeight: 600 }}>
                             ⚠️ Attenzione: DA elevata! Le prestazioni del motore e del velivolo (corsa di decollo, rateo di salita) sono ridotte.
                           </div>
@@ -405,23 +405,23 @@ export default async function BriefingPage({
                       <div className="card" style={{ 
                         margin: "8px 0 0 0", 
                         padding: "12px 14px", 
-                        backgroundColor: arrivalDetails.densityAltitudeFt > arrivalDetails.elevationFt + 1000 
+                        backgroundColor: arrivalDetails.densityAltitudeFt > arrivalDetails.elevationFt + 2000 
                           ? "rgba(220, 38, 38, 0.05)" 
                           : "rgba(59, 130, 246, 0.05)",
-                        border: arrivalDetails.densityAltitudeFt > arrivalDetails.elevationFt + 1000 
+                        border: arrivalDetails.densityAltitudeFt > arrivalDetails.elevationFt + 2000 
                           ? "1px solid rgba(220, 38, 38, 0.15)" 
                           : "1px solid rgba(59, 130, 246, 0.15)",
                         borderRadius: 10
                       }}>
                         <div className="between" style={{ alignItems: "center" }}>
-                          <span style={{ fontSize: "0.85rem", fontWeight: 700, color: arrivalDetails.densityAltitudeFt > arrivalDetails.elevationFt + 1000 ? "#b91c1c" : "#1d4ed8" }}>
+                          <span style={{ fontSize: "0.85rem", fontWeight: 700, color: arrivalDetails.densityAltitudeFt > arrivalDetails.elevationFt + 2000 ? "#b91c1c" : "#1d4ed8" }}>
                             DENSITY ALTITUDE (DA):
                           </span>
-                          <strong style={{ fontSize: "1.2rem", fontWeight: 900, color: arrivalDetails.densityAltitudeFt > arrivalDetails.elevationFt + 1000 ? "#dc2626" : "#2563eb" }}>
+                          <strong style={{ fontSize: "1.2rem", fontWeight: 900, color: arrivalDetails.densityAltitudeFt > arrivalDetails.elevationFt + 2000 ? "#dc2626" : "#2563eb" }}>
                             {arrivalDetails.densityAltitudeFt.toLocaleString()} ft
                           </strong>
                         </div>
-                        {arrivalDetails.densityAltitudeFt > arrivalDetails.elevationFt + 1000 && (
+                        {arrivalDetails.densityAltitudeFt > arrivalDetails.elevationFt + 2000 && (
                           <div style={{ fontSize: "0.75rem", color: "#b91c1c", marginTop: 6, fontWeight: 600 }}>
                             ⚠️ Attenzione: DA elevata! La corsa di atterraggio sarà più lunga del normale a causa di una velocità all'aria vera (TAS) maggiore a parità di IAS.
                           </div>
