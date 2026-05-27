@@ -1,7 +1,8 @@
 import React from "react";
 import { Navbar } from "@/components/navbar";
+import { getSessionFromCookie } from "@/lib/auth";
 
-export function AppShell({
+export async function AppShell({
   title,
   subtitle,
   children,
@@ -12,9 +13,12 @@ export function AppShell({
   children: React.ReactNode;
   className?: string;
 }) {
+  const session = await getSessionFromCookie();
+  const isLoggedIn = !!session;
+
   return (
     <>
-      <Navbar />
+      <Navbar isLoggedIn={isLoggedIn} />
       <main className={`container ${className || ""}`} style={{ paddingTop: 8 }}>
         <div className="between no-print app-shell-header" style={{ marginBottom: 24, alignItems: "flex-start" }}>
           <div>

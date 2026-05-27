@@ -13,6 +13,7 @@ const PUBLIC_PATHS = new Set([
   "/register",
   "/forgot-password",
   "/reset-password",
+  "/briefing",
 ]);
 const PUBLIC_API_PREFIXES = [
   "/api/auth/login",
@@ -35,9 +36,12 @@ export async function proxy(request: NextRequest) {
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   const session = token ? await verifySessionToken(token) : null;
 
+  // Normalize the pathname: convert to lowercase and remove trailing slash for comparison
+  const normalizedPath = pathname.toLowerCase().replace(/\/$/, "") || "/";
+
   const isPublicPath =
-    PUBLIC_PATHS.has(pathname) ||
-    PUBLIC_API_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+    PUBLIC_PATHS.has(normalizedPath) ||
+    PUBLIC_API_PREFIXES.some((prefix) => normalizedPath.startsWith(prefix));
 
   if (isPublicPath) {
     const response = NextResponse.next();

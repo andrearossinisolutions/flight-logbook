@@ -109,6 +109,60 @@ export default async function HomePage() {
           </div>
 
           <div className="showcase-content-rows">
+
+            {/* Feature 5 */}
+            <div className="showcase-row">
+              <div className="showcase-text">
+                <span className="showcase-badge">Pianificazione Meteo VFR</span>
+                <h3>Briefing Meteo & Density Altitude</h3>
+                <p>
+                  Ottieni i bollettini METAR e TAF decodificati lungo la rotta inserita. Il sistema calcola 
+                  automaticamente la Density Altitude di partenza e arrivo per prevenire rischi legati a 
+                  ridotte prestazioni di decollo o atterraggio.
+                </p>
+                <ul className="showcase-features-list">
+                  <li>
+                    <CheckIcon />
+                    <span>Decodifica automatica di vento, visibilità, QNH e copertura nuvolosa</span>
+                  </li>
+                  <li>
+                    <CheckIcon />
+                    <span>Geocodifica dinamica di città e aviosuperfici non-ICAO</span>
+                  </li>
+                  <li>
+                    <CheckIcon />
+                    <span>Calcolo in tempo reale di Pressure Altitude e Density Altitude con avvisi</span>
+                  </li>
+                </ul>
+                <div style={{ marginTop: 24 }}>
+                  <Link href="/briefing" className="btn" style={{ display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+                    Prova il Briefing Meteo <ArrowRightIcon size={16} />
+                  </Link>
+                </div>
+              </div>
+              <div className="showcase-visual">
+                <div className="browser-mockup">
+                  <div className="browser-header">
+                    <div className="browser-dots">
+                      <div className="browser-dot red"></div>
+                      <div className="browser-dot yellow"></div>
+                      <div className="browser-dot green"></div>
+                    </div>
+                    <div className="browser-address">logbook.rossinisolutions.com/briefing</div>
+                  </div>
+                  <div className="browser-content">
+                    <Image 
+                      src="/images/screenshots/weather.png" 
+                      alt="Briefing Meteo e Density Altitude" 
+                      width={800}
+                      height={500}
+                      className="browser-image"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
             {/* Feature 1 */}
             <div className="showcase-row">
               <div className="showcase-text">
@@ -293,54 +347,6 @@ export default async function HomePage() {
                     <Image 
                       src="/images/screenshots/maintenance.png" 
                       alt="Gestione Flotta e Manutenzioni" 
-                      width={800}
-                      height={500}
-                      className="browser-image"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Feature 5 */}
-            <div className="showcase-row">
-              <div className="showcase-text">
-                <span className="showcase-badge">Pianificazione Meteo VFR</span>
-                <h3>Briefing Meteo & Density Altitude</h3>
-                <p>
-                  Ottieni i bollettini METAR e TAF decodificati lungo la rotta inserita. Il sistema calcola 
-                  automaticamente la Density Altitude di partenza e arrivo per prevenire rischi legati a 
-                  ridotte prestazioni di decollo o atterraggio.
-                </p>
-                <ul className="showcase-features-list">
-                  <li>
-                    <CheckIcon />
-                    <span>Decodifica automatica di vento, visibilità, QNH e copertura nuvolosa</span>
-                  </li>
-                  <li>
-                    <CheckIcon />
-                    <span>Geocodifica dinamica di città e aviosuperfici non-ICAO</span>
-                  </li>
-                  <li>
-                    <CheckIcon />
-                    <span>Calcolo in tempo reale di Pressure Altitude e Density Altitude con avvisi</span>
-                  </li>
-                </ul>
-              </div>
-              <div className="showcase-visual">
-                <div className="browser-mockup">
-                  <div className="browser-header">
-                    <div className="browser-dots">
-                      <div className="browser-dot red"></div>
-                      <div className="browser-dot yellow"></div>
-                      <div className="browser-dot green"></div>
-                    </div>
-                    <div className="browser-address">logbook.rossinisolutions.com/briefing</div>
-                  </div>
-                  <div className="browser-content">
-                    <Image 
-                      src="/images/screenshots/weather.png" 
-                      alt="Briefing Meteo e Density Altitude" 
                       width={800}
                       height={500}
                       className="browser-image"

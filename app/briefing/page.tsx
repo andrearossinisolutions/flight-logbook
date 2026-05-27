@@ -1,4 +1,5 @@
-import { requireUser } from "@/lib/require-user";
+import { getSessionFromCookie } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/app-shell";
 import { 
   fetchMetar, 
@@ -21,49 +22,63 @@ export default async function BriefingPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  const user = await requireUser();
+  const session = await getSessionFromCookie();
+  let user = null;
+  if (session) {
+    user = await prisma.user.findUnique({
+      where: { id: session.userId },
+      include: { settings: true }
+    });
+  }
+
   const { icao } = await searchParams;
-  const defaultBase = user.settings?.defaultBase || "LIML";
-  const targetIcao = (typeof icao === "string" ? icao.trim() : defaultBase) || defaultBase;
+  const defaultBase = user?.settings?.defaultBase || "LIML";
+  const targetIcao = typeof icao === "string" ? icao.trim() : (session ? defaultBase : "");
 
-  // Risolve i nomi delle località/aviosuperfici in codici ICAO reali
-  const icaos = await resolveQueryToIcaos(targetIcao, defaultBase);
+  const showIntro = !targetIcao;
 
-  // Scarica in parallelo i dati per ciascuna stazione della rotta
-  const stationsData = await Promise.all(
-    icaos.map(async (icaoCode) => {
-      const [metar, taf] = await Promise.all([
-        fetchMetar(icaoCode),
-        fetchTaf(icaoCode)
-      ]);
-      return { icao: icaoCode, metar, taf };
-    })
-  );
-
-  // Filtra le stazioni per cui abbiamo ricevuto almeno METAR o TAF
-  const validStations = stationsData.filter(s => s.metar || s.taf);
-
-  // Estrai i token di partenza e arrivo inseriti dall'utente
-  const tokens = targetIcao.split(/[,/\-➔➔]/).map(t => t.trim()).filter(Boolean);
-  const departureName = tokens[0] || null;
-  const arrivalName = tokens.length > 1 ? tokens[tokens.length - 1] : null;
-
-  // Risolvi i dati meteo specifici della località (inclusa la Density Altitude)
+  let icaos: string[] = [];
+  let stationsData: any[] = [];
+  let validStations: any[] = [];
   let departureDetails = null;
   let arrivalDetails = null;
 
-  if (departureName) {
-    const depIcao = icaos[0];
-    const depStation = stationsData.find(s => s.icao === depIcao);
-    const depQnh = depStation?.metar?.altim || 1013.25;
-    departureDetails = await getLocationWeatherDetails(departureName, depQnh);
-  }
+  if (!showIntro) {
+    // Risolve i nomi delle località/aviosuperfici in codici ICAO reali
+    icaos = await resolveQueryToIcaos(targetIcao, defaultBase);
 
-  if (arrivalName) {
-    const arrIcao = icaos[icaos.length - 1];
-    const arrStation = stationsData.find(s => s.icao === arrIcao);
-    const arrQnh = arrStation?.metar?.altim || 1013.25;
-    arrivalDetails = await getLocationWeatherDetails(arrivalName, arrQnh);
+    // Scarica in parallelo i dati per ciascuna stazione della rotta
+    stationsData = await Promise.all(
+      icaos.map(async (icaoCode) => {
+        const [metar, taf] = await Promise.all([
+          fetchMetar(icaoCode),
+          fetchTaf(icaoCode)
+        ]);
+        return { icao: icaoCode, metar, taf };
+      })
+    );
+
+    // Filtra le stazioni per cui abbiamo ricevuto almeno METAR o TAF
+    validStations = stationsData.filter(s => s.metar || s.taf);
+
+    // Estrai i token di partenza e arrivo inseriti dall'utente
+    const tokens = targetIcao.split(/[,/\-➔➔]/).map(t => t.trim()).filter(Boolean);
+    const departureName = tokens[0] || null;
+    const arrivalName = tokens.length > 1 ? tokens[tokens.length - 1] : null;
+
+    if (departureName) {
+      const depIcao = icaos[0];
+      const depStation = stationsData.find(s => s.icao === depIcao);
+      const depQnh = depStation?.metar?.altim || 1013.25;
+      departureDetails = await getLocationWeatherDetails(departureName, depQnh);
+    }
+
+    if (arrivalName) {
+      const arrIcao = icaos[icaos.length - 1];
+      const arrStation = stationsData.find(s => s.icao === arrIcao);
+      const arrQnh = arrStation?.metar?.altim || 1013.25;
+      arrivalDetails = await getLocationWeatherDetails(arrivalName, arrQnh);
+    }
   }
 
   // Formattatore per le date del bollettino
@@ -165,8 +180,16 @@ export default async function BriefingPage({
         </div>
       </div>
 
-      {/* Se nessun aeroporto è stato trovato */}
-      {validStations.length === 0 ? (
+      {/* Se non è stata inserita alcuna query di ricerca */}
+      {showIntro ? (
+        <div className="card" style={{ textAlign: "center", padding: "48px 24px" }}>
+          <span style={{ fontSize: "3rem" }}>🌤️</span>
+          <h2 style={{ marginTop: 16 }}>Inserisci una località o rotta per iniziare</h2>
+          <p className="muted" style={{ maxWidth: 500, margin: "8px auto 24px" }}>
+            Digita un codice ICAO (es. <strong>LIML</strong>), il nome di un aeroporto/città (es. <strong>Bergamo</strong>, <strong>Valle Gaffaro</strong>) o una rotta composta (es. <strong>Dovera - Valle Gaffaro</strong>) nel campo di ricerca in alto.
+          </p>
+        </div>
+      ) : validStations.length === 0 ? (
         <div className="card" style={{ textAlign: "center", padding: "48px 24px", borderColor: "var(--danger)" }}>
           <span style={{ fontSize: "3rem" }}>⚠️</span>
           <h2 style={{ marginTop: 16 }}>Nessun dato disponibile</h2>
@@ -192,7 +215,7 @@ export default async function BriefingPage({
                 <span>🗺️</span> Sintesi Meteo della Rotta
               </h3>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-                {validStations.map((data, idx) => {
+                {validStations.map((data: any, idx: number) => {
                   const catStyle = data.metar ? getFltCatStyle(data.metar.fltCat) : null;
                   return (
                     <div key={data.icao} style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -356,7 +379,7 @@ export default async function BriefingPage({
           )}
 
           {/* PILA DEI METEO DI STAZIONE */}
-          {validStations.map((station, sIdx) => {
+          {validStations.map((station: any, sIdx: number) => {
             const metar = station.metar;
             const taf = station.taf;
             const fltCatStyle = metar ? getFltCatStyle(metar.fltCat) : null;
@@ -531,7 +554,7 @@ export default async function BriefingPage({
                           </div>
                         ) : metar.clouds && metar.clouds.length > 0 ? (
                           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                            {metar.clouds.map((cloud, i) => (
+                            {metar.clouds.map((cloud: any, i: number) => (
                               <div key={i} className="row" style={{ gap: 10 }}>
                                 <span className="pill" style={{ backgroundColor: "var(--border)", color: "var(--text)", fontSize: "0.8rem", padding: "2px 8px" }}>
                                   {cloud.cover}
@@ -574,7 +597,7 @@ export default async function BriefingPage({
                     </div>
 
                     <div className="timeline-container">
-                      {(taf.fcsts || []).map((fcst, idx) => {
+                      {(taf.fcsts || []).map((fcst: any, idx: number) => {
                         const hasClouds = fcst.clouds && fcst.clouds.length > 0;
                         const changeLabel = formatChangeIndicator(fcst.fcstChange, fcst.probability);
                         
@@ -657,7 +680,7 @@ export default async function BriefingPage({
                                 <div style={{ marginTop: 4 }}>
                                   {hasClouds ? (
                                     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                                      {fcst.clouds.map((cloud, cIdx) => (
+                                      {fcst.clouds.map((cloud: any, cIdx: number) => (
                                         <div key={cIdx} style={{ fontSize: "0.85rem" }}>
                                           {cloud.cover} {cloud.base !== null ? `a ${cloud.base} ft` : ""}
                                           {cloud.type ? ` (${cloud.type})` : ""}

@@ -7,7 +7,7 @@ import { useState } from "react";
 import { AirplaneIcon, BriefingIcon, LogOutIcon, SettingsIcon, UsersIcon } from "./icons";
 import { version } from "../package.json";
 
-export function Navbar() {
+export function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const pathname = usePathname();
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
@@ -29,7 +29,7 @@ export function Navbar() {
   return (
     <header className="navbar-container">
       <nav className="navbar">
-        <Link href="/logbook" className="navbar-brand">
+        <Link href={isLoggedIn ? "/logbook" : "/"} className="navbar-brand">
           <div className="navbar-logo">
             <AirplaneIcon size={20} />
           </div>
@@ -40,7 +40,7 @@ export function Navbar() {
         </Link>
 
         <div className="navbar-tabs">
-          {navItems.map((item) => {
+          {isLoggedIn && navItems.map((item) => {
             const isActive =
               pathname === item.href ||
               (item.href !== "/logbook" && pathname?.startsWith(item.href));
@@ -60,16 +60,27 @@ export function Navbar() {
         </div>
 
         <div className="navbar-actions">
-          <button
-            onClick={handleLogout}
-            disabled={loggingOut}
-            className="navbar-logout-btn"
-            title="Esci dal profilo"
-            aria-label="Logout"
-          >
-            <LogOutIcon size={18} />
-            <span className="navbar-logout-text">{loggingOut ? "..." : "Esci"}</span>
-          </button>
+          {isLoggedIn ? (
+            <button
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="navbar-logout-btn"
+              title="Esci dal profilo"
+              aria-label="Logout"
+            >
+              <LogOutIcon size={18} />
+              <span className="navbar-logout-text">{loggingOut ? "..." : "Esci"}</span>
+            </button>
+          ) : (
+            <div className="navbar-public-actions" style={{ display: "flex", gap: 12, alignItems: "center" }}>
+              <Link href="/login" className="btn secondary" style={{ padding: "6px 14px", fontSize: "0.88rem", height: "auto", minHeight: "initial", border: "1px solid var(--border)" }}>
+                Accedi
+              </Link>
+              <Link href="/register" className="btn" style={{ padding: "6px 14px", fontSize: "0.88rem", height: "auto", minHeight: "initial" }}>
+                Registrati
+              </Link>
+            </div>
+          )}
         </div>
       </nav>
     </header>
