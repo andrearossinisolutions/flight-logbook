@@ -19,7 +19,6 @@ import {
 import { requireUser } from "@/lib/require-user";
 import { eur, formatDateDisplay, formatTimeDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate, daysToDate } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
-import { getBriefingRoute } from "@/lib/weather";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -679,7 +678,7 @@ export default async function DashboardPage({
                       <div className="row" style={{ gap: 8, flexWrap: "nowrap", whiteSpace: "nowrap" }}>
                         {isToday(booking.startTime) && (
                           <Link
-                            href={`/briefing?icao=${getBriefingRoute(booking.notes || "", settings?.defaultBase || "LIML").join(",")}`}
+                            href={`/briefing?icao=${encodeURIComponent(booking.notes || settings?.defaultBase || "LIML")}`}
                             className="btn secondary"
                             style={{
                               padding: "6px 8px",
@@ -779,7 +778,9 @@ export default async function DashboardPage({
                     <div className="row" style={{ gap: 8, flexWrap: "nowrap", whiteSpace: "nowrap" }}>
                       {m.type === "FLIGHT" && m.isDraft && isToday(m.date) && (
                         <Link
-                          href={`/briefing?icao=${getBriefingRoute(`${m.flight?.takeoffPlace || ""} - ${m.flight?.arrivalPlace || ""} - ${m.notes || ""}`, settings?.defaultBase || "LIML").join(",")}`}
+                          href={`/briefing?icao=${encodeURIComponent(
+                            [m.flight?.takeoffPlace, m.flight?.arrivalPlace].filter(Boolean).join(" - ") || m.notes || settings?.defaultBase || "LIML"
+                          )}`}
                           className="btn secondary icon-btn"
                           style={{
                             padding: 0,

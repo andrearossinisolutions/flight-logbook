@@ -25,7 +25,7 @@ export default async function BriefingPage({
   const targetIcao = (typeof icao === "string" ? icao.trim() : "LIML") || "LIML";
 
   // Risolve i nomi delle località/aviosuperfici in codici ICAO reali
-  const icaos = resolveQueryToIcaos(targetIcao, user.settings?.defaultBase || "LIML");
+  const icaos = await resolveQueryToIcaos(targetIcao, user.settings?.defaultBase || "LIML");
 
   // Scarica in parallelo i dati per ciascuna stazione della rotta
   const stationsData = await Promise.all(

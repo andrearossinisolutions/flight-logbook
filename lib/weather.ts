@@ -373,6 +373,9 @@ export const ITALIAN_AIRPORTS: Record<string, AirportCoords> = {
   LIEE: { icao: "LIEE", name: "Cagliari Elmas", lat: 39.251, lon: 9.054 },
   LIEO: { icao: "LIEO", name: "Olbia Costa Smeralda", lat: 40.899, lon: 9.518 },
   LIEA: { icao: "LIEA", name: "Alghero Fertilia", lat: 40.632, lon: 8.291 },
+  LIRS: { icao: "LIRS", name: "Grosseto Baccarini", lat: 42.760, lon: 11.071 },
+  LIRQ: { icao: "LIRQ", name: "Firenze Peretola", lat: 43.810, lon: 11.203 },
+  LIPA: { icao: "LIPA", name: "Aviano Air Base", lat: 46.032, lon: 12.597 },
 };
 
 export function getAirportsAlongRoute(depIcao: string, arrIcao: string): string[] {
@@ -491,24 +494,108 @@ export const PLACE_TO_METAR: Record<string, string> = {
   bari: "LIBD",
   pescara: "LIBP",
   lamezia: "LICA",
+  // Aggiunte VFR e aviosuperfici
+  cecina: "LIRP",
+  "il gabbiano": "LIRP",
+  gabbiano: "LIRP",
+  "prati nuovi": "LIML",
+  pratinuovi: "LIML",
+  cogliate: "LIML",
+  "san vincenzo": "LIRP",
+  caposile: "LIPZ",
+  montagnana: "LIPU",
+  legnago: "LIPX",
+  "casale monferrato": "LIMC",
+  vercelli: "LIMC",
+  voghera: "LIML",
+  tortona: "LIML",
+  // Codici ICAO VFR non-reporting comuni in Italia
+  limb: "LIML", // Milano Bresso
+  lild: "LIML", // Milano Bresso
+  liln: "LIMC", // Varese Venegono
+  lilm: "LIME", // Alzate Brianza
+  lilo: "LIMC", // Biella Cerrione
+  lilq: "LIME", // Valbrembo
+  lilh: "LIME", // Como Idroscalo
+  liqg: "LIRP", // Lucca Tassignano
+  liqd: "LIRQ", // Arezzo
+  liqma: "LIRP", // Marina di Campo Elba
 };
 
-export function resolveLocationToIcao(locationName: string): string | null {
+export async function getCoordinatesFromName(name: string): Promise<{ lat: number; lon: number } | null> {
+  try {
+    const query = encodeURIComponent(`${name}, Italia`);
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`, {
+      headers: {
+        "User-Agent": "FlightLogbookApp/1.0 (contact: andrea.rossini.solutions@gmail.com)"
+      },
+      next: { revalidate: 86400 } // Cache results for 24 hours
+    });
+    
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) {
+      const lat = parseFloat(data[0].lat);
+      const lon = parseFloat(data[0].lon);
+      if (!isNaN(lat) && !isNaN(lon)) {
+        return { lat, lon };
+      }
+    }
+    return null;
+  } catch (err) {
+    console.error("Errore geocodifica Nominatim:", name, err);
+    return null;
+  }
+}
+
+export function findNearestIcao(lat: number, lon: number): string {
+  let nearestIcao = "LIML";
+  let minDist = Infinity;
+  
+  for (const [icao, apt] of Object.entries(ITALIAN_AIRPORTS)) {
+    const dy = apt.lat - lat;
+    const dx = apt.lon - lon;
+    const dist = dx * dx + dy * dy;
+    if (dist < minDist) {
+      minDist = dist;
+      nearestIcao = icao;
+    }
+  }
+  
+  return nearestIcao;
+}
+
+export function cleanLocationName(name: string): string {
+  if (!name) return "";
+  return name
+    .replace(/\([^)]*\)/g, " ") // Rimuove tutto ciò che è tra parentesi tonda, incluse le parentesi
+    .replace(/\b(aviosuperficie|aviosuperfici|campo volo|campo di volo|aeroporto|aeroclub|aero club|airfield|altipiano|elisuperficie)\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export async function resolveLocationToIcao(locationName: string): Promise<string | null> {
   if (!locationName) return null;
   
-  const normalized = locationName
+  const cleaned = cleanLocationName(locationName);
+  if (!cleaned) return null;
+  
+  // 1. Se è un codice ICAO di 4 lettere ed è una delle stazioni meteo note
+  if (/^[a-zA-Z]{4}$/.test(cleaned)) {
+    const upper = cleaned.toUpperCase();
+    if (ITALIAN_AIRPORTS[upper]) {
+      return upper;
+    }
+  }
+
+  // 2. Se c'è una corrispondenza esatta nella tabella statico-locale
+  const normalized = cleaned
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "") // rimuove gli accenti
     .replace(/[^a-z0-9\s]/g, " ") // rimuove caratteri speciali
     .trim();
 
-  // 1. Se è già un codice ICAO di 4 lettere
-  if (/^[a-z]{4}$/i.test(normalized)) {
-    return normalized.toUpperCase();
-  }
-
-  // 2. Se c'è una corrispondenza esatta nella tabella
   if (PLACE_TO_METAR[normalized]) {
     return PLACE_TO_METAR[normalized];
   }
@@ -521,34 +608,42 @@ export function resolveLocationToIcao(locationName: string): string | null {
     }
   }
 
+  // 4. Risoluzione Dinamica tramite Nominatim OSM
+  const coords = await getCoordinatesFromName(cleaned);
+  if (coords) {
+    return findNearestIcao(coords.lat, coords.lon);
+  }
+
   return null;
 }
 
-export function resolveQueryToIcaos(query: string, defaultBase: string = "LIML"): string[] {
+export async function resolveQueryToIcaos(query: string, defaultBase: string = "LIML"): Promise<string[]> {
   const cleanBase = (defaultBase || "LIML").trim().toUpperCase();
   if (!query) return [cleanBase];
   
-  // Se la ricerca contiene virgole, risolviamo ciascun elemento
-  const tokens = query.split(",").map(t => t.trim()).filter(Boolean);
+  // Se la ricerca contiene virgole o delimitatori di rotta, risolviamo ciascun elemento
+  const tokens = query.split(/[,/\-➔➔]/).map(t => t.trim()).filter(Boolean);
   const resolved: string[] = [];
   
   for (const token of tokens) {
-    const icao = resolveLocationToIcao(token);
+    const icao = await resolveLocationToIcao(token);
     if (icao) {
       resolved.push(icao);
     }
   }
   
-  if (resolved.length >= 3) {
-    return Array.from(new Set(resolved));
-  } else if (resolved.length === 2) {
-    return getAirportsAlongRoute(resolved[0], resolved[1]);
-  } else if (resolved.length === 1) {
-    return [resolved[0]];
+  const unique = Array.from(new Set(resolved));
+  
+  if (unique.length >= 3) {
+    return unique;
+  } else if (unique.length === 2) {
+    return getAirportsAlongRoute(unique[0], unique[1]);
+  } else if (unique.length === 1) {
+    return [unique[0]];
   }
   
-  // Se non si è diviso per virgole ma contiene testo libero (es. "Dovera Valle Gaffaro")
-  const textResolved = extractLocationsFromText(query);
+  // Se non si è diviso in token validi o non è stato trovato nulla tramite i token
+  const textResolved = await extractLocationsFromText(query);
   if (textResolved.length >= 3) {
     return textResolved;
   } else if (textResolved.length === 2) {
@@ -560,29 +655,35 @@ export function resolveQueryToIcaos(query: string, defaultBase: string = "LIML")
   return [cleanBase];
 }
 
-export function extractLocationsFromText(text: string): string[] {
+export async function extractLocationsFromText(text: string): Promise<string[]> {
   if (!text) return [];
-  const normalized = text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9\s]/g, " ")
-    .trim();
-    
-  const words = normalized.split(/\s+/);
-  const resolved: string[] = [];
   
-  // Cerca corrispondenze a più parole per prime (es. "valle gaffaro")
-  for (const [place, icao] of Object.entries(PLACE_TO_METAR)) {
-    if (place.includes(" ") && normalized.includes(place)) {
-      resolved.push(icao);
+  // Split su delimitatori di rotta
+  let parts = text.split(/[-➔➔,]/i).map(p => p.trim()).filter(Boolean);
+  
+  // Se non ci sono delimitatori, proviamo a estrarre chiavi note o dividere per spazio
+  if (parts.length === 1) {
+    let tempText = text.toLowerCase();
+    const foundKeys: string[] = [];
+    for (const place of Object.keys(PLACE_TO_METAR)) {
+      if (tempText.includes(place)) {
+        foundKeys.push(place);
+        tempText = tempText.replace(place, "");
+      }
+    }
+    if (foundKeys.length > 0) {
+      parts = foundKeys;
+    } else {
+      parts = text.split(/\s+/).map(p => p.trim()).filter(Boolean);
     }
   }
-  
-  // Cerca corrispondenze a singola parola
-  for (const word of words) {
-    if (word.length >= 3 && PLACE_TO_METAR[word]) {
-      resolved.push(PLACE_TO_METAR[word]);
+
+  const resolved: string[] = [];
+  for (const part of parts) {
+    if (part.length < 3) continue;
+    const icao = await resolveLocationToIcao(part);
+    if (icao) {
+      resolved.push(icao);
     }
   }
   
@@ -590,15 +691,15 @@ export function extractLocationsFromText(text: string): string[] {
   
   // Ordina le stazioni in base all'ordine di apparizione nel testo originale
   unique.sort((a, b) => {
-    const keyA = Object.keys(PLACE_TO_METAR).find(k => PLACE_TO_METAR[k] === a) || "";
-    const keyB = Object.keys(PLACE_TO_METAR).find(k => PLACE_TO_METAR[k] === b) || "";
-    return normalized.indexOf(keyA) - normalized.indexOf(keyB);
+    const keyA = Object.keys(PLACE_TO_METAR).find(k => PLACE_TO_METAR[k] === a) || a;
+    const keyB = Object.keys(PLACE_TO_METAR).find(k => PLACE_TO_METAR[k] === b) || b;
+    return text.toLowerCase().indexOf(keyA.toLowerCase()) - text.toLowerCase().indexOf(keyB.toLowerCase());
   });
   
   return unique;
 }
 
-export function getBriefingRoute(text: string, defaultBase: string): string[] {
+export async function getBriefingRoute(text: string, defaultBase: string): Promise<string[]> {
   const cleanBase = (defaultBase || "LIML").trim().toUpperCase();
   if (!text) return [cleanBase];
   
@@ -612,17 +713,16 @@ export function getBriefingRoute(text: string, defaultBase: string): string[] {
   } else if (rawIcaos.length === 2) {
     return getAirportsAlongRoute(rawIcaos[0], rawIcaos[1]);
   } else if (rawIcaos.length === 1) {
-    // Se c'è un solo ICAO grezzo, estraiamo gli altri luoghi dal testo circostante
     const remainingText = text.replace(new RegExp(rawIcaos[0], "gi"), "").trim();
-    const resolvedOthers = extractLocationsFromText(remainingText);
+    const resolvedOthers = await extractLocationsFromText(remainingText);
     if (resolvedOthers.length > 0) {
       return getAirportsAlongRoute(rawIcaos[0], resolvedOthers[0]);
     }
     return getAirportsAlongRoute(cleanBase, rawIcaos[0]);
   }
 
-  // 2. Nessun ICAO esplicito. Estraiamo tutti i luoghi conosciuti tramite dizionario
-  const resolved = extractLocationsFromText(text);
+  // 2. Nessun ICAO esplicito. Estraiamo tutti i luoghi conosciuti tramite dizionario o Nominatim
+  const resolved = await extractLocationsFromText(text);
 
   if (resolved.length >= 3) {
     return resolved;
@@ -634,4 +734,3 @@ export function getBriefingRoute(text: string, defaultBase: string): string[] {
 
   return [cleanBase];
 }
-
