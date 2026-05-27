@@ -7,6 +7,7 @@ import { AppShell } from "@/components/app-shell";
 import { DashboardWidgets } from "@/components/dashboard-widgets";
 import { DeleteMovementButton } from "@/components/delete-movement-button";
 import { DashboardRegistryActions } from "@/components/dashboard-registry-actions";
+import { BookPlannedFlightButton } from "@/components/book-planned-flight-button";
 
 import {
   AirplaneIcon,
@@ -304,8 +305,10 @@ export default async function DashboardPage({
       0
     );
 
-  const { filter } = await searchParams;
+  const { filter, error, success } = await searchParams;
   const filterVal = typeof filter === "string" ? filter : undefined;
+  const errorMsg = typeof error === "string" ? error : undefined;
+  const successMsg = typeof success === "string" ? success : undefined;
 
   const movements = allMovements.filter((item: MovementItem) => {
     if (!filterVal) return true;
@@ -414,12 +417,116 @@ export default async function DashboardPage({
     redirect("/logbook");
   }
 
+  async function bookPlannedFlight(formData: FormData) {
+    "use server";
+
+    const user = await requireUser();
+    const movementId = String(formData.get("movementId") ?? "");
+
+    if (!movementId) {
+      throw new Error("ID movimento mancante.");
+    }
+
+    const movement = await prisma.movement.findFirst({
+      where: {
+        id: movementId,
+        userId: user.id,
+        type: "FLIGHT",
+      },
+      include: {
+        flight: {
+          include: {
+            partnershipAircraft: true,
+          }
+        },
+      },
+    });
+
+    if (!movement || !movement.flight || !movement.flight.partnershipAircraftId || !movement.flight.partnershipAircraft) {
+      throw new Error("Volo societario non trovato o dati mancanti.");
+    }
+
+    const flight = movement.flight;
+    const aircraftId = flight.partnershipAircraftId;
+    if (aircraftId === null) {
+      throw new Error("Aereo societario non associato al volo.");
+    }
+    const partnershipAircraft = flight.partnershipAircraft;
+    if (partnershipAircraft === null) {
+      throw new Error("Associazione società aereo non trovata.");
+    }
+    const flightStart = new Date(movement.date);
+    const flightEnd = new Date(flightStart.getTime() + (flight.durationMinutes * 60 * 1000));
+
+    // Check overlap for the same aircraft
+    const overlappingBooking = await prisma.partnershipBooking.findFirst({
+      where: {
+        aircraftId: aircraftId,
+        startTime: {
+          lt: flightEnd
+        },
+        endTime: {
+          gt: flightStart
+        }
+      },
+      include: {
+        user: true
+      }
+    });
+
+    if (overlappingBooking) {
+      const occupantName = overlappingBooking.user.fullName || overlappingBooking.user.email;
+      redirect(`/logbook?error=${encodeURIComponent(`L'aereo è già prenotato da ${occupantName} nel periodo selezionato.`)}`);
+    }
+
+    await prisma.partnershipBooking.create({
+      data: {
+        partnershipId: partnershipAircraft.partnershipId,
+        userId: user.id,
+        aircraftId: aircraftId,
+        startTime: flightStart,
+        endTime: flightEnd,
+        notes: movement.notes ? `Volo pianificato: ${movement.notes}` : "Prenotazione da volo pianificato"
+      }
+    });
+
+    revalidatePath("/logbook");
+    redirect(`/logbook?success=${encodeURIComponent("Prenotazione registrata con successo!")}`);
+  }
+
   return (
     <AppShell
       title={`Ciao${user.fullName ? `, ${user.fullName}` : ""}`}
       subtitle="Saldo, movimenti e accesso rapido a inserimento volo, ricarica e settings."
       className="dashboard-container"
     >
+      {errorMsg && (
+        <div style={{ 
+          backgroundColor: "rgba(220, 38, 38, 0.1)", 
+          border: "1px solid rgba(220, 38, 38, 0.2)", 
+          borderRadius: 16, 
+          padding: "16px 20px", 
+          color: "var(--danger)",
+          marginBottom: 24,
+          fontWeight: 600
+        }}>
+          ⚠️ {errorMsg}
+        </div>
+      )}
+      {successMsg && (
+        <div style={{ 
+          backgroundColor: "rgba(22, 163, 74, 0.1)", 
+          border: "1px solid rgba(22, 163, 74, 0.2)", 
+          borderRadius: 16, 
+          padding: "16px 20px", 
+          color: "#16a34a",
+          marginBottom: 24,
+          fontWeight: 600
+        }}>
+          ✅ {successMsg}
+        </div>
+      )}
+
       {alerts.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
           {alerts.map((alert, i) => {
@@ -767,7 +874,7 @@ export default async function DashboardPage({
                   </td>
 
                   <td>
-                    {dashboardItem(m, allMovements, isFutureMovement)}
+                    {dashboardItem(m, allMovements, isFutureMovement, bookings)}
                   </td>
 
                   <td style={{ fontWeight: 700 }}>
@@ -812,6 +919,25 @@ export default async function DashboardPage({
                         </a>
                       ) : null}
 
+                      {m.type === "FLIGHT" && m.isDraft && m.flight?.partnershipAircraftId && (() => {
+                        const flightStart = new Date(m.date);
+                        const flightEnd = new Date(flightStart.getTime() + (m.flight.durationMinutes * 60 * 1000));
+                        const hasBooking = bookings.some(b => 
+                          b.aircraftId === m.flight?.partnershipAircraftId &&
+                          new Date(b.startTime) < flightEnd &&
+                          new Date(b.endTime) > flightStart
+                        );
+                        if (!hasBooking) {
+                          return (
+                            <form action={bookPlannedFlight}>
+                              <input type="hidden" name="movementId" value={m.id} />
+                              <BookPlannedFlightButton />
+                            </form>
+                          );
+                        }
+                        return null;
+                      })()}
+
                       <Link
                         className="btn secondary icon-btn"
                         href={m.type === "FLIGHT" ? `/edit-flight/${m.id}` : m.type === "REMINDER" ? `/edit-reminder/${m.id}` : `/edit-payment/${m.id}`}
@@ -837,7 +963,7 @@ export default async function DashboardPage({
   );
 }
 
-function dashboardItem(item: any, movements: any[] = [], isFutureMovement = false) {
+function dashboardItem(item: any, movements: any[] = [], isFutureMovement = false, bookings: any[] = []) {
   type MovementItem = (typeof movements)[number];
 
   const progressiveSaldo = movements
@@ -881,12 +1007,56 @@ function dashboardItem(item: any, movements: any[] = [], isFutureMovement = fals
         0
       );
 
+      const isCompanyAircraft = !!item.flight?.partnershipAircraftId;
+      let bookingWarning = null;
+      if (item.isDraft && isCompanyAircraft) {
+        const flightStart = new Date(item.date);
+        const flightEnd = new Date(flightStart.getTime() + (item.flight.durationMinutes * 60 * 1000));
+        const hasBooking = bookings.some(b => 
+          b.aircraftId === item.flight?.partnershipAircraftId &&
+          new Date(b.startTime) < flightEnd &&
+          new Date(b.endTime) > flightStart
+        );
+        if (!hasBooking) {
+          bookingWarning = (
+            <span style={{ 
+              color: "#d97706", 
+              backgroundColor: "#fef3c7", 
+              padding: "2px 6px", 
+              borderRadius: "6px", 
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              display: "inline-block",
+              marginLeft: "8px"
+            }}>
+              ⚠️ Senza prenotazione
+            </span>
+          );
+        } else {
+          bookingWarning = (
+            <span style={{ 
+              color: "#16a34a", 
+              backgroundColor: "rgba(22, 163, 74, 0.1)", 
+              padding: "2px 6px", 
+              borderRadius: "6px", 
+              fontSize: "0.75rem",
+              fontWeight: 600,
+              display: "inline-block",
+              marginLeft: "8px"
+            }}>
+              ✅ Prenotato
+            </span>
+          );
+        }
+      }
+
       return (
         <div className="grid grid-2">
           <div>
             <div className={"muted" + (isFutureMovement ? " future-movement" : "")}>
               ✈️ {(item.flight?.aircraftRegistration ?? "I-4150") + " · "}
               ⏱️ {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
+              {bookingWarning}
             </div>
             {(item.flight?.takeoffPlace != null || item.flight?.arrivalPlace != null) &&
               <div className={isFutureMovement ? "future-movement" : undefined}>
