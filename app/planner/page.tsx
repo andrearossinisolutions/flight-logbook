@@ -91,16 +91,19 @@ export default async function PlannerPage() {
     <AppShell
       title="Planner Rotte e Spazio Aereo"
       subtitle="Visualizzazione interattiva su carta degli spazi aerei CTR/TMA e dei punti di riporto VFR e IFR."
+      fluid={true}
+      hideHeader={true}
     >
       <div 
-        className="card" 
         style={{ 
-          height: "calc(100vh - 200px)", 
-          minHeight: "550px", 
+          height: "100vh", 
+          width: "100%",
           padding: 0, 
           overflow: "hidden",
-          border: "1px solid var(--border)",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.04)"
+          position: "absolute",
+          top: 0,
+          left: 0,
+          zIndex: 1
         }}
       >
         <PlannerMapWrapper 

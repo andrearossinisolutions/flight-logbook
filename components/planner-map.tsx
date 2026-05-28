@@ -71,6 +71,7 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
   const [showAirspaces, setShowAirspaces] = useState(true);
   const [showAirports, setShowAirports] = useState(true);
   const [showOfm, setShowOfm] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Layer groups references for toggling
   const airspacesLayerGroup = useRef<L.LayerGroup | null>(null);
@@ -523,7 +524,7 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
       {loading && (
         <div style={{
           position: "absolute",
-          top: "16px",
+          top: "96px",
           left: "50%",
           transform: "translateX(-50%)",
           zIndex: 1000,
@@ -559,102 +560,129 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
         style={{
           width: "100%",
           height: "100%",
-          borderRadius: "16px",
-          overflow: "hidden",
-          boxShadow: "0 10px 30px rgba(0, 0, 0, 0.08)"
+          overflow: "hidden"
         }}
       />
 
+      {/* Floating Toggle Button */}
+      <button
+        onClick={() => setIsFilterOpen(!isFilterOpen)}
+        style={{
+          position: "absolute",
+          top: "96px",
+          right: "16px",
+          zIndex: 1000,
+          backgroundColor: isFilterOpen ? "var(--primary)" : "var(--card)",
+          color: isFilterOpen ? "white" : "var(--text)",
+          border: "1px solid var(--border)",
+          width: "42px",
+          height: "42px",
+          borderRadius: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          cursor: "pointer",
+          boxShadow: "0 4px 16px rgba(0, 0, 0, 0.15)",
+          transition: "all 0.2s ease",
+          fontSize: "1.2rem"
+        }}
+        title="Filtri Mappa"
+      >
+        {isFilterOpen ? "✕" : "🎛️"}
+      </button>
+
       {/* Control Panel overlay */}
-      <div style={{
-        position: "absolute",
-        top: "16px",
-        right: "16px",
-        zIndex: 999,
-        backgroundColor: "rgba(255, 255, 255, 0.85)",
-        backdropFilter: "blur(12px)",
-        padding: "16px",
-        borderRadius: "16px",
-        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.12)",
-        border: "1px solid rgba(255, 255, 255, 0.5)",
-        width: "240px"
-      }}>
-        <h4 style={{ margin: "0 0 12px 0", fontSize: "0.95rem", fontWeight: 800, color: "var(--text)" }}>
-          Filtri e Opzioni
-        </h4>
+      {isFilterOpen && (
+        <div style={{
+          position: "absolute",
+          top: "148px",
+          right: "16px",
+          zIndex: 999,
+          backgroundColor: "var(--card)",
+          backdropFilter: "blur(12px)",
+          padding: "16px",
+          borderRadius: "16px",
+          boxShadow: "0 8px 32px rgba(0, 0, 0, 0.15)",
+          border: "1px solid var(--border)",
+          width: "240px"
+        }}>
+          <h4 style={{ margin: "0 0 12px 0", fontSize: "0.95rem", fontWeight: 800, color: "var(--text)" }}>
+            Filtri e Opzioni
+          </h4>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.85rem", cursor: "pointer", fontWeight: 600 }}>
-            <input
-              type="checkbox"
-              checked={showAirspaces}
-              onChange={(e) => setShowAirspaces(e.target.checked)}
-              style={{ width: 16, height: 16, cursor: "pointer" }}
-            />
-            Spazi Aerei (CTR/TMA)
-          </label>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.85rem", cursor: "pointer", fontWeight: 600 }}>
+              <input
+                type="checkbox"
+                checked={showAirspaces}
+                onChange={(e) => setShowAirspaces(e.target.checked)}
+                style={{ width: 16, height: 16, cursor: "pointer" }}
+              />
+              Spazi Aerei (CTR/TMA)
+            </label>
 
-          <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.85rem", cursor: "pointer", fontWeight: 600 }}>
-            <input
-              type="checkbox"
-              checked={showAirports}
-              onChange={(e) => setShowAirports(e.target.checked)}
-              style={{ width: 16, height: 16, cursor: "pointer" }}
-            />
-            Aeroporti & Campi Volo <span style={{ color: "#1e40af" }}>✈</span>
-          </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.85rem", cursor: "pointer", fontWeight: 600 }}>
+              <input
+                type="checkbox"
+                checked={showAirports}
+                onChange={(e) => setShowAirports(e.target.checked)}
+                style={{ width: 16, height: 16, cursor: "pointer" }}
+              />
+              Aeroporti & Campi Volo <span style={{ color: "#1e40af" }}>✈</span>
+            </label>
 
-          <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.85rem", cursor: "pointer", fontWeight: 600 }}>
-            <input
-              type="checkbox"
-              checked={showVfr}
-              onChange={(e) => setShowVfr(e.target.checked)}
-              style={{ width: 16, height: 16, cursor: "pointer" }}
-            />
-            Punti VFR <span style={{ color: "#3b82f6" }}>●</span>
-          </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.85rem", cursor: "pointer", fontWeight: 600 }}>
+              <input
+                type="checkbox"
+                checked={showVfr}
+                onChange={(e) => setShowVfr(e.target.checked)}
+                style={{ width: 16, height: 16, cursor: "pointer" }}
+              />
+              Punti VFR <span style={{ color: "#3b82f6" }}>●</span>
+            </label>
 
-          <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.85rem", cursor: "pointer", fontWeight: 600 }}>
-            <input
-              type="checkbox"
-              checked={showIfr}
-              onChange={(e) => setShowIfr(e.target.checked)}
-              style={{ width: 16, height: 16, cursor: "pointer" }}
-            />
-            Punti IFR (Fix/VOR) <span style={{ color: "#10b981" }}>▲</span>
-          </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.85rem", cursor: "pointer", fontWeight: 600 }}>
+              <input
+                type="checkbox"
+                checked={showIfr}
+                onChange={(e) => setShowIfr(e.target.checked)}
+                style={{ width: 16, height: 16, cursor: "pointer" }}
+              />
+              Punti IFR (Fix/VOR) <span style={{ color: "#10b981" }}>▲</span>
+            </label>
 
-          <hr style={{ border: 0, borderTop: "1px solid var(--border)", margin: "6px 0" }} />
+            <hr style={{ border: 0, borderTop: "1px solid var(--border)", margin: "6px 0" }} />
 
-          <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.85rem", cursor: "pointer", fontWeight: 600 }}>
-            <input
-              type="checkbox"
-              checked={showOfm}
-              onChange={(e) => setShowOfm(e.target.checked)}
-              style={{ width: 16, height: 16, cursor: "pointer" }}
-            />
-            Carta VFR (OpenFlightMaps)
-          </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.85rem", cursor: "pointer", fontWeight: 600 }}>
+              <input
+                type="checkbox"
+                checked={showOfm}
+                onChange={(e) => setShowOfm(e.target.checked)}
+                style={{ width: 16, height: 16, cursor: "pointer" }}
+              />
+              Carta VFR (OpenFlightMaps)
+            </label>
 
-          <button
-            onClick={handleRecenter}
-            className="btn secondary"
-            style={{
-              marginTop: "8px",
-              width: "100%",
-              padding: "8px 12px",
-              fontSize: "0.82rem",
-              height: "auto",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 6
-            }}
-          >
-            <span>🎯</span> Centra su Base ({defaultBase})
-          </button>
+            <button
+              onClick={handleRecenter}
+              className="btn secondary"
+              style={{
+                marginTop: "8px",
+                width: "100%",
+                padding: "8px 12px",
+                fontSize: "0.82rem",
+                height: "auto",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6
+              }}
+            >
+              <span>🎯</span> Centra su Base ({defaultBase})
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
