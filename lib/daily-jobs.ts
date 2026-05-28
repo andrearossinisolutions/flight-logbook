@@ -415,9 +415,111 @@ function buildDailyDigestEmail(args: {
   return { subject, text, html };
 }
 
+function buildSingleReminderEmail(reminder: ReminderMovement) {
+  const hasTime = reminder.date.getHours() !== 0 || reminder.date.getMinutes() !== 0;
+  const timeStr = hasTime ? ` alle ${formatTimeDisplay(reminder.date)}` : "";
+  const subject = `Flight Logbook · Promemoria${timeStr}`;
+
+  const text = `Promemoria Flight Logbook\n\nPromemoria${timeStr}: ${reminder.notes}`;
+
+  const html = `
+    <div style="margin: 0; padding: 32px 16px; background: #edf3f8; font-family: Inter, 'Segoe UI', Arial, sans-serif; color: #17324d;">
+      <div style="max-width: 600px; margin: 0 auto;">
+        <div style="margin: 0 0 24px; padding: 22px; border-radius: 24px; background: linear-gradient(135deg, #17324d 0%, #244a70 100%); color: #ffffff;">
+          <div style="font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.78; margin-bottom: 10px;">
+            Notifica Promemoria
+          </div>
+          <div style="font-size: 30px; line-height: 1.1; font-weight: 800; margin-bottom: 10px;">
+            Flight Logbook
+          </div>
+        </div>
+
+        <div style="background: #ffffff; border: 1px solid #dbe5f0; border-radius: 28px; padding: 24px;">
+          <div style="margin: 0 0 14px; padding: 18px; border: 1px solid #bae6fd; border-radius: 20px; background: #f0f9ff;">
+            <div style="font-size: 17px; font-weight: 800; color: #0369a1; margin-bottom: 6px;">
+              🔔 Promemoria${escapeHtml(timeStr)}
+            </div>
+            <div style="font-size: 15px; line-height: 1.6; color: #0f172a; white-space: pre-wrap;">
+              ${escapeHtml(reminder.notes ?? "")}
+            </div>
+          </div>
+          <div style="font-size: 13px; line-height: 1.7; color: #4c5f76; margin-top: 24px; text-align: center;">
+            Questo promemoria è stato generato automaticamente da <strong>Flight Logbook</strong>.
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  return { subject, text, html };
+}
+
 async function runDailyJobs(now = new Date()) {
   console.log(`[daily-jobs] Avvio controlli giornalieri per ${getRomeDateKey(now)}`);
   await runDailyChecksAndActions(now);
+}
+
+export async function checkAndSendTimedReminders(now = new Date()) {
+  // Finestra temporale di 2 ore nel passato per intercettare promemoria dovuti
+  const windowStart = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+  const windowEnd = now;
+
+  const reminders = await prisma.movement.findMany({
+    where: {
+      type: MovementType.REMINDER,
+      date: {
+        gte: windowStart,
+        lte: windowEnd,
+      },
+    },
+    select: {
+      id: true,
+      userId: true,
+      type: true,
+      date: true,
+      notes: true,
+    },
+  });
+
+  for (const reminder of reminders) {
+    const hasTime = reminder.date.getHours() !== 0 || reminder.date.getMinutes() !== 0;
+    if (!hasTime) {
+      continue;
+    }
+
+    const jobKey = `reminder-sent-${reminder.id}-${reminder.date.getTime()}`;
+
+    const alreadySent = await prisma.dailyJobState.findUnique({
+      where: { key: jobKey },
+    });
+
+    if (alreadySent) {
+      continue;
+    }
+
+    const email = buildSingleReminderEmail(reminder);
+
+    try {
+      await sendUserEmail({
+        userId: reminder.userId,
+        subject: email.subject,
+        text: email.text,
+        html: email.html,
+      });
+
+      console.log(`[daily-jobs] Email promemoria inviata a ${reminder.userId} per il promemoria ${reminder.id}`);
+
+      await prisma.dailyJobState.create({
+        data: {
+          key: jobKey,
+          lastRunDateKey: getRomeDateKey(now),
+          lastRunAt: now,
+        },
+      });
+    } catch (error) {
+      console.error(`[daily-jobs] Errore invio email promemoria per utente ${reminder.userId}`, error);
+    }
+  }
 }
 
 async function getPersistedLastRunDateKey() {
@@ -502,10 +604,16 @@ export async function runDailyChecksAndActions(now = new Date()) {
     }),
   ]);
 
+  // Filtriamo i promemoria di oggi escludendo quelli con un orario impostato.
+  // Quelli con un orario impostato verranno inviati all'orario specifico.
+  const remindersWithoutTime = todayReminders.filter((item) => {
+    return item.date.getHours() === 0 && item.date.getMinutes() === 0;
+  });
+
   const userIds = new Set([
     ...tomorrowFlights.map((item) => item.userId),
     ...duePayments.map((item) => item.userId),
-    ...todayReminders.map((item) => item.userId),
+    ...remindersWithoutTime.map((item) => item.userId),
   ]);
 
   if (userIds.size === 0) {
@@ -516,7 +624,7 @@ export async function runDailyChecksAndActions(now = new Date()) {
   for (const userId of userIds) {
     const userTomorrowFlights = tomorrowFlights.filter((item) => item.userId === userId);
     const userDuePayments = duePayments.filter((item) => item.userId === userId);
-    const userTodayReminders = todayReminders.filter((item) => item.userId === userId);
+    const userTodayReminders = remindersWithoutTime.filter((item) => item.userId === userId);
 
     if (
       userTomorrowFlights.length === 0 &&
@@ -696,6 +804,12 @@ async function tickDailyJobs() {
   const now = new Date();
   const todayKey = getRomeDateKey(now);
   const romeNow = getRomeDateTimeParts(now);
+
+  try {
+    await checkAndSendTimedReminders(now);
+  } catch (error) {
+    console.error("[daily-jobs] Errore durante l'invio dei promemoria pianificati", error);
+  }
 
   if (state.lastRunDateKey === todayKey) {
     return;

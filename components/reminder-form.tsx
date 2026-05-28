@@ -132,7 +132,7 @@ export default function ReminderForm({
             Vengono mostrati nel registro movimenti in ordine cronologico.
           </p>
           <p className="muted" style={{ lineHeight: 1.5, fontSize: "0.95rem", marginTop: 12 }}>
-            <strong>Notifiche Email:</strong> Il giorno stesso in cui scade il promemoria, 
+            <strong>Notifiche Email:</strong> Il giorno stesso in cui scade il promemoria, all'orario indicato (o la mattina se non è stato specificato un orario),
             riceverai una notifica email automatica contenente tutti i dettagli impostati.
           </p>
         </div>
