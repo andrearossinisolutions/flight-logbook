@@ -39,6 +39,24 @@ interface Airport {
   elevation: string;
 }
 
+// Ray-casting point-in-polygon algorithm
+function isPointInPolygon(point: [number, number], vs: [number, number][]): boolean {
+  const x = point[1]; // longitude
+  const y = point[0]; // latitude
+
+  let inside = false;
+  for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+    const xi = vs[i][1], yi = vs[i][0];
+    const xj = vs[j][1], yj = vs[j][0];
+
+    const intersect = ((yi > y) !== (yj > y))
+        && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+    if (intersect) inside = !inside;
+  }
+
+  return inside;
+}
+
 export default function PlannerMap({ centerLat, centerLon, defaultBase }: PlannerMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
@@ -61,31 +79,53 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
   const airportsLayerGroup = useRef<L.LayerGroup | null>(null);
   const ofmLayerRef = useRef<L.TileLayer | null>(null);
 
+  // References to states for the map click handler to access latest state values
+  const airspacesRef = useRef<Airspace[]>([]);
+  const showAirspacesRef = useRef<boolean>(true);
+
+  // Keep references updated
+  useEffect(() => {
+    airspacesRef.current = airspaces;
+  }, [airspaces]);
+
+  useEffect(() => {
+    showAirspacesRef.current = showAirspaces;
+  }, [showAirspaces]);
+
   // Helper to color airspaces by class/type aligning with ICAO standards
+  function getAirspaceColor(airspaceClass: string, type: string) {
+    const t = type.toUpperCase();
+    const c = airspaceClass.toUpperCase();
+
+    if (t === "DANGER") return "#eab308";
+    if (t === "PROHIBITED") return "#dc2626";
+    if (t === "RESTRICTED") return "#ea580c";
+    if (c === "A") return "#7c3aed";
+    if (c === "C") return "#db2777";
+    if (c === "D") return "#2563eb";
+    return "#4b5563";
+  }
+
   function getAirspaceStyle(airspace: Airspace) {
     const type = airspace.type.toUpperCase();
     const airspaceClass = airspace.class.toUpperCase();
+    const color = getAirspaceColor(airspaceClass, airspace.type);
 
-    if (type === "DANGER") {
-      return { color: "#eab308", fillColor: "#eab308", fillOpacity: 0.12, weight: 2, dashArray: "4, 6" }; // Yellow dashed
-    } else if (type === "PROHIBITED") {
-      return { color: "#dc2626", fillColor: "#dc2626", fillOpacity: 0.15, weight: 2.5, dashArray: "4, 6" }; // Red dashed
-    } else if (type === "RESTRICTED") {
-      return { color: "#ea580c", fillColor: "#ea580c", fillOpacity: 0.12, weight: 2, dashArray: "4, 6" }; // Orange dashed
+    if (type === "DANGER" || type === "PROHIBITED" || type === "RESTRICTED") {
+      return { color, fillColor: color, fillOpacity: 0.12, weight: 2, dashArray: "4, 6" };
     }
 
-    // Standard classes
     if (airspaceClass === "A") {
-      return { color: "#7c3aed", fillColor: "#c084fc", fillOpacity: 0.12, weight: 2.5 }; // Purple (TMA)
+      return { color, fillColor: "#c084fc", fillOpacity: 0.12, weight: 2.5 };
     } else if (airspaceClass === "C") {
-      return { color: "#db2777", fillColor: "#f472b6", fillOpacity: 0.12, weight: 2 }; // Magenta (CTA/TMA)
+      return { color, fillColor: "#f472b6", fillOpacity: 0.12, weight: 2 };
     } else if (airspaceClass === "D") {
-      return { color: "#2563eb", fillColor: "#93c5fd", fillOpacity: 0.1, weight: 2 }; // Blue (CTR)
+      return { color, fillColor: "#93c5fd", fillOpacity: 0.1, weight: 2 };
     } else if (type === "ATZ" || type === "MATZ") {
-      return { color: "#2563eb", fillColor: "#93c5fd", fillOpacity: 0.08, weight: 1.5, dashArray: "2, 4" }; // Blue dashed
+      return { color, fillColor: "#93c5fd", fillOpacity: 0.08, weight: 1.5, dashArray: "2, 4" };
     }
 
-    return { color: "#4b5563", fillColor: "#9ca3af", fillOpacity: 0.06, weight: 1.5 }; // Grey
+    return { color, fillColor: "#9ca3af", fillOpacity: 0.06, weight: 1.5 };
   }
 
   // Load Leaflet CSS on mount
@@ -103,7 +143,7 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
     };
   }, []);
 
-  // Initialize Map & set up bounding box fetching
+  // Initialize Map & set up bounding box fetching & click events
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -138,7 +178,7 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
       ifrLayerGroup.current = L.layerGroup().addTo(map);
       airportsLayerGroup.current = L.layerGroup().addTo(map);
 
-      // Special marker for Campo Base
+      // Special base marker
       const baseIconHtml = `
         <div style="
           background-color: var(--primary);
@@ -184,7 +224,6 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
         const minLon = bounds.getWest();
         const maxLat = bounds.getNorth();
         const maxLon = bounds.getEast();
-        // BBox format: minLon,minLat,maxLon,maxLat
         const bboxParam = `${minLon},${minLat},${maxLon},${maxLat}`;
 
         try {
@@ -202,6 +241,56 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
           setLoading(false);
         }
       };
+
+      // Set up map click handler to detect and list all overlapping airspaces under the cursor
+      map.on("click", (e) => {
+        if (!showAirspacesRef.current) return;
+
+        const clickedPt: [number, number] = [e.latlng.lat, e.latlng.lng];
+        const containing = airspacesRef.current.filter((space) => {
+          return space.coordinates && space.coordinates.length > 2 && isPointInPolygon(clickedPt, space.coordinates);
+        });
+
+        if (containing.length === 0) return;
+
+        let popupContent = `
+          <div style="font-family: inherit; font-size: 0.88rem; padding: 4px; max-width: 280px; max-height: 280px; overflow-y: auto;">
+            <h4 style="margin: 0 0 10px 0; font-weight: 800; border-bottom: 1px solid var(--border); padding-bottom: 6px; font-size: 0.95rem;">
+              Spazi Aerei Rilevati (${containing.length})
+            </h4>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+        `;
+
+        containing.forEach((space) => {
+          const typeLabel = space.type === "DANGER" ? "Zona Pericolosa" :
+                            space.type === "PROHIBITED" ? "Zona Vietata" :
+                            space.type === "RESTRICTED" ? "Zona Regolamentata" : space.type;
+          
+          const color = getAirspaceColor(space.class, space.type);
+
+          popupContent += `
+            <div style="border-left: 3px solid ${color}; padding-left: 8px;">
+              <div style="font-weight: 800; color: ${color}; font-size: 0.88rem;">${space.name}</div>
+              <div style="font-size: 0.8rem; margin-top: 2px;">
+                Tipo: <b>${typeLabel} (${space.class})</b>
+              </div>
+              <div style="font-size: 0.8rem; margin-top: 1px;">
+                Limiti: <b>${space.lowerLimit} - ${space.upperLimit}</b>
+              </div>
+            </div>
+          `;
+        });
+
+        popupContent += `
+            </div>
+          </div>
+        `;
+
+        L.popup()
+          .setLatLng(e.latlng)
+          .setContent(popupContent)
+          .openOn(map);
+      });
 
       // Query on mount and on every drag/zoom stop
       map.on("moveend", fetchMapData);
@@ -224,28 +313,16 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
     ifrGroup.clearLayers();
     airportsGroup.clearLayers();
 
-    // 1. Plot Airspaces
+    // 1. Plot Airspaces (click popup disabled on individual polygon, handled at map click level instead)
     if (showAirspaces) {
       airspaces.forEach((airspace) => {
         if (!airspace.coordinates || airspace.coordinates.length === 0) return;
 
         const style = getAirspaceStyle(airspace);
-        const polygon = L.polygon(airspace.coordinates, style);
-
-        const typeLabel = airspace.type === "DANGER" ? "Zona Pericolosa" :
-                          airspace.type === "PROHIBITED" ? "Zona Vietata" :
-                          airspace.type === "RESTRICTED" ? "Zona Regolamentata" : airspace.type;
-
-        polygon.bindPopup(`
-          <div style="font-family: inherit; font-size: 0.9rem; padding: 4px;">
-            <h4 style="margin: 0 0 8px 0; font-weight: 800; color: ${style.color};">${airspace.name}</h4>
-            <div style="display: flex; flex-direction: column; gap: 4px;">
-              <div>Tipo: <b>${typeLabel} (${airspace.class})</b></div>
-              <div>Limite inferiore: <b>${airspace.lowerLimit}</b></div>
-              <div>Limite superiore: <b>${airspace.upperLimit}</b></div>
-            </div>
-          </div>
-        `);
+        const polygon = L.polygon(airspace.coordinates, {
+          ...style,
+          interactive: false // Turn off click blocking to let clicks reach map & lower polygons
+        });
 
         polygon.addTo(airGroup);
       });
@@ -253,7 +330,6 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
 
     // 2. Plot Airports & Airfields (Aviosuperfici)
     if (showAirports) {
-      // Certified Airport: Blue circle with airplane icon
       const airportSvg = `
         <svg width="22" height="22" viewBox="0 0 100 100" style="display: block;">
           <circle cx="50" cy="50" r="40" fill="#1e40af" stroke="white" stroke-width="8" />
@@ -261,7 +337,6 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
         </svg>
       `;
 
-      // Campi di Volo / Aviosuperfici: Green circle with airplane icon
       const airfieldSvg = `
         <svg width="18" height="18" viewBox="0 0 100 100" style="display: block;">
           <circle cx="50" cy="50" r="40" fill="#15803d" stroke="white" stroke-width="8" />
@@ -282,14 +357,12 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
 
         const marker = L.marker([airport.lat, airport.lon], { icon: customIcon });
 
-        // Show Tooltip with ICAO or Name
         marker.bindTooltip(airport.icao || airport.name, {
           permanent: false,
           direction: "top",
           offset: [0, -10]
         });
 
-        // Popup with Airport details
         const typeLabel = isCertified ? "Aeroporto Certificato" : "Aviosuperficie / Campo Volo";
         marker.bindPopup(`
           <div style="font-family: inherit; font-size: 0.88rem; padding: 4px; min-width: 160px;">
@@ -313,7 +386,6 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
       if (point.type === "VFR") {
         if (!showVfr) return;
 
-        // VFR Point: Official style circle with a center dot
         const circleSvg = `
           <svg width="16" height="16" viewBox="0 0 100 100" style="display: block;">
             <circle cx="50" cy="50" r="35" fill="none" stroke="#1d4ed8" stroke-width="14" />
@@ -350,7 +422,6 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
       } else if (point.type === "IFR") {
         if (!showIfr) return;
 
-        // IFR Point: Standard navigation triangle (Fix)
         const triangleSvg = `
           <svg width="14" height="14" viewBox="0 0 100 100" style="display: block;">
             <polygon points="50,15 90,85 10,85" fill="#10b981" stroke="#047857" stroke-width="12" />
