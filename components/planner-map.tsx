@@ -805,7 +805,8 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
       `;
 
       airports.forEach((airport) => {
-        const isCertified = ["CIVIL", "CIVIL_MILITARY", "MILITARY"].includes(airport.type);
+        const hasIcao = airport.icao && airport.icao.trim().length > 0;
+        const isCertified = ["CIVIL", "CIVIL_MILITARY", "MILITARY"].includes(airport.type) && (airport.type !== "CIVIL" || hasIcao);
         const iconSvg = isCertified ? airportSvg : airfieldSvg;
 
         const customIcon = L.divIcon({
