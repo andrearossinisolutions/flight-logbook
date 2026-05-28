@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
+import { LOCAL_AIRFIELDS } from "@/lib/aeronautical-data";
+import { ITALIAN_AIRPORTS } from "@/lib/weather";
 
 interface PlannerMapProps {
   centerLat: number;
@@ -72,6 +74,221 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
   const [showAirports, setShowAirports] = useState(true);
   const [showOfm, setShowOfm] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+
+  // Route Planning States
+  const [departureInput, setDepartureInput] = useState("");
+  const [arrivalInput, setArrivalInput] = useState("");
+  const [routeDistance, setRouteDistance] = useState<number | null>(null);
+  const [routeError, setRouteError] = useState("");
+  const [calculatingRoute, setCalculatingRoute] = useState(false);
+
+  // Route Refs
+  const routePolylineRef = useRef<L.Polyline | null>(null);
+  const depMarkerRef = useRef<L.Marker | null>(null);
+  const arrMarkerRef = useRef<L.Marker | null>(null);
+
+  // Great Circle Distance helper in Nautical Miles
+  function calculateDistanceNm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+    const R = 3440.065; // Earth radius in NM
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLon = ((lon2 - lon1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  }
+
+  // Resolve coordinates using local search first, then OSM Nominatim as fallback
+  async function resolveCoordinates(query: string): Promise<{ lat: number; lon: number; name: string } | null> {
+    const clean = query.trim().toUpperCase();
+    if (!clean) return null;
+
+    // 1. Search in certified Italian airports
+    if (ITALIAN_AIRPORTS[clean]) {
+      return {
+        lat: ITALIAN_AIRPORTS[clean].lat,
+        lon: ITALIAN_AIRPORTS[clean].lon,
+        name: `${ITALIAN_AIRPORTS[clean].name} (${clean})`
+      };
+    }
+    const matchingCertified = Object.entries(ITALIAN_AIRPORTS).find(([icao, apt]) => 
+      apt.name.toUpperCase().includes(clean) || icao.includes(clean)
+    );
+    if (matchingCertified) {
+      return {
+        lat: matchingCertified[1].lat,
+        lon: matchingCertified[1].lon,
+        name: `${matchingCertified[1].name} (${matchingCertified[0]})`
+      };
+    }
+
+    // 2. Search in local airfields / aviosuperfici
+    const matchingLocal = LOCAL_AIRFIELDS.find(fld => 
+      (fld.icao && fld.icao.toUpperCase() === clean) ||
+      fld.name.toUpperCase().includes(clean)
+    );
+    if (matchingLocal) {
+      return {
+        lat: matchingLocal.lat,
+        lon: matchingLocal.lon,
+        name: `${matchingLocal.name} ${matchingLocal.icao ? `(${matchingLocal.icao})` : ""}`
+      };
+    }
+
+    // 3. Fallback to OpenStreetMap/Nominatim Geocoding API
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data && data.length > 0) {
+          return {
+            lat: parseFloat(data[0].lat),
+            lon: parseFloat(data[0].lon),
+            name: data[0].display_name.split(",")[0]
+          };
+        }
+      }
+    } catch (err) {
+      console.warn("Geocoding lookup failed:", err);
+    }
+
+    return null;
+  }
+
+  // Handle clear route
+  const handleClearRoute = () => {
+    const map = leafletMap.current;
+    if (routePolylineRef.current && map) {
+      map.removeLayer(routePolylineRef.current);
+      routePolylineRef.current = null;
+    }
+    if (depMarkerRef.current && map) {
+      map.removeLayer(depMarkerRef.current);
+      depMarkerRef.current = null;
+    }
+    if (arrMarkerRef.current && map) {
+      map.removeLayer(arrMarkerRef.current);
+      arrMarkerRef.current = null;
+    }
+    setRouteDistance(null);
+    setRouteError("");
+  };
+
+  // Handle calculate route
+  const handleCalculateRoute = async () => {
+    handleClearRoute();
+    setRouteError("");
+    
+    if (!departureInput.trim() || !arrivalInput.trim()) {
+      setRouteError("Inserisci partenza e arrivo.");
+      return;
+    }
+
+    setCalculatingRoute(true);
+    try {
+      const depRes = await resolveCoordinates(departureInput);
+      if (!depRes) {
+        setRouteError(`Impossibile trovare la partenza: "${departureInput}"`);
+        setCalculatingRoute(false);
+        return;
+      }
+
+      const arrRes = await resolveCoordinates(arrivalInput);
+      if (!arrRes) {
+        setRouteError(`Impossibile trovare l'arrivo: "${arrivalInput}"`);
+        setCalculatingRoute(false);
+        return;
+      }
+
+      const dist = calculateDistanceNm(depRes.lat, depRes.lon, arrRes.lat, arrRes.lon);
+      setRouteDistance(dist);
+
+      const map = leafletMap.current;
+      if (map) {
+        // Draw route line (dashed thick magenta)
+        const polyline = L.polyline([[depRes.lat, depRes.lon], [arrRes.lat, arrRes.lon]], {
+          color: "#d946ef",
+          weight: 4,
+          opacity: 0.85,
+          dashArray: "8, 6"
+        }).addTo(map);
+        routePolylineRef.current = polyline;
+
+        // Custom departure marker
+        const depIcon = L.divIcon({
+          html: `
+            <div style="
+              background-color: #10b981;
+              color: white;
+              width: 24px;
+              height: 24px;
+              border-radius: 50%;
+              border: 2px solid white;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 800;
+              font-size: 0.7rem;
+            ">
+              D
+            </div>
+          `,
+          className: "custom-route-dep",
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+
+        const depMarker = L.marker([depRes.lat, depRes.lon], { icon: depIcon })
+          .addTo(map)
+          .bindPopup(`<b>Partenza:</b><br>${depRes.name}`);
+        depMarkerRef.current = depMarker;
+
+        // Custom arrival marker
+        const arrIcon = L.divIcon({
+          html: `
+            <div style="
+              background-color: #ef4444;
+              color: white;
+              width: 24px;
+              height: 24px;
+              border-radius: 50%;
+              border: 2px solid white;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              font-weight: 800;
+              font-size: 0.7rem;
+            ">
+              A
+            </div>
+          `,
+          className: "custom-route-arr",
+          iconSize: [24, 24],
+          iconAnchor: [12, 12]
+        });
+
+        const arrMarker = L.marker([arrRes.lat, arrRes.lon], { icon: arrIcon })
+          .addTo(map)
+          .bindPopup(`<b>Arrivo:</b><br>${arrRes.name}`);
+        arrMarkerRef.current = arrMarker;
+
+        // Fit map bounds to view whole route
+        const bounds = L.latLngBounds([[depRes.lat, depRes.lon], [arrRes.lat, arrRes.lon]]);
+        map.fitBounds(bounds, { padding: [50, 50] });
+      }
+    } catch (err) {
+      console.error(err);
+      setRouteError("Errore durante il calcolo della rotta.");
+    } finally {
+      setCalculatingRoute(false);
+    }
+  };
 
   // Layer groups references for toggling
   const airspacesLayerGroup = useRef<L.LayerGroup | null>(null);
@@ -519,6 +736,128 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
           border: none !important;
         }
       `}</style>
+
+      {/* Route Planner Panel */}
+      <div style={{
+        position: "absolute",
+        top: "96px",
+        left: "16px",
+        zIndex: 999,
+        backgroundColor: "var(--card)",
+        backdropFilter: "blur(12px)",
+        padding: "16px",
+        borderRadius: "16px",
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.15)",
+        border: "1px solid var(--border)",
+        width: "240px",
+        display: "flex",
+        flexDirection: "column",
+        gap: "12px"
+      }}>
+        <h4 style={{ margin: 0, fontSize: "0.95rem", fontWeight: 800, color: "var(--text)", display: "flex", alignItems: "center", gap: 6 }}>
+          <span>✈️</span> Pianificatore Tratta
+        </h4>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Partenza</label>
+          <input
+            type="text"
+            placeholder="Es. LIML, Linate, Dovera..."
+            value={departureInput}
+            onChange={(e) => setDepartureInput(e.target.value)}
+            style={{
+              padding: "8px 12px",
+              borderRadius: "8px",
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--background)",
+              color: "var(--text)",
+              fontSize: "0.85rem",
+              width: "100%"
+            }}
+          />
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <label style={{ fontSize: "0.78rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Arrivo</label>
+          <input
+            type="text"
+            placeholder="Es. LIME, Bergamo, Bresso..."
+            value={arrivalInput}
+            onChange={(e) => setArrivalInput(e.target.value)}
+            style={{
+              padding: "8px 12px",
+              borderRadius: "8px",
+              border: "1px solid var(--border)",
+              backgroundColor: "var(--background)",
+              color: "var(--text)",
+              fontSize: "0.85rem",
+              width: "100%"
+            }}
+          />
+        </div>
+
+        {routeError && (
+          <div style={{ color: "#ef4444", fontSize: "0.78rem", fontWeight: 600 }}>
+            ⚠️ {routeError}
+          </div>
+        )}
+
+        {routeDistance !== null && (
+          <div style={{
+            backgroundColor: "rgba(217, 70, 239, 0.1)",
+            border: "1px solid rgba(217, 70, 239, 0.2)",
+            borderRadius: "8px",
+            padding: "10px",
+            textAlign: "center"
+          }}>
+            <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>
+              Distanza Rotta
+            </div>
+            <div style={{ fontSize: "1.2rem", fontWeight: 800, color: "#d946ef", marginTop: 2 }}>
+              {routeDistance.toFixed(1)} <span style={{ fontSize: "0.85rem" }}>NM</span>
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+          <button
+            onClick={handleCalculateRoute}
+            disabled={calculatingRoute}
+            className="btn"
+            style={{
+              flex: 1,
+              padding: "8px 12px",
+              fontSize: "0.82rem",
+              height: "auto",
+              minHeight: "initial",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center"
+            }}
+          >
+            {calculatingRoute ? "..." : "Calcola"}
+          </button>
+          
+          {(routeDistance !== null || departureInput || arrivalInput) && (
+            <button
+              onClick={() => {
+                setDepartureInput("");
+                setArrivalInput("");
+                handleClearRoute();
+              }}
+              className="btn secondary"
+              style={{
+                padding: "8px 12px",
+                fontSize: "0.82rem",
+                height: "auto",
+                minHeight: "initial"
+              }}
+            >
+              Azzera
+            </button>
+          )}
+        </div>
+      </div>
 
       {/* Loading Indicator (Non-blocking) */}
       {loading && (
