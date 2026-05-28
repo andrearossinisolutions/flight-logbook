@@ -59,6 +59,62 @@ function isPointInPolygon(point: [number, number], vs: [number, number][]): bool
   return inside;
 }
 
+// Normalize vertical limit strings (like GND, FL55, 1500 ft) into numerical feet
+function parseLimitToFeet(limitStr: string): number {
+  const clean = limitStr.trim().toUpperCase();
+  if (clean === "GND" || clean === "SFC") return 0;
+  if (clean === "UNLIMITED" || clean === "UNL") return 99999;
+  
+  // Flight Level (e.g. FL 95, FL95, FL 095)
+  if (clean.startsWith("FL")) {
+    const numStr = clean.replace("FL", "").trim();
+    const val = parseInt(numStr, 10);
+    if (!isNaN(val)) {
+      return val * 100;
+    }
+  }
+  
+  // Feet (e.g. 1500 FT AMSL, 1500 FT AGL, 1500 FT)
+  const match = clean.match(/(\d+)\s*FT/);
+  if (match) {
+    return parseInt(match[1], 10);
+  }
+  
+  const matchPlain = clean.match(/^(\d+)$/);
+  if (matchPlain) {
+    return parseInt(matchPlain[1], 10);
+  }
+  
+  return 0; // Default fallback
+}
+
+// Check if segment AB intersects segment CD
+function segmentsIntersect(
+  a: [number, number],
+  b: [number, number],
+  c: [number, number],
+  d: [number, number]
+): boolean {
+  const ccw = (p1: [number, number], p2: [number, number], p3: [number, number]) => {
+    return (p3[0] - p1[0]) * (p2[1] - p1[1]) > (p2[0] - p1[0]) * (p3[1] - p1[1]);
+  };
+  return ccw(a, c, d) !== ccw(b, c, d) && ccw(a, b, c) !== ccw(a, b, d);
+}
+
+// Check if flight segment p1-p2 crosses a polygon boundary or is contained inside it
+function segmentIntersectsPolygon(p1: [number, number], p2: [number, number], poly: [number, number][]): boolean {
+  for (let i = 0; i < poly.length; i++) {
+    const nextIdx = (i + 1) % poly.length;
+    if (segmentsIntersect(p1, p2, poly[i], poly[nextIdx])) {
+      return true;
+    }
+  }
+  if (isPointInPolygon(p1, poly) || isPointInPolygon(p2, poly)) {
+    return true;
+  }
+  return false;
+}
+
 export default function PlannerMap({ centerLat, centerLon, defaultBase }: PlannerMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
@@ -81,11 +137,15 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
   const [routeDistance, setRouteDistance] = useState<number | null>(null);
   const [routeError, setRouteError] = useState("");
   const [calculatingRoute, setCalculatingRoute] = useState(false);
+  const [altitudeInput, setAltitudeInput] = useState("1000");
+  const [ulmBasico, setUlmBasico] = useState(false);
+  const [routeWaypoints, setRouteWaypoints] = useState<{ lat: number; lon: number; name: string }[]>([]);
 
   // Route Refs
   const routePolylineRef = useRef<L.Polyline | null>(null);
   const depMarkerRef = useRef<L.Marker | null>(null);
   const arrMarkerRef = useRef<L.Marker | null>(null);
+  const routeMarkersRef = useRef<L.Marker[]>([]);
 
   // Great Circle Distance helper in Nautical Miles
   function calculateDistanceNm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -174,7 +234,12 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
       map.removeLayer(arrMarkerRef.current);
       arrMarkerRef.current = null;
     }
+    if (map) {
+      routeMarkersRef.current.forEach((m) => map.removeLayer(m));
+    }
+    routeMarkersRef.current = [];
     setRouteDistance(null);
+    setRouteWaypoints([]);
     setRouteError("");
   };
 
@@ -204,15 +269,161 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
         return;
       }
 
-      const dist = calculateDistanceNm(depRes.lat, depRes.lon, arrRes.lat, arrRes.lon);
-      setRouteDistance(dist);
+      // 1. Calculate bounding box of departure and arrival with buffer
+      const minLat = Math.min(depRes.lat, arrRes.lat) - 0.8;
+      const maxLat = Math.max(depRes.lat, arrRes.lat) + 0.8;
+      const minLon = Math.min(depRes.lon, arrRes.lon) - 0.8;
+      const maxLon = Math.max(depRes.lon, arrRes.lon) + 0.8;
+      const bboxParam = `${minLon},${minLat},${maxLon},${maxLat}`;
+
+      // 2. Fetch all candidates and airspaces in this bbox
+      const [bboxAirspaces, bboxWaypoints, bboxAirports] = await Promise.all([
+        fetch(`/api/planner/airspaces?bbox=${encodeURIComponent(bboxParam)}`).then((r) => r.ok ? r.json() : []),
+        fetch(`/api/planner/reporting-points?bbox=${encodeURIComponent(bboxParam)}`).then((r) => r.ok ? r.json() : []),
+        fetch(`/api/planner/airports?bbox=${encodeURIComponent(bboxParam)}`).then((r) => r.ok ? r.json() : [])
+      ]);
+
+      const altFeet = parseInt(altitudeInput, 10) || 1000;
+      
+      // Airspaces that overlap with our altitude
+      const activeAirspaces = ulmBasico
+        ? bboxAirspaces.filter((space: any) => {
+            const type = space.type?.toUpperCase() || "";
+            const spaceClass = space.class?.toUpperCase() || "";
+
+            // Avoid spaces of type D (Danger), P (Prohibited), R (Restricted)
+            const isDPR = ["DANGER", "PROHIBITED", "RESTRICTED", "D", "P", "R"].includes(type);
+
+            // Avoid all CTRs of any class that is not G
+            const isCtrNotG = (type === "CTR") && (spaceClass !== "G");
+
+            // Avoid CTA and TMA spaces
+            const isCtaTma = ["CTA", "TMA"].includes(type);
+
+            if (!isDPR && !isCtrNotG && !isCtaTma) return false;
+
+            const lower = parseLimitToFeet(space.lowerLimit || "0");
+            const upper = parseLimitToFeet(space.upperLimit || "99999");
+            return altFeet >= lower && altFeet <= upper;
+          })
+        : [];
+
+      // 3. Build candidates graph nodes
+      const candidates: { lat: number; lon: number; name: string }[] = [];
+      candidates.push({ lat: depRes.lat, lon: depRes.lon, name: depRes.name });
+
+      bboxWaypoints.forEach((wp: any) => {
+        candidates.push({ lat: wp.lat, lon: wp.lon, name: wp.code || wp.name });
+      });
+
+      bboxAirports.forEach((apt: any) => {
+        candidates.push({ lat: apt.lat, lon: apt.lon, name: apt.icao || apt.name });
+      });
+
+      candidates.push({ lat: arrRes.lat, lon: arrRes.lon, name: arrRes.name });
+
+      // Deduplicate coordinates
+      const uniqueCandidates: { lat: number; lon: number; name: string }[] = [];
+      candidates.forEach((cand) => {
+        const exists = uniqueCandidates.some(
+          (u) => Math.abs(u.lat - cand.lat) < 0.0001 && Math.abs(u.lon - cand.lon) < 0.0001
+        );
+        if (!exists) {
+          uniqueCandidates.push(cand);
+        }
+      });
+
+      // Find start and end indices
+      const startIndex = 0;
+      const endIndex = uniqueCandidates.findIndex(
+        (c) => Math.abs(c.lat - arrRes.lat) < 0.0001 && Math.abs(c.lon - arrRes.lon) < 0.0001
+      );
+
+      if (endIndex === -1) {
+        setRouteError("Impossibile mappare la destinazione nel grafo.");
+        setCalculatingRoute(false);
+        return;
+      }
+
+      // Check if a segment crosses any active airspace
+      const isSegmentValid = (p1: { lat: number; lon: number }, p2: { lat: number; lon: number }) => {
+        const pt1: [number, number] = [p1.lat, p1.lon];
+        const pt2: [number, number] = [p2.lat, p2.lon];
+        
+        for (const space of activeAirspaces) {
+          if (space.coordinates && space.coordinates.length > 2) {
+            if (segmentIntersectsPolygon(pt1, pt2, space.coordinates)) {
+              return false;
+            }
+          }
+        }
+        return true;
+      };
+
+      // 4. Dijkstra algorithm
+      const n = uniqueCandidates.length;
+      const dists = new Array(n).fill(Infinity);
+      const prev = new Array(n).fill(-1);
+      const visited = new Array(n).fill(false);
+
+      dists[startIndex] = 0;
+
+      for (let i = 0; i < n; i++) {
+        let u = -1;
+        let minDist = Infinity;
+        for (let j = 0; j < n; j++) {
+          if (!visited[j] && dists[j] < minDist) {
+            minDist = dists[j];
+            u = j;
+          }
+        }
+
+        if (u === -1) break;
+        if (u === endIndex) break;
+        visited[u] = true;
+
+        const nodeU = uniqueCandidates[u];
+
+        for (let v = 0; v < n; v++) {
+          if (visited[v]) continue;
+
+          const nodeV = uniqueCandidates[v];
+          if (isSegmentValid(nodeU, nodeV)) {
+            const d = calculateDistanceNm(nodeU.lat, nodeU.lon, nodeV.lat, nodeV.lon);
+            const altDist = dists[u] + d;
+            if (altDist < dists[v]) {
+              dists[v] = altDist;
+              prev[v] = u;
+            }
+          }
+        }
+      }
+
+      if (dists[endIndex] === Infinity) {
+        setRouteError("Nessun percorso sicuro trovato a questa quota evitando spazi aerei controllati. Prova a cambiare quota o a disattivare ULM Basico.");
+        setCalculatingRoute(false);
+        return;
+      }
+
+      // Reconstruct path
+      const path: { lat: number; lon: number; name: string }[] = [];
+      let curr = endIndex;
+      while (curr !== -1) {
+        path.push(uniqueCandidates[curr]);
+        curr = prev[curr];
+      }
+      path.reverse();
+
+      setRouteWaypoints(path);
+      setRouteDistance(dists[endIndex]);
 
       const map = leafletMap.current;
       if (map) {
-        // Draw route line (dashed thick magenta)
-        const polyline = L.polyline([[depRes.lat, depRes.lon], [arrRes.lat, arrRes.lon]], {
+        // Draw route line
+        const latLngs = path.map((wp) => [wp.lat, wp.lon] as [number, number]);
+        const polyline = L.polyline(latLngs, {
           color: "#d946ef",
-          weight: 4,
+          weight: 4.5,
           opacity: 0.85,
           dashArray: "8, 6"
         }).addTo(map);
@@ -278,9 +489,40 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
           .bindPopup(`<b>Arrivo:</b><br>${arrRes.name}`);
         arrMarkerRef.current = arrMarker;
 
+        // Plot intermediate waypoint markers/tooltips on map
+        const markers: L.Marker[] = [];
+        for (let idx = 1; idx < path.length - 1; idx++) {
+          const wp = path[idx];
+          const wpIcon = L.divIcon({
+            html: `
+              <div style="
+                background-color: #d946ef;
+                color: white;
+                width: 14px;
+                height: 14px;
+                border-radius: 50%;
+                border: 2px solid white;
+                box-shadow: 0 1px 6px rgba(0,0,0,0.3);
+              "></div>
+            `,
+            className: "custom-route-wp",
+            iconSize: [14, 14],
+            iconAnchor: [7, 7]
+          });
+
+          const marker = L.marker([wp.lat, wp.lon], { icon: wpIcon })
+            .addTo(map)
+            .bindTooltip(`${wp.name}`, {
+              permanent: false,
+              direction: "top"
+            });
+          markers.push(marker);
+        }
+        routeMarkersRef.current = markers;
+
         // Fit map bounds to view whole route
-        const bounds = L.latLngBounds([[depRes.lat, depRes.lon], [arrRes.lat, arrRes.lon]]);
-        map.fitBounds(bounds, { padding: [50, 50] });
+        const bounds = L.latLngBounds(latLngs);
+        map.fitBounds(bounds, { padding: [60, 60] });
       }
     } catch (err) {
       console.error(err);
@@ -749,7 +991,7 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
         borderRadius: "16px",
         boxShadow: "0 8px 32px rgba(0, 0, 0, 0.15)",
         border: "1px solid var(--border)",
-        width: "240px",
+        width: "260px",
         display: "flex",
         flexDirection: "column",
         gap: "12px"
@@ -796,6 +1038,37 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
           />
         </div>
 
+        {/* Quota and ULM Options */}
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1 }}>
+            <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Quota (ft)</label>
+            <input
+              type="number"
+              value={altitudeInput}
+              onChange={(e) => setAltitudeInput(e.target.value)}
+              style={{
+                padding: "6px 10px",
+                borderRadius: "8px",
+                border: "1px solid var(--border)",
+                backgroundColor: "var(--background)",
+                color: "var(--text)",
+                fontSize: "0.85rem",
+                width: "100%"
+              }}
+            />
+          </div>
+          
+          <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.82rem", cursor: "pointer", fontWeight: 600, marginTop: 18 }}>
+            <input
+              type="checkbox"
+              checked={ulmBasico}
+              onChange={(e) => setUlmBasico(e.target.checked)}
+              style={{ width: 16, height: 16, cursor: "pointer" }}
+            />
+            Evita spazi aerei
+          </label>
+        </div>
+
         {routeError && (
           <div style={{ color: "#ef4444", fontSize: "0.78rem", fontWeight: 600 }}>
             ⚠️ {routeError}
@@ -804,17 +1077,53 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
 
         {routeDistance !== null && (
           <div style={{
-            backgroundColor: "rgba(217, 70, 239, 0.1)",
-            border: "1px solid rgba(217, 70, 239, 0.2)",
+            backgroundColor: "rgba(217, 70, 239, 0.08)",
+            border: "1px solid rgba(217, 70, 239, 0.15)",
             borderRadius: "8px",
             padding: "10px",
             textAlign: "center"
           }}>
-            <div style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>
-              Distanza Rotta
+            <div style={{ fontSize: "0.72rem", color: "var(--text-muted)", fontWeight: 600, textTransform: "uppercase" }}>
+              Distanza Totale
             </div>
             <div style={{ fontSize: "1.2rem", fontWeight: 800, color: "#d946ef", marginTop: 2 }}>
               {routeDistance.toFixed(1)} <span style={{ fontSize: "0.85rem" }}>NM</span>
+            </div>
+          </div>
+        )}
+
+        {/* Navigation waypoints log */}
+        {routeWaypoints.length > 1 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: "0.75rem", fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase" }}>Registro Nav (Tratta)</label>
+            <div style={{
+              maxHeight: "150px",
+              overflowY: "auto",
+              padding: "8px",
+              backgroundColor: "var(--background)",
+              border: "1px solid var(--border)",
+              borderRadius: "8px",
+              fontSize: "0.78rem",
+              display: "flex",
+              flexDirection: "column",
+              gap: "6px"
+            }}>
+              {routeWaypoints.map((wp, i) => {
+                if (i === 0) return <div key={i} style={{ fontWeight: 600 }}>🛫 {wp.name} (DEP)</div>;
+                const prevWp = routeWaypoints[i - 1];
+                const legDist = calculateDistanceNm(prevWp.lat, prevWp.lon, wp.lat, wp.lon);
+                const isArr = i === routeWaypoints.length - 1;
+                return (
+                  <div key={i} style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid var(--border)", paddingTop: 4, gap: 10 }}>
+                    <span style={{ textOverflow: "ellipsis", overflow: "hidden", whiteSpace: "nowrap" }}>
+                      {isArr ? "🛬" : "📍"} {wp.name}
+                    </span>
+                    <span style={{ fontWeight: 700, color: "var(--text-muted)", flexShrink: 0 }}>
+                      +{legDist.toFixed(1)} NM
+                    </span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

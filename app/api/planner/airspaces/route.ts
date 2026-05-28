@@ -74,6 +74,23 @@ function getAirspaceTypeLabel(type: any): string {
   }
 }
 
+function getAirspaceClassLabel(item: any): string {
+  if (item.class && typeof item.class === "string") return item.class.toUpperCase();
+  const classCode = item.icaoClass !== undefined ? item.icaoClass : item.class;
+  if (classCode === undefined || classCode === null) return "G";
+  const code = Number(classCode);
+  switch (code) {
+    case 0: return "A";
+    case 1: return "B";
+    case 2: return "C";
+    case 3: return "D";
+    case 4: return "E";
+    case 5: return "F";
+    case 6: return "G";
+    default: return "G";
+  }
+}
+
 export async function GET(request: Request) {
   const session = await getSessionFromCookie();
   if (!session) {
@@ -110,7 +127,7 @@ export async function GET(request: Request) {
           return {
             id: item._id || String(Math.random()),
             name: item.name,
-            class: item.class || "G",
+            class: getAirspaceClassLabel(item),
             type: getAirspaceTypeLabel(item.type),
             lowerLimit: formatLimit(item.lowerLimit),
             upperLimit: formatLimit(item.upperLimit),
