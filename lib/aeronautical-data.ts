@@ -1,3 +1,5 @@
+import { ITALIAN_AIRPORTS } from "./weather";
+
 export interface Airspace {
   id: string;
   name: string;
@@ -198,3 +200,25 @@ export const LOCAL_REPORTING_POINTS: ReportingPoint[] = [
   { id: "ifr-boa", name: "BOA (Bologna VOR)", type: "IFR", lat: 44.536, lon: 11.289, description: "VHF Omnidirectional Range & DME - Bologna" },
   { id: "ifr-ost", name: "OST (Ostia VOR)", type: "IFR", lat: 41.802, lon: 12.246, description: "VHF Omnidirectional Range & DME - Ostia (Roma)" }
 ];
+
+export const LOCAL_AIRFIELDS = [
+  // Certified Airports
+  ...Object.values(ITALIAN_AIRPORTS).map(apt => ({
+    id: `apt-${apt.icao}`,
+    name: apt.name,
+    icao: apt.icao,
+    lat: apt.lat,
+    lon: apt.lon,
+    type: "CIVIL",
+    elevation: "N/D"
+  })),
+  // Major Aviosuperfici / Campi di Volo (Recreational Airfields)
+  { id: "fld-dovera", name: "Dovera Airfield (Campo Volo)", icao: "", lat: 45.367, lon: 9.530, type: "ULTRALIGHT_STRIP", elevation: "245 ft" },
+  { id: "fld-vallegaffaro", name: "Valle Gaffaro (Aviosuperficie)", icao: "LIPZ_V", lat: 44.831, lon: 12.228, type: "AIRFIELD", elevation: "0 ft" },
+  { id: "fld-cogliate", name: "Cogliate (Campo Volo)", icao: "", lat: 45.642, lon: 9.076, type: "ULTRALIGHT_STRIP", elevation: "720 ft" },
+  { id: "fld-valbrembo", name: "Valbrembo (Aeroporto)", icao: "LILQ", lat: 45.714, lon: 9.598, type: "AIRFIELD", elevation: "794 ft" },
+  { id: "fld-alzate", name: "Alzate Brianza (Aeroporto)", icao: "LILM", lat: 45.772, lon: 9.176, type: "AIRFIELD", elevation: "1188 ft" },
+  { id: "fld-bresso", name: "Milano Bresso (Aeroporto)", icao: "LIMB", lat: 45.541, lon: 9.202, type: "CIVIL", elevation: "485 ft" },
+  { id: "fld-venegono", name: "Varese Venegono (Aeroporto)", icao: "LILN", lat: 45.736, lon: 8.889, type: "CIVIL", elevation: "1138 ft" }
+];
+

@@ -29,21 +29,36 @@ interface ReportingPoint {
   description?: string;
 }
 
+interface Airport {
+  id: string;
+  name: string;
+  icao: string;
+  lat: number;
+  lon: number;
+  type: string;
+  elevation: string;
+}
+
 export default function PlannerMap({ centerLat, centerLon, defaultBase }: PlannerMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletMap = useRef<L.Map | null>(null);
   const [airspaces, setAirspaces] = useState<Airspace[]>([]);
   const [reportingPoints, setReportingPoints] = useState<ReportingPoint[]>([]);
+  const [airports, setAirports] = useState<Airport[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Toggles
   const [showVfr, setShowVfr] = useState(true);
   const [showIfr, setShowIfr] = useState(true);
   const [showAirspaces, setShowAirspaces] = useState(true);
+  const [showAirports, setShowAirports] = useState(true);
   const [showOfm, setShowOfm] = useState(false);
 
   // Layer groups references for toggling
   const airspacesLayerGroup = useRef<L.LayerGroup | null>(null);
   const vfrLayerGroup = useRef<L.LayerGroup | null>(null);
   const ifrLayerGroup = useRef<L.LayerGroup | null>(null);
+  const airportsLayerGroup = useRef<L.LayerGroup | null>(null);
   const ofmLayerRef = useRef<L.TileLayer | null>(null);
 
   // Helper to color airspaces by class/type aligning with ICAO standards
@@ -121,6 +136,7 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
       airspacesLayerGroup.current = L.layerGroup().addTo(map);
       vfrLayerGroup.current = L.layerGroup().addTo(map);
       ifrLayerGroup.current = L.layerGroup().addTo(map);
+      airportsLayerGroup.current = L.layerGroup().addTo(map);
 
       // Special marker for Campo Base
       const baseIconHtml = `
@@ -172,12 +188,14 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
         const bboxParam = `${minLon},${minLat},${maxLon},${maxLat}`;
 
         try {
-          const [airspacesData, pointsData] = await Promise.all([
+          const [airspacesData, pointsData, airportsData] = await Promise.all([
             fetch(`/api/planner/airspaces?bbox=${encodeURIComponent(bboxParam)}`).then((r) => r.ok ? r.json() : []),
-            fetch(`/api/planner/reporting-points?bbox=${encodeURIComponent(bboxParam)}`).then((r) => r.ok ? r.json() : [])
+            fetch(`/api/planner/reporting-points?bbox=${encodeURIComponent(bboxParam)}`).then((r) => r.ok ? r.json() : []),
+            fetch(`/api/planner/airports?bbox=${encodeURIComponent(bboxParam)}`).then((r) => r.ok ? r.json() : [])
           ]);
           setAirspaces(airspacesData);
           setReportingPoints(pointsData);
+          setAirports(airportsData);
         } catch (err) {
           console.error("Error loading visible aeronautical data:", err);
         } finally {
@@ -197,12 +215,14 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
     const airGroup = airspacesLayerGroup.current;
     const vfrGroup = vfrLayerGroup.current;
     const ifrGroup = ifrLayerGroup.current;
+    const airportsGroup = airportsLayerGroup.current;
 
-    if (!map || !airGroup || !vfrGroup || !ifrGroup) return;
+    if (!map || !airGroup || !vfrGroup || !ifrGroup || !airportsGroup) return;
 
     airGroup.clearLayers();
     vfrGroup.clearLayers();
     ifrGroup.clearLayers();
+    airportsGroup.clearLayers();
 
     // 1. Plot Airspaces
     if (showAirspaces) {
@@ -231,7 +251,64 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
       });
     }
 
-    // 2. Plot Waypoints & Reporting Points
+    // 2. Plot Airports & Airfields (Aviosuperfici)
+    if (showAirports) {
+      // Certified Airport: Blue circle with airplane icon
+      const airportSvg = `
+        <svg width="22" height="22" viewBox="0 0 100 100" style="display: block;">
+          <circle cx="50" cy="50" r="40" fill="#1e40af" stroke="white" stroke-width="8" />
+          <path d="M50,15 L50,85 M20,50 L80,50 M50,45 L25,65 M50,45 L75,65 M50,80 L35,85 M50,80 L65,85" stroke="white" stroke-width="8" stroke-linecap="round" fill="none" />
+        </svg>
+      `;
+
+      // Campi di Volo / Aviosuperfici: Green circle with airplane icon
+      const airfieldSvg = `
+        <svg width="18" height="18" viewBox="0 0 100 100" style="display: block;">
+          <circle cx="50" cy="50" r="40" fill="#15803d" stroke="white" stroke-width="8" />
+          <path d="M50,20 L50,80 M25,50 L75,50 M50,45 L30,65 M50,45 L70,65" stroke="white" stroke-width="8" stroke-linecap="round" fill="none" />
+        </svg>
+      `;
+
+      airports.forEach((airport) => {
+        const isCertified = ["CIVIL", "CIVIL_MILITARY", "MILITARY"].includes(airport.type);
+        const iconSvg = isCertified ? airportSvg : airfieldSvg;
+
+        const customIcon = L.divIcon({
+          html: iconSvg,
+          className: "custom-airport-icon",
+          iconSize: isCertified ? [22, 22] : [18, 18],
+          iconAnchor: isCertified ? [11, 11] : [9, 9]
+        });
+
+        const marker = L.marker([airport.lat, airport.lon], { icon: customIcon });
+
+        // Show Tooltip with ICAO or Name
+        marker.bindTooltip(airport.icao || airport.name, {
+          permanent: false,
+          direction: "top",
+          offset: [0, -10]
+        });
+
+        // Popup with Airport details
+        const typeLabel = isCertified ? "Aeroporto Certificato" : "Aviosuperficie / Campo Volo";
+        marker.bindPopup(`
+          <div style="font-family: inherit; font-size: 0.88rem; padding: 4px; min-width: 160px;">
+            <span style="color: ${isCertified ? "#1d4ed8" : "#15803d"}; font-weight: 700; text-transform: uppercase; font-size: 0.75rem;">
+              ${typeLabel}
+            </span>
+            <h4 style="margin: 4px 0 6px 0; font-weight: 800; font-size: 0.95rem;">${airport.name} ${airport.icao ? `(${airport.icao})` : ""}</h4>
+            <div style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
+              <div>Elevazione: <b>${airport.elevation}</b></div>
+              <div style="font-size: 0.8rem;" class="muted">Lat: ${airport.lat.toFixed(4)} · Lon: ${airport.lon.toFixed(4)}</div>
+            </div>
+          </div>
+        `);
+
+        marker.addTo(airportsGroup);
+      });
+    }
+
+    // 3. Plot Waypoints & Reporting Points
     reportingPoints.forEach((point) => {
       if (point.type === "VFR") {
         if (!showVfr) return;
@@ -309,7 +386,7 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
       }
     });
 
-  }, [airspaces, reportingPoints, showVfr, showIfr, showAirspaces]);
+  }, [airspaces, reportingPoints, airports, showVfr, showIfr, showAirspaces, showAirports]);
 
   // Handle toggling OpenFlightMaps layer
   useEffect(() => {
@@ -365,7 +442,7 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
           font-family: inherit;
           background-color: #f1f5f9;
         }
-        .custom-vfr-icon, .custom-ifr-icon {
+        .custom-vfr-icon, .custom-ifr-icon, .custom-airport-icon {
           background: transparent !important;
           border: none !important;
         }
@@ -444,6 +521,16 @@ export default function PlannerMap({ centerLat, centerLon, defaultBase }: Planne
               style={{ width: 16, height: 16, cursor: "pointer" }}
             />
             Spazi Aerei (CTR/TMA)
+          </label>
+
+          <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.85rem", cursor: "pointer", fontWeight: 600 }}>
+            <input
+              type="checkbox"
+              checked={showAirports}
+              onChange={(e) => setShowAirports(e.target.checked)}
+              style={{ width: 16, height: 16, cursor: "pointer" }}
+            />
+            Aeroporti & Campi Volo <span style={{ color: "#1e40af" }}>✈</span>
           </label>
 
           <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: "0.85rem", cursor: "pointer", fontWeight: 600 }}>

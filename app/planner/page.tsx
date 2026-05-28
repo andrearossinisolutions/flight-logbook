@@ -7,6 +7,7 @@ import {
   getCoordinatesFromName, 
   ITALIAN_AIRPORTS 
 } from "@/lib/weather";
+import { LOCAL_AIRFIELDS } from "@/lib/aeronautical-data";
 
 export default async function PlannerPage() {
   const user = await requireUser();
@@ -24,23 +25,61 @@ export default async function PlannerPage() {
   let centerLon = 9.263;
 
   try {
-    // 1. Try to get coordinates of the location name directly from OSM/Nominatim (e.g., "Dovera")
-    const coords = await getCoordinatesFromName(defaultBase);
-    if (coords) {
-      centerLat = coords.lat;
-      centerLon = coords.lon;
+    const cleanBase = defaultBase.trim().toLowerCase();
+    
+    // 1. Check if the base name matches any local airfield (like Dovera, Bresso, Alzate Brianza)
+    const localMatch = LOCAL_AIRFIELDS.find((fld) => {
+      if (fld.icao && fld.icao.toLowerCase() === cleanBase) return true;
+      if (fld.name.toLowerCase().includes(cleanBase)) return true;
+      if (cleanBase.includes(fld.name.toLowerCase())) return true;
+      return false;
+    });
+
+    if (localMatch) {
+      centerLat = localMatch.lat;
+      centerLon = localMatch.lon;
     } else {
-      // 2. If name lookup fails, check if the string is a direct ICAO code
-      const upperBase = defaultBase.trim().toUpperCase();
-      if (ITALIAN_AIRPORTS[upperBase]) {
-        centerLat = ITALIAN_AIRPORTS[upperBase].lat;
-        centerLon = ITALIAN_AIRPORTS[upperBase].lon;
-      } else {
-        // 3. Fallback to resolving via weather station ICAO
-        const resolvedIcao = await resolveLocationToIcao(defaultBase);
-        if (resolvedIcao && ITALIAN_AIRPORTS[resolvedIcao]) {
-          centerLat = ITALIAN_AIRPORTS[resolvedIcao].lat;
-          centerLon = ITALIAN_AIRPORTS[resolvedIcao].lon;
+      let resolvedRemote = false;
+      const apiKey = process.env.OPENAIP_API_KEY;
+
+      // 2. Try to query OpenAIP for matching airfield coordinates (globally/nationally)
+      if (apiKey) {
+        try {
+          const searchUrl = `https://api.core.openaip.net/api/airports?search=${encodeURIComponent(defaultBase)}&limit=1`;
+          const openaipRes = await fetch(searchUrl, {
+            headers: {
+              "x-openaip-api-key": apiKey,
+              "Accept": "application/json"
+            }
+          });
+          if (openaipRes.ok) {
+            const searchData = await openaipRes.json();
+            const items = searchData.items || [];
+            if (items.length > 0) {
+              const coords = items[0].geometry?.coordinates || [0, 0];
+              centerLat = coords[1]; // GeoJSON is [lon, lat]
+              centerLon = coords[0];
+              resolvedRemote = true;
+            }
+          }
+        } catch (err) {
+          console.warn("OpenAIP airfield search resolution failed:", err);
+        }
+      }
+
+      if (!resolvedRemote) {
+        // 3. Fallback to geocoding location name directly (OSM town center)
+        const coords = await getCoordinatesFromName(defaultBase);
+        if (coords) {
+          centerLat = coords.lat;
+          centerLon = coords.lon;
+        } else {
+          // 4. Fallback to weather ICAO station
+          const resolvedIcao = await resolveLocationToIcao(defaultBase);
+          if (resolvedIcao && ITALIAN_AIRPORTS[resolvedIcao]) {
+            centerLat = ITALIAN_AIRPORTS[resolvedIcao].lat;
+            centerLon = ITALIAN_AIRPORTS[resolvedIcao].lon;
+          }
         }
       }
     }
