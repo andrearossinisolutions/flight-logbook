@@ -5,20 +5,80 @@ export function eur(value: number) {
   }).format(value);
 }
 
+export const ROME_TIME_ZONE = "Europe/Rome";
+
+export function getRomeDateTimeParts(date = new Date()) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: ROME_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  });
+
+  const formattedParts = formatter.formatToParts(new Date(date));
+
+  return {
+    year: Number(formattedParts.find((part) => part.type === "year")?.value ?? "0"),
+    month: Number(formattedParts.find((part) => part.type === "month")?.value ?? "0"),
+    day: Number(formattedParts.find((part) => part.type === "day")?.value ?? "0"),
+    hour: Number(formattedParts.find((part) => part.type === "hour")?.value ?? "0"),
+    minute: Number(formattedParts.find((part) => part.type === "minute")?.value ?? "0"),
+    second: Number(formattedParts.find((part) => part.type === "second")?.value ?? "0"),
+  };
+}
+
+export function romeLocalDateTimeToUtcDate(
+  year: number,
+  month: number,
+  day: number,
+  hour = 0,
+  minute = 0,
+  second = 0,
+) {
+  const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+  const romePartsAtGuess = getRomeDateTimeParts(utcGuess);
+  const expectedAsUtc = Date.UTC(year, month - 1, day, hour, minute, second);
+  const actualAsUtc = Date.UTC(
+    romePartsAtGuess.year,
+    romePartsAtGuess.month - 1,
+    romePartsAtGuess.day,
+    romePartsAtGuess.hour,
+    romePartsAtGuess.minute,
+    romePartsAtGuess.second,
+  );
+
+  return new Date(utcGuess.getTime() + (expectedAsUtc - actualAsUtc));
+}
+
+export function hasTime(date: Date | string) {
+  const parts = getRomeDateTimeParts(new Date(date));
+  return parts.hour !== 0 || parts.minute !== 0;
+}
+
 export function formatDateInput(date: Date | string) {
   const d = new Date(date);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return `${yyyy}-${mm}-${dd}`;
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: ROME_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  return formatter.format(d);
 }
 
 export function formatDateDisplay(date: Date | string) {
-  return new Intl.DateTimeFormat("it-IT").format(new Date(date));
+  return new Intl.DateTimeFormat("it-IT", {
+    timeZone: ROME_TIME_ZONE,
+  }).format(new Date(date));
 }
 
 export function formatTimeDisplay(date: Date | string) {
   return new Intl.DateTimeFormat("it-IT", {
+    timeZone: ROME_TIME_ZONE,
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(date));
@@ -28,11 +88,12 @@ export function formatDateTimeInput(date: Date | string | null | undefined) {
   if (!date) return "";
 
   const d = new Date(date);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  const hh = String(d.getHours()).padStart(2, "0");
-  const min = String(d.getMinutes()).padStart(2, "0");
+  const parts = getRomeDateTimeParts(d);
+  const yyyy = parts.year;
+  const mm = String(parts.month).padStart(2, "0");
+  const dd = String(parts.day).padStart(2, "0");
+  const hh = String(parts.hour).padStart(2, "0");
+  const min = String(parts.minute).padStart(2, "0");
 
   return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
 }

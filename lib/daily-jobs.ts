@@ -6,6 +6,9 @@ import {
   formatDateDisplay,
   formatTimeDisplay,
   minutesToHoursMinutes,
+  getRomeDateTimeParts,
+  romeLocalDateTimeToUtcDate,
+  hasTime,
 } from "@/lib/utils";
 import { buildMonthlyReportEmail } from "@/lib/monthly-report-email";
 
@@ -62,56 +65,9 @@ function getSchedulerState(): DailyJobsSchedulerState {
   return globalThis.__dailyJobsSchedulerState;
 }
 
-function getRomeDateTimeParts(date = new Date()) {
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: ROME_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hourCycle: "h23",
-  });
-
-  const formattedParts = formatter.formatToParts(date);
-
-  return {
-    year: Number(formattedParts.find((part) => part.type === "year")?.value ?? "0"),
-    month: Number(formattedParts.find((part) => part.type === "month")?.value ?? "0"),
-    day: Number(formattedParts.find((part) => part.type === "day")?.value ?? "0"),
-    hour: Number(formattedParts.find((part) => part.type === "hour")?.value ?? "0"),
-    minute: Number(formattedParts.find((part) => part.type === "minute")?.value ?? "0"),
-    second: Number(formattedParts.find((part) => part.type === "second")?.value ?? "0"),
-  };
-}
-
 function getRomeDateKey(date = new Date()) {
   const parts = getRomeDateTimeParts(date);
   return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
-}
-
-function romeLocalDateTimeToUtcDate(
-  year: number,
-  month: number,
-  day: number,
-  hour = 0,
-  minute = 0,
-  second = 0,
-) {
-  const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
-  const romePartsAtGuess = getRomeDateTimeParts(utcGuess);
-  const expectedAsUtc = Date.UTC(year, month - 1, day, hour, minute, second);
-  const actualAsUtc = Date.UTC(
-    romePartsAtGuess.year,
-    romePartsAtGuess.month - 1,
-    romePartsAtGuess.day,
-    romePartsAtGuess.hour,
-    romePartsAtGuess.minute,
-    romePartsAtGuess.second,
-  );
-
-  return new Date(utcGuess.getTime() + (expectedAsUtc - actualAsUtc));
 }
 
 function getRomeDayRange(date = new Date(), dayOffset = 0) {
@@ -203,8 +159,8 @@ function buildDailyDigestEmail(args: {
     ? [
         "Promemoria di oggi:",
         ...todayReminders.map((item, index) => {
-          const hasTime = item.date.getHours() !== 0 || item.date.getMinutes() !== 0;
-          const timeStr = hasTime ? ` alle ${formatTimeDisplay(item.date)}` : "";
+          const isTimed = hasTime(item.date);
+          const timeStr = isTimed ? ` alle ${formatTimeDisplay(item.date)}` : "";
           return `${index + 1}. Promemoria${timeStr}: ${item.notes}`;
         }),
       ].join("\n")
@@ -271,8 +227,8 @@ function buildDailyDigestEmail(args: {
         <div style="font-size: 20px; font-weight: 800; color: #0284c7; margin: 0 0 14px;">Promemoria di oggi</div>
         ${todayReminders
           .map((item) => {
-            const hasTime = item.date.getHours() !== 0 || item.date.getMinutes() !== 0;
-            const timeStr = hasTime ? ` alle ${formatTimeDisplay(item.date)}` : "";
+            const isTimed = hasTime(item.date);
+            const timeStr = isTimed ? ` alle ${formatTimeDisplay(item.date)}` : "";
 
             return `
               <div style="margin: 0 0 14px; padding: 18px; border: 1px solid #bae6fd; border-radius: 20px; background: #f0f9ff;">
@@ -482,8 +438,8 @@ export async function checkAndSendTimedReminders(now = new Date()) {
   });
 
   for (const reminder of reminders) {
-    const hasTime = reminder.date.getHours() !== 0 || reminder.date.getMinutes() !== 0;
-    if (!hasTime) {
+    const isTimed = hasTime(reminder.date);
+    if (!isTimed) {
       continue;
     }
 
@@ -607,7 +563,7 @@ export async function runDailyChecksAndActions(now = new Date()) {
   // Filtriamo i promemoria di oggi escludendo quelli con un orario impostato.
   // Quelli con un orario impostato verranno inviati all'orario specifico.
   const remindersWithoutTime = todayReminders.filter((item) => {
-    return item.date.getHours() === 0 && item.date.getMinutes() === 0;
+    return !hasTime(item.date);
   });
 
   const userIds = new Set([

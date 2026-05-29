@@ -18,7 +18,7 @@ import {
   PlusIcon,
 } from "@/components/icons";
 import { requireUser } from "@/lib/require-user";
-import { eur, formatDateDisplay, formatTimeDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate, daysToDate } from "@/lib/utils";
+import { eur, formatDateDisplay, formatTimeDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate, daysToDate, hasTime, getRomeDateTimeParts, romeLocalDateTimeToUtcDate } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 
 function isToday(date: Date) {
@@ -837,7 +837,7 @@ export default async function DashboardPage({
                       <CalendarIcon />
                       <span>{formatDateDisplay(m.date)}</span>
                     </div><br />
-                    {((m.type === "FLIGHT") || (m.type === "REMINDER" && (m.date.getHours() !== 0 || m.date.getMinutes() !== 0))) &&
+                    {((m.type === "FLIGHT") || (m.type === "REMINDER" && hasTime(m.date))) &&
                       <div className={"inline-meta" + (isFutureMovement ? " future-movement" : "")}>
                         🕒 <span>{formatTimeDisplay(m.date)}</span>
                       </div>
@@ -1077,7 +1077,7 @@ function dashboardItem(item: any, movements: any[] = [], isFutureMovement = fals
         </div>
       )
     case "REMINDER":
-      const hasTimeReminder = item.date.getHours() !== 0 || item.date.getMinutes() !== 0;
+      const hasTimeReminder = hasTime(item.date);
       return (
         <div className="grid grid-2">
           <div>
@@ -1140,14 +1140,15 @@ function buildCalendarLink(item: any) {
 
 function buildReminderCalendarLink(item: any) {
   const start = new Date(item.date);
-  const hasTime = start.getHours() !== 0 || start.getMinutes() !== 0;
+  const hasTimeVal = hasTime(start);
 
   let dates: string;
-  if (hasTime) {
+  if (hasTimeVal) {
     const end = new Date(start.getTime() + 30 * 60 * 1000); // 30 mins
     dates = `${formatCalendarDateTime(start)}/${formatCalendarDateTime(end)}`;
   } else {
-    const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
+    const parts = getRomeDateTimeParts(start);
+    const end = romeLocalDateTimeToUtcDate(parts.year, parts.month, parts.day + 1, 0, 0, 0);
     dates = `${formatCalendarDate(start)}/${formatCalendarDate(end)}`;
   }
 
@@ -1169,7 +1170,8 @@ function buildReminderCalendarLink(item: any) {
 
 function buildPaymentCalendarLink(item: any) {
   const start = new Date(item.date);
-  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 1);
+  const parts = getRomeDateTimeParts(start);
+  const end = romeLocalDateTimeToUtcDate(parts.year, parts.month, parts.day + 1, 0, 0, 0);
 
   const title = item.type === "SERVICE"
     ? `Scadenza pagamento servizio · ${eur(Number(item.amount))}`
@@ -1194,18 +1196,20 @@ function buildPaymentCalendarLink(item: any) {
 }
 
 function formatCalendarDate(date: Date) {
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
+  const parts = getRomeDateTimeParts(date);
+  const yyyy = parts.year;
+  const mm = String(parts.month).padStart(2, "0");
+  const dd = String(parts.day).padStart(2, "0");
   return `${yyyy}${mm}${dd}`;
 }
 
 function formatCalendarDateTime(date: Date) {
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  const hh = String(date.getHours()).padStart(2, "0");
-  const min = String(date.getMinutes()).padStart(2, "0");
-  const ss = String(date.getSeconds()).padStart(2, "0");
+  const parts = getRomeDateTimeParts(date);
+  const yyyy = parts.year;
+  const mm = String(parts.month).padStart(2, "0");
+  const dd = String(parts.day).padStart(2, "0");
+  const hh = String(parts.hour).padStart(2, "0");
+  const min = String(parts.minute).padStart(2, "0");
+  const ss = String(parts.second).padStart(2, "0");
   return `${yyyy}${mm}${dd}T${hh}${min}${ss}`;
 }

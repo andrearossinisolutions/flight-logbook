@@ -1,3 +1,5 @@
+import { getRomeDateTimeParts, romeLocalDateTimeToUtcDate } from "./utils";
+
 export type ReminderFormValues = {
   date: string;       // YYYY-MM-DD
   time: string;       // HH:MM
@@ -37,8 +39,8 @@ export function parseReminderFormData(formData: FormData) {
     }
   }
 
-  // Costruisce la data nel fuso orario locale del server
-  const date = new Date(year, month - 1, day, hours, minutes, 0, 0);
+  // Costruisce la data nel fuso orario di Roma
+  const date = romeLocalDateTimeToUtcDate(year, month, day, hours, minutes, 0);
 
   return {
     date,
@@ -52,18 +54,14 @@ export function buildReminderInitialValues(args: {
 }): Partial<ReminderFormValues> {
   const d = new Date(args.date);
   
-  // Estrae anno, mese, giorno locali
-  const year = d.getFullYear();
-  const month = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  const dateStr = `${year}-${month}-${day}`;
+  // Estrae anno, mese, giorno nel fuso orario di Roma
+  const parts = getRomeDateTimeParts(d);
+  const dateStr = `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(parts.day).padStart(2, "0")}`;
 
-  const hours = d.getHours();
-  const minutes = d.getMinutes();
-  const hasTime = hours !== 0 || minutes !== 0;
+  const hasTime = parts.hour !== 0 || parts.minute !== 0;
   
   const timeStr = hasTime 
-    ? `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`
+    ? `${String(parts.hour).padStart(2, "0")}:${String(parts.minute).padStart(2, "0")}`
     : "12:00"; // default placeholder
 
   return {
