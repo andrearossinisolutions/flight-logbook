@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog, addRecommendedReminders, addBooking, deleteBooking, updateBooking } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
-import { formatDateDisplay, daysFromDate } from "@/lib/utils";
+import { formatDateDisplay, daysFromDate, formatDateTimeInput, getRomeDateTimeParts } from "@/lib/utils";
 import {
   DashboardIcon,
   UsersIcon,
@@ -280,14 +280,14 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
 
   // Booking agenda helpers
   const formatTime = (dateStr: string) => {
-    const d = new Date(dateStr);
-    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+    const parts = getRomeDateTimeParts(new Date(dateStr));
+    return `${String(parts.hour).padStart(2, '0')}:${String(parts.minute).padStart(2, '0')}`;
   };
 
   const formatDateShort = (dateStr: string) => {
-    const d = new Date(dateStr);
+    const parts = getRomeDateTimeParts(new Date(dateStr));
     const months = ["Gen", "Feb", "Mar", "Apr", "Mag", "Giu", "Lug", "Ago", "Set", "Ott", "Nov", "Dic"];
-    return `${String(d.getDate()).padStart(2, '0')} ${months[d.getMonth()]}`;
+    return `${String(parts.day).padStart(2, '0')} ${months[parts.month - 1]}`;
   };
 
   useEffect(() => {
@@ -478,12 +478,17 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                     const end = new Date(b.endTime);
                     
                     const formattedDate = start.toLocaleDateString("it-IT", {
+                      timeZone: "Europe/Rome",
                       day: "2-digit",
                       month: "short"
                     });
-                    const formattedStartTime = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`;
-                    const formattedEndTime = `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
-                    const isSameDay = start.toDateString() === end.toDateString();
+                    const startParts = getRomeDateTimeParts(start);
+                    const endParts = getRomeDateTimeParts(end);
+                    const formattedStartTime = `${String(startParts.hour).padStart(2, '0')}:${String(startParts.minute).padStart(2, '0')}`;
+                    const formattedEndTime = `${String(endParts.hour).padStart(2, '0')}:${String(endParts.minute).padStart(2, '0')}`;
+                    const isSameDay = startParts.day === endParts.day &&
+                                      startParts.month === endParts.month &&
+                                      startParts.year === endParts.year;
                     
                     return (
                       <div key={b.id} style={{
@@ -749,18 +754,19 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
           
           // Always ensure today is in the groups list
           const today = new Date();
-          const todayKey = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
+          const todayParts = getRomeDateTimeParts(today);
+          const todayKey = `${todayParts.year}-${todayParts.month}-${todayParts.day}`;
           groups[todayKey] = {
             dateObj: today,
             bookings: []
           };
           
           bookings.forEach((b) => {
-            const startDate = new Date(b.startTime);
-            const dateKey = `${startDate.getFullYear()}-${startDate.getMonth()}-${startDate.getDate()}`;
+            const startParts = getRomeDateTimeParts(new Date(b.startTime));
+            const dateKey = `${startParts.year}-${startParts.month}-${startParts.day}`;
             if (!groups[dateKey]) {
               groups[dateKey] = {
-                dateObj: startDate,
+                dateObj: new Date(b.startTime),
                 bookings: []
               };
             }
@@ -776,6 +782,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             .map((key) => {
               const { dateObj, bookings } = groups[key];
               const dateStr = dateObj.toLocaleDateString("it-IT", {
+                timeZone: "Europe/Rome",
                 weekday: "long",
                 day: "numeric",
                 month: "long",
@@ -783,9 +790,10 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               });
               let capitalizedDateStr = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
               
-              const isToday = dateObj.getDate() === today.getDate() &&
-                              dateObj.getMonth() === today.getMonth() &&
-                              dateObj.getFullYear() === today.getFullYear();
+              const dateParts = getRomeDateTimeParts(dateObj);
+              const isToday = dateParts.day === todayParts.day &&
+                              dateParts.month === todayParts.month &&
+                              dateParts.year === todayParts.year;
               if (isToday) {
                 capitalizedDateStr += " (Oggi)";
               }
@@ -1032,11 +1040,8 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                             fontWeight: 600
                                           }}
                                           onClick={() => {
-                                            const start = new Date(b.startTime);
-                                            const end = new Date(b.endTime);
-                                            const pad = (n: number) => String(n).padStart(2, '0');
-                                            const startLocal = `${start.getFullYear()}-${pad(start.getMonth() + 1)}-${pad(start.getDate())}T${pad(start.getHours())}:${pad(start.getMinutes())}`;
-                                            const endLocal = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())}T${pad(end.getHours())}:${pad(end.getMinutes())}`;
+                                            const startLocal = formatDateTimeInput(b.startTime);
+                                            const endLocal = formatDateTimeInput(b.endTime);
                                             
                                             setEditingBooking({
                                               id: b.id,

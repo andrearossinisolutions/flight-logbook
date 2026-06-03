@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 import type { Route } from "next";
 import { sendEmail } from "@/lib/mail";
 import { renderBoardMessageEmail } from "@/lib/board-message-email";
+import { parseRomeDateTime } from "@/lib/utils";
 
 async function createRecommendedRemindersDb(tx: any, aircraftId: string) {
   // 1. Sostituzione gomme
@@ -525,8 +526,9 @@ export async function addTransaction(partnershipId: string, formData: FormData) 
   const amount = Number(formData.get("amount") || 0);
   const type = String(formData.get("type") || "INCOME");
   const dateRaw = String(formData.get("date") || "");
+  const parsedDate = parseRomeDateTime(dateRaw);
 
-  if (!description || amount <= 0 || !dateRaw) return;
+  if (!description || amount <= 0 || !parsedDate) return;
 
   const partnership = await prisma.partnership.findUnique({
     where: { id: partnershipId },
@@ -548,7 +550,7 @@ export async function addTransaction(partnershipId: string, formData: FormData) 
       amount,
       type,
       description,
-      date: new Date(dateRaw),
+      date: parsedDate,
     }
   });
 
@@ -756,7 +758,7 @@ export async function addAircraftReminder(partnershipId: string, aircraftId: str
 
   const lastCompletedDateInput = formData.get("lastCompletedDate");
   const lastCompletedDate = lastCompletedDateInput && lastCompletedDateInput !== "" 
-    ? new Date(String(lastCompletedDateInput)) 
+    ? (parseRomeDateTime(String(lastCompletedDateInput)) || new Date()) 
     : new Date();
 
   const coversIds = formData.getAll("covers").map(String);
@@ -807,7 +809,7 @@ export async function updateAircraftReminder(partnershipId: string, reminderId: 
 
   const lastCompletedDateInput = formData.get("lastCompletedDate");
   const lastCompletedDate = lastCompletedDateInput && lastCompletedDateInput !== "" 
-    ? new Date(String(lastCompletedDateInput)) 
+    ? (parseRomeDateTime(String(lastCompletedDateInput)) || new Date()) 
     : new Date();
 
   const coversIds = formData.getAll("covers").map(String);
@@ -882,7 +884,7 @@ export async function logAircraftMaintenance(partnershipId: string, reminderId: 
 
   const performedAtHours = Number(formData.get("performedAtHours") || 0);
   const dateInput = String(formData.get("date") || "");
-  const date = dateInput ? new Date(dateInput) : new Date();
+  const date = dateInput ? (parseRomeDateTime(dateInput) || new Date()) : new Date();
   const notes = String(formData.get("notes") || "").trim();
 
   await prisma.$transaction(async (tx) => {
@@ -979,10 +981,10 @@ export async function addBooking(partnershipId: string, formData: FormData) {
     throw new Error("Tutti i campi obbligatori devono essere compilati.");
   }
 
-  const startDateTime = new Date(startTimeRaw);
-  const endDateTime = new Date(endTimeRaw);
+  const startDateTime = parseRomeDateTime(startTimeRaw);
+  const endDateTime = parseRomeDateTime(endTimeRaw);
 
-  if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+  if (!startDateTime || !endDateTime || isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
     throw new Error("Date inserite non valide.");
   }
 
@@ -1085,10 +1087,10 @@ export async function updateBooking(partnershipId: string, bookingId: string, fo
     throw new Error("Tutti i campi obbligatori devono essere compilati.");
   }
 
-  const startDateTime = new Date(startTimeRaw);
-  const endDateTime = new Date(endTimeRaw);
+  const startDateTime = parseRomeDateTime(startTimeRaw);
+  const endDateTime = parseRomeDateTime(endTimeRaw);
 
-  if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+  if (!startDateTime || !endDateTime || isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
     throw new Error("Date inserite non valide.");
   }
 

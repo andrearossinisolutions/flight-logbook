@@ -1,4 +1,5 @@
 import { MovementType } from "@prisma/client";
+import { parseRomeDateTime, formatDateInput } from "@/lib/utils";
 
 export type PaymentFormValues = {
   movementType: "TOPUP" | "SERVICE";
@@ -36,7 +37,10 @@ export function parsePaymentFormData(formData: FormData) {
     throw new Error("L'importo deve essere diverso da zero.");
   }
 
-  const date = new Date(dateRaw);
+  const date = parseRomeDateTime(dateRaw);
+  if (!date) {
+    throw new Error("Data pagamento non valida.");
+  }
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -61,7 +65,7 @@ export function buildPaymentInitialValues(args: {
 }): Partial<PaymentFormValues> {
   return {
     movementType: args.movementType,
-    date: new Date(args.date).toISOString().slice(0, 10),
+    date: formatDateInput(args.date),
     isDraft: args.isDraft,
     amount: String(Number(args.amount)),
     notes: args.notes ?? "",

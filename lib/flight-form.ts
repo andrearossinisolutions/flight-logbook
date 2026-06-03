@@ -1,5 +1,5 @@
 import { FlightInputMode } from "@prisma/client";
-import { formatDateTimeInput } from "@/lib/utils";
+import { formatDateTimeInput, parseRomeDateTime } from "@/lib/utils";
 
 export type FlightFormValues = {
   date: string;
@@ -54,9 +54,9 @@ function parseOptionalDateTime(value: FormDataEntryValue | null, label: string) 
     return null;
   }
 
-  const parsed = new Date(raw);
+  const parsed = parseRomeDateTime(raw);
 
-  if (Number.isNaN(parsed.getTime())) {
+  if (!parsed || Number.isNaN(parsed.getTime())) {
     throw new Error(`${label} non valida.`);
   }
 
@@ -168,8 +168,13 @@ export function parseFlightFormData(formData: FormData) {
   const totalCost = rentalCost + instructorCost;
   const movementAmount = -totalCost;
 
+  const parsedDate = parseRomeDateTime(dateRaw);
+  if (!parsedDate) {
+    throw new Error("Data volo non valida.");
+  }
+
   return {
-    date: new Date(dateRaw),
+    date: parsedDate,
     notes: notesRaw || null,
     aircraftRegistration,
     aircraftType,

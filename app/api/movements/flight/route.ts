@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { FlightInputMode } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/require-user";
+import { parseRomeDateTime } from "@/lib/utils";
 
 function parseNumber(value: FormDataEntryValue | null) {
   if (value === null) return null;
@@ -25,8 +26,7 @@ function parseDateTimeValue(value: FormDataEntryValue | null) {
   const str = String(value).trim();
   if (str === "") return null;
 
-  const parsed = new Date(str);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
+  return parseRomeDateTime(str);
 }
 
 export async function POST(request: Request) {
@@ -53,8 +53,9 @@ export async function POST(request: Request) {
 
   const notesRaw = String(formData.get("notes") ?? "").trim();
 
-  if (!dateRaw) {
-    return NextResponse.json({ error: "La data è obbligatoria." }, { status: 400 });
+  const dateParsed = parseRomeDateTime(dateRaw);
+  if (!dateParsed) {
+    return NextResponse.json({ error: "La data non è valida." }, { status: 400 });
   }
 
   if (engineOn && engineOff && engineOff < engineOn) {
@@ -160,7 +161,7 @@ export async function POST(request: Request) {
       data: {
         userId: user.id,
         type: "FLIGHT",
-        date: new Date(dateRaw),
+        date: dateParsed,
         isDraft: insertMode === "FUTURE",
         amount: movementAmount,
         notes: notesRaw || null,
