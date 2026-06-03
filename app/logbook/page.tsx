@@ -348,6 +348,21 @@ export default async function DashboardPage({
     }
   });
 
+  const bookingsWithoutPlannedFlights = filteredBookings.filter((b) => {
+    const hasMatchingDraft = allMovements.some((m) => {
+      if (m.type !== "FLIGHT" || !m.isDraft || !m.flight?.partnershipAircraftId) {
+        return false;
+      }
+      if (m.flight.partnershipAircraftId !== b.aircraftId) {
+        return false;
+      }
+      const flightStart = new Date(m.date);
+      const flightEnd = new Date(flightStart.getTime() + (m.flight.durationMinutes * 60 * 1000));
+      return b.startTime < flightEnd && b.endTime > flightStart;
+    });
+    return !hasMatchingDraft;
+  });
+
   type CombinedItem =
     | {
         isBooking: true;
@@ -369,7 +384,7 @@ export default async function DashboardPage({
       date: m.date,
       movement: m,
     })),
-    ...filteredBookings.map((b) => ({
+    ...bookingsWithoutPlannedFlights.map((b) => ({
       isBooking: true as const,
       id: b.id,
       date: b.startTime,
