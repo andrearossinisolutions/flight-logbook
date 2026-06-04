@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog, addRecommendedReminders, addBooking, deleteBooking, updateBooking } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
-import { formatDateDisplay, daysFromDate, formatDateTimeInput, getRomeDateTimeParts } from "@/lib/utils";
+import { formatDateDisplay, daysFromDate, formatDateTimeInput, getRomeDateTimeParts, formatDateInput } from "@/lib/utils";
 import {
   DashboardIcon,
   UsersIcon,
@@ -1666,7 +1666,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               <form action={addTransaction.bind(null, partnership.id)} className="grid grid-5" style={{ gap: 8, alignItems: "end" }}>
                 <div>
                   <label style={{ fontSize: 12 }}>Data</label>
-                  <input className="input" type="date" name="date" required defaultValue={new Date().toISOString().split('T')[0]} />
+                  <input className="input" type="date" name="date" required defaultValue={formatDateInput(new Date())} />
                 </div>
                 <div>
                   <label style={{ fontSize: 12 }}>Tipo</label>
@@ -2007,7 +2007,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                                 </div>
                                                 <div className="field">
                                                   <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Ultimo eseguito il</label>
-                                                  <input className="input" name="lastCompletedDate" type="date" defaultValue={r.lastCompletedDate ? new Date(r.lastCompletedDate).toISOString().substring(0, 10) : ""} style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                                  <input className="input" name="lastCompletedDate" type="date" defaultValue={r.lastCompletedDate ? formatDateInput(r.lastCompletedDate) : ""} style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
                                                 </div>
                                               </div>
 
@@ -2144,7 +2144,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                                     </div>
                                                     <div className="field">
                                                       <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Data esecuzione</label>
-                                                      <input className="input" name="date" type="date" defaultValue={new Date().toISOString().substring(0, 10)} required style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                                      <input className="input" name="date" type="date" defaultValue={formatDateInput(new Date())} required style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
                                                     </div>
                                                     <div className="field">
                                                       <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Note / Intervento</label>
@@ -2220,7 +2220,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                       </div>
                                       <div className="field">
                                         <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Ultimo eseguito il</label>
-                                        <input className="input" name="lastCompletedDate" type="date" defaultValue={new Date().toISOString().substring(0, 10)} style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                        <input className="input" name="lastCompletedDate" type="date" defaultValue={formatDateInput(new Date())} style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
                                       </div>
                                     </div>
 

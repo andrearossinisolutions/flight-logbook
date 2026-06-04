@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { eur, minutesToHoursMinutes } from "@/lib/utils";
+import { eur, minutesToHoursMinutes, formatDateInput } from "@/lib/utils";
 import type { PaymentFormValues } from "@/lib/payment-form";
 import { SubmitButton } from "./submit-button";
 
@@ -22,7 +22,7 @@ function buildInitialValues(
 ): PaymentFormValues {
   return {
     movementType: initialValues?.movementType ?? "TOPUP",
-    date: initialValues?.date ?? new Date().toISOString().slice(0, 10),
+    date: initialValues?.date ?? formatDateInput(new Date()),
     isDraft: initialValues?.isDraft ?? false,
     amount: initialValues?.amount ?? "",
     notes: initialValues?.notes ?? "",

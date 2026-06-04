@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useMemo } from "react";
 import type { ReminderFormValues } from "@/lib/reminder-form";
 import { SubmitButton } from "./submit-button";
+import { formatDateInput } from "@/lib/utils";
 
 type ReminderFormProps = {
   mode: "create" | "edit";
@@ -15,7 +16,7 @@ type ReminderFormProps = {
 
 function buildInitialValues(initialValues?: Partial<ReminderFormValues>): ReminderFormValues {
   return {
-    date: initialValues?.date ?? new Date().toISOString().slice(0, 10),
+    date: initialValues?.date ?? formatDateInput(new Date()),
     time: initialValues?.time ?? "12:00",
     hasTime: initialValues?.hasTime ?? false,
     notes: initialValues?.notes ?? "",
