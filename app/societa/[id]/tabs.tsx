@@ -2490,11 +2490,9 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                       <table className="table" style={{ fontSize: "0.8rem", width: "100%" }}>
                                         <thead>
                                           <tr>
-                                            <th>Data</th>
-                                            <th>Descrizione</th>
-                                            <th>A ore</th>
+                                            <th>Intervento</th>
                                             <th>Costo</th>
-                                            <th>Note</th>
+                                            <th>Note e Ripartizione</th>
                                             {isAdmin && <th>Azioni</th>}
                                           </tr>
                                         </thead>
@@ -2503,9 +2501,12 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                             const split = partnership.disableSharedFund ? getMaintenanceSplit(log, a, partnershipFlights, partnership.members) : null;
                                             return (
                                               <tr key={log.id}>
-                                                <td>{new Date(log.date).toLocaleDateString("it-IT")}</td>
-                                                <td><strong>{log.description}</strong></td>
-                                                <td>{log.performedAtHours.toFixed(1)} h</td>
+                                                <td>
+                                                  <strong>{log.description}</strong>
+                                                  <div style={{ fontSize: "0.72rem", color: "var(--muted)", marginTop: 4 }}>
+                                                    {new Date(log.date).toLocaleDateString("it-IT")} · a {log.performedAtHours.toFixed(1)} h
+                                                  </div>
+                                                </td>
                                                 <td style={{ fontWeight: 600 }}>
                                                   {log.cost ? `€ ${log.cost.toFixed(2)}` : "—"}
                                                   {log.cost && partnership.disableSharedFund && (() => {
@@ -2521,17 +2522,20 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                                 <td>
                                                   <div>{log.notes || "—"}</div>
                                                   {split && (
-                                                    <div style={{ marginTop: 6, padding: "6px 10px", background: "rgba(37, 99, 235, 0.04)", borderRadius: 6, fontSize: "0.75rem", border: "1px solid rgba(37, 99, 235, 0.1)" }}>
-                                                      <div style={{ fontWeight: 600, color: "var(--primary-strong)", marginBottom: 4 }}>
-                                                        Ripartizione costo ({split.prevHours.toFixed(1)}h ➔ {split.logHours.toFixed(1)}h):
+                                                    <div style={{ marginTop: 6, padding: "8px 10px", background: "rgba(37, 99, 235, 0.04)", borderRadius: 8, fontSize: "0.75rem", border: "1px solid rgba(37, 99, 235, 0.1)", maxWidth: "280px" }}>
+                                                      <div style={{ fontWeight: 600, color: "var(--primary-strong)", marginBottom: 6 }}>
+                                                        Ripartizione ({split.prevHours.toFixed(1)}h ➔ {split.logHours.toFixed(1)}h):
                                                       </div>
-                                                      <ul style={{ margin: 0, paddingLeft: 16, listStyleType: "disc" }}>
+                                                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                                                         {split.shares.map((sh: any) => (
-                                                          <li key={sh.userId} style={{ margin: "2px 0" }}>
-                                                            <strong>{sh.name}</strong>: € {sh.amount.toFixed(2)} {sh.minutes > 0 ? `(${sh.hours.toFixed(1)}h volate)` : "(nessun volo)"}
-                                                          </li>
+                                                          <div key={sh.userId} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                                                            <span style={{ fontWeight: 500 }}>{sh.name}</span>
+                                                            <span style={{ color: "var(--muted)" }}>
+                                                              € {sh.amount.toFixed(2)} {sh.minutes > 0 ? `(${sh.hours.toFixed(1)}h)` : " (no ore)"}
+                                                            </span>
+                                                          </div>
                                                         ))}
-                                                      </ul>
+                                                      </div>
                                                     </div>
                                                   )}
                                                 </td>
