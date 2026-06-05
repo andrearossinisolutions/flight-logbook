@@ -169,6 +169,7 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
         maintenanceLogs: (a.maintenanceLogs || []).map(l => ({
           ...l,
           performedAtHours: Number(l.performedAtHours),
+          cost: l.cost ? Number(l.cost) : null,
           date: l.date.toISOString(),
           createdAt: l.createdAt.toISOString(),
           updatedAt: l.updatedAt.toISOString(),

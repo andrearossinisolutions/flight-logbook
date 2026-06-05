@@ -905,6 +905,8 @@ export async function logAircraftMaintenance(partnershipId: string, reminderId: 
   const dateInput = String(formData.get("date") || "");
   const date = dateInput ? (parseRomeDateTime(dateInput) || new Date()) : new Date();
   const notes = String(formData.get("notes") || "").trim();
+  const costRaw = formData.get("cost");
+  const cost = costRaw && costRaw !== "" ? Number(costRaw) : null;
 
   await prisma.$transaction(async (tx) => {
     // 1. Update reminder last completed hours & date
@@ -924,6 +926,7 @@ export async function logAircraftMaintenance(partnershipId: string, reminderId: 
         performedAtHours,
         date,
         notes: notes || null,
+        cost,
       }
     });
 

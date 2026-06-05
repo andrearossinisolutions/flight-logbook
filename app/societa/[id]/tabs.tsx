@@ -90,6 +90,88 @@ function handleCheckboxChange(
   }
 }
 
+function getMaintenanceSplit(log: any, aircraft: any, partnershipFlights: any[], members: any[]) {
+  const logHours = Number(log.performedAtHours);
+  const cost = Number(log.cost || 0);
+  if (cost <= 0) return null;
+
+  // 1. Find the previous maintenance hours for this aircraft
+  const otherLogs = aircraft.maintenanceLogs || [];
+  const prevLogs = otherLogs.filter((l: any) => Number(l.performedAtHours) < logHours);
+  let prevHours = Number(aircraft.initialHours);
+  if (prevLogs.length > 0) {
+    const maxPrev = Math.max(...prevLogs.map((l: any) => Number(l.performedAtHours)));
+    prevHours = maxPrev;
+  }
+
+  // 2. Sort all flights for this aircraft in chronological order (ascending by date)
+  const aircraftFlights = partnershipFlights
+    .filter((f: any) => f.partnershipAircraftId === aircraft.id)
+    .map((f: any) => ({
+      ...f,
+      dateVal: new Date(f.movement.date).getTime()
+    }))
+    .sort((a: any, b: any) => a.dateVal - b.dateVal);
+
+  // 3. Assign start/end engine hours to each flight
+  let currentHours = Number(aircraft.initialHours);
+  const flightsWithHours = aircraftFlights.map((f: any) => {
+    const durationHours = f.durationMinutes / 60;
+    const startHours = currentHours;
+    const endHours = currentHours + durationHours;
+    currentHours = endHours;
+    return {
+      ...f,
+      startHours,
+      endHours
+    };
+  });
+
+  // 4. Filter flights in the interval (prevHours, logHours]
+  // We use a small buffer margin of 0.05 hours (3 mins) to handle floating point issues.
+  const intervalFlights = flightsWithHours.filter((f: any) => {
+    return f.endHours > prevHours && f.endHours <= logHours + 0.05;
+  });
+
+  // 5. Aggregate duration by user
+  const userDurations: { [userId: string]: number } = {};
+  for (const m of members) {
+    userDurations[m.userId] = 0;
+  }
+
+  let totalDurationMinutes = 0;
+  for (const f of intervalFlights) {
+    const uid = f.movement.userId;
+    if (userDurations[uid] === undefined) {
+      userDurations[uid] = 0;
+    }
+    userDurations[uid] += f.durationMinutes;
+    totalDurationMinutes += f.durationMinutes;
+  }
+
+  // 6. Calculate shares
+  const shares = members.map((m: any) => {
+    const minutes = userDurations[m.userId] || 0;
+    const shareAmount = totalDurationMinutes > 0 
+      ? cost * (minutes / totalDurationMinutes) 
+      : cost / members.length;
+    return {
+      userId: m.userId,
+      name: m.user.fullName || m.user.email,
+      minutes,
+      hours: minutes / 60,
+      amount: shareAmount
+    };
+  });
+
+  return {
+    prevHours,
+    logHours,
+    totalDurationMinutes,
+    shares
+  };
+}
+
 export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFlights = [], partnershipFlights = [] }: any) {
   const [activeTab, setActiveTab] = useState("BACHECA");
 
@@ -2264,7 +2346,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                                   setLoggingReminderId(null);
                                                 }} className="grid" style={{ gap: 8, marginTop: 12, padding: 12, border: "1px solid var(--border)", borderRadius: 8, backgroundColor: "var(--bg)" }}>
                                                   <div style={{ fontWeight: 600, fontSize: "0.8rem" }}>Registra manutenzione effettuata: {r.description}</div>
-                                                  <div className="grid grid-3" style={{ gap: 12 }}>
+                                                  <div className="grid grid-4" style={{ gap: 12 }}>
                                                     <div className="field">
                                                       <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Ore aereo all'esecuzione</label>
                                                       <input className="input" name="performedAtHours" type="number" step="0.1" min="0" defaultValue={a.totalHours.toFixed(1)} required style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
@@ -2272,6 +2354,10 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                                     <div className="field">
                                                       <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Data esecuzione</label>
                                                       <input className="input" name="date" type="date" defaultValue={formatDateInput(new Date())} required style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                                    </div>
+                                                    <div className="field">
+                                                      <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Costo (€)</label>
+                                                      <input className="input" name="cost" type="number" step="0.01" min="0" placeholder="Es. 300" style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
                                                     </div>
                                                     <div className="field">
                                                       <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Note / Intervento</label>
@@ -2390,35 +2476,56 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                             <th>Data</th>
                                             <th>Descrizione</th>
                                             <th>A ore</th>
+                                            <th>Costo</th>
                                             <th>Note</th>
                                             {isAdmin && <th>Azioni</th>}
                                           </tr>
                                         </thead>
                                         <tbody>
-                                          {a.maintenanceLogs.map((log: any) => (
-                                            <tr key={log.id}>
-                                              <td>{new Date(log.date).toLocaleDateString("it-IT")}</td>
-                                              <td><strong>{log.description}</strong></td>
-                                              <td>{log.performedAtHours.toFixed(1)} h</td>
-                                              <td>{log.notes || "—"}</td>
-                                              {isAdmin && (
+                                          {a.maintenanceLogs.map((log: any) => {
+                                            const split = partnership.disableSharedFund ? getMaintenanceSplit(log, a, partnershipFlights, partnership.members) : null;
+                                            return (
+                                              <tr key={log.id}>
+                                                <td>{new Date(log.date).toLocaleDateString("it-IT")}</td>
+                                                <td><strong>{log.description}</strong></td>
+                                                <td>{log.performedAtHours.toFixed(1)} h</td>
+                                                <td style={{ fontWeight: 600 }}>{log.cost ? `€ ${log.cost.toFixed(2)}` : "—"}</td>
                                                 <td>
-                                                  <form 
-                                                    action={deleteMaintenanceLog.bind(null, partnership.id, log.id)}
-                                                    onSubmit={(e) => {
-                                                      if (!confirm("Sei sicuro di voler eliminare questa registrazione storica?")) {
-                                                        e.preventDefault();
-                                                      }
-                                                    }}
-                                                  >
-                                                    <button className="btn secondary" style={{ padding: "2px 6px", fontSize: 10, color: "var(--danger)" }} type="submit">
-                                                      Elimina
-                                                    </button>
-                                                  </form>
+                                                  <div>{log.notes || "—"}</div>
+                                                  {split && (
+                                                    <div style={{ marginTop: 6, padding: "6px 10px", background: "rgba(37, 99, 235, 0.04)", borderRadius: 6, fontSize: "0.75rem", border: "1px solid rgba(37, 99, 235, 0.1)" }}>
+                                                      <div style={{ fontWeight: 600, color: "var(--primary-strong)", marginBottom: 4 }}>
+                                                        Ripartizione costo ({split.prevHours.toFixed(1)}h ➔ {split.logHours.toFixed(1)}h):
+                                                      </div>
+                                                      <ul style={{ margin: 0, paddingLeft: 16, listStyleType: "disc" }}>
+                                                        {split.shares.map((sh: any) => (
+                                                          <li key={sh.userId} style={{ margin: "2px 0" }}>
+                                                            <strong>{sh.name}</strong>: € {sh.amount.toFixed(2)} {sh.minutes > 0 ? `(${sh.hours.toFixed(1)}h volate)` : "(nessun volo)"}
+                                                          </li>
+                                                        ))}
+                                                      </ul>
+                                                    </div>
+                                                  )}
                                                 </td>
-                                              )}
-                                            </tr>
-                                          ))}
+                                                {isAdmin && (
+                                                  <td>
+                                                    <form 
+                                                      action={deleteMaintenanceLog.bind(null, partnership.id, log.id)}
+                                                      onSubmit={(e) => {
+                                                        if (!confirm("Sei sicuro di voler eliminare questa registrazione storica?")) {
+                                                          e.preventDefault();
+                                                        }
+                                                      }}
+                                                    >
+                                                      <button className="btn secondary" style={{ padding: "2px 6px", fontSize: 10, color: "var(--danger)" }} type="submit">
+                                                        Elimina
+                                                      </button>
+                                                    </form>
+                                                  </td>
+                                                )}
+                                              </tr>
+                                            );
+                                          })}
                                         </tbody>
                                       </table>
                                     </div>
