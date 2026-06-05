@@ -33,6 +33,7 @@ model User {
   resetTokenExpiresAt DateTime?
   bookings              PartnershipBooking[]
   paidMaintenances      PartnershipAircraftMaintenanceLog[] @relation("MaintenancePayer")
+  partnershipReceivedTransactns PartnershipTransaction[] @relation("TransactionRecipient")
   createdAt             DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
@@ -244,6 +245,8 @@ model PartnershipTransaction {
   date           DateTime    @default(now())
   maintenanceLogId String?
   maintenanceLog   PartnershipAircraftMaintenanceLog? @relation(fields: [maintenanceLogId], references: [id], onDelete: Cascade)
+  recipientId    String?
+  recipient      User?       @relation("TransactionRecipient", fields: [recipientId], references: [id], onDelete: SetNull)
   
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt

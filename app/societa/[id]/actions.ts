@@ -477,7 +477,7 @@ export async function getMonthlyReport(partnershipId: string, year: number, mont
   const memberExpenses = await prisma.partnershipTransaction.findMany({
     where: {
       partnershipId,
-      type: "MEMBER_EXPENSE",
+      type: { in: ["MEMBER_EXPENSE", "MEMBER_TRANSFER"] },
       date: {
         gte: startOfMonth,
         lt: endOfMonth,
@@ -533,8 +533,11 @@ export async function getMonthlyReport(partnershipId: string, year: number, mont
       flightCost += (f.durationMinutes / 60) * hourlyCost;
     }
 
-    const userExpenses = memberExpenses.filter(t => t.userId === m.userId);
-    const advancedExpense = userExpenses.reduce((acc, t) => acc + Number(t.amount), 0);
+    const userSentExpenses = memberExpenses.filter(t => t.userId === m.userId);
+    const userReceivedTransfers = memberExpenses.filter(t => t.type === "MEMBER_TRANSFER" && t.recipientId === m.userId);
+    const advancedExpense = 
+      userSentExpenses.reduce((acc, t) => acc + Number(t.amount), 0) -
+      userReceivedTransfers.reduce((acc, t) => acc + Number(t.amount), 0);
     const maintenanceShare = maintenanceShares[m.userId] || 0;
 
     return {
@@ -579,7 +582,9 @@ export async function addTransaction(partnershipId: string, formData: FormData) 
 
   let transactionType = type;
   if (partnership.disableSharedFund) {
-    transactionType = "MEMBER_EXPENSE";
+    if (type !== "MEMBER_TRANSFER") {
+      transactionType = "MEMBER_EXPENSE";
+    }
   }
 
   // Only admins can add expenses
@@ -595,10 +600,13 @@ export async function addTransaction(partnershipId: string, formData: FormData) 
     }
   }
 
+  const recipientId = formData.get("recipientId") ? String(formData.get("recipientId")) : null;
+
   await prisma.partnershipTransaction.create({
     data: {
       partnershipId,
-      userId: (transactionType === "INCOME" || transactionType === "MEMBER_EXPENSE") ? targetUserId : null,
+      userId: (transactionType === "INCOME" || transactionType === "MEMBER_EXPENSE" || transactionType === "MEMBER_TRANSFER") ? targetUserId : null,
+      recipientId: transactionType === "MEMBER_TRANSFER" ? recipientId : null,
       amount,
       type: transactionType,
       description,
@@ -1233,6 +1241,56 @@ export async function updateBooking(partnershipId: string, bookingId: string, fo
       startTime: startDateTime,
       endTime: endDateTime,
       notes: notes || null
+    }
+  });
+
+  revalidatePath(`/societa/${partnershipId}`);
+}
+
+export async function settleDirectPayment(
+  partnershipId: string,
+  senderId: string,
+  recipientId: string,
+  amount: number,
+  description: string,
+  year: number,
+  month: number
+) {
+  const user = await requireUser();
+
+  const partnership = await prisma.partnership.findFirst({
+    where: {
+      id: partnershipId,
+      members: { some: { userId: user.id } }
+    },
+    include: { members: true }
+  });
+
+  if (!partnership) throw new Error("Società non trovata");
+
+  const senderExists = partnership.members.some(m => m.userId === senderId);
+  const recipientExists = partnership.members.some(m => m.userId === recipientId);
+  if (!senderExists || !recipientExists) {
+    throw new Error("I soci indicati non appartengono a questa società");
+  }
+
+  // If the target month is in the past, use the 28th of that month.
+  // Otherwise (current or future month), use today's date so it's not a future date.
+  let transactionDate = new Date();
+  const endOfTargetMonth = new Date(year, month + 1, 1);
+  if (transactionDate > endOfTargetMonth) {
+    transactionDate = new Date(year, month, 28, 12, 0, 0);
+  }
+
+  await prisma.partnershipTransaction.create({
+    data: {
+      partnershipId,
+      userId: senderId,
+      recipientId,
+      amount,
+      type: "MEMBER_TRANSFER",
+      description,
+      date: transactionDate
     }
   });
 

@@ -50,7 +50,7 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
       },
       fixedCosts: true,
       transactions: {
-        include: { user: true },
+        include: { user: true, recipient: true },
         orderBy: { date: 'desc' }
       },
       invitations: true,
@@ -184,7 +184,8 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
       ...t,
       amount: Number(t.amount),
       date: t.date.toISOString(),
-      user: t.user ? { fullName: t.user.fullName, email: t.user.email } : null,
+      user: t.user ? { id: t.user.id, fullName: t.user.fullName, email: t.user.email } : null,
+      recipient: t.recipient ? { id: t.recipient.id, fullName: t.recipient.fullName, email: t.recipient.email } : null,
     })),
     invitations: (partnership.invitations || []).map(i => ({
       ...i,

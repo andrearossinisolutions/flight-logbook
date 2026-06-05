@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipSettings, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog, addRecommendedReminders, addBooking, deleteBooking, updateBooking } from "./actions";
+import { useRouter } from "next/navigation";
+import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipSettings, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog, addRecommendedReminders, addBooking, deleteBooking, updateBooking, settleDirectPayment } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateDisplay, daysFromDate, formatDateTimeInput, getRomeDateTimeParts, formatDateInput } from "@/lib/utils";
 import {
@@ -174,6 +175,10 @@ function getMaintenanceSplit(log: any, aircraft: any, partnershipFlights: any[],
 
 export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFlights = [], partnershipFlights = [] }: any) {
   const [activeTab, setActiveTab] = useState("BACHECA");
+  const router = useRouter();
+
+  // State for transaction type when adding a new transaction with cassa disabled
+  const [newTxType, setNewTxType] = useState("MEMBER_EXPENSE");
 
   // Precompute computed start/end engine hours for all flights grouped by aircraft
   const flightHoursMap = React.useMemo(() => {
@@ -1777,7 +1782,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                 const debtors = balances.filter((b: any) => b.amount > 0.01).map((b: any) => ({ ...b }));
                 const creditors = balances.filter((b: any) => b.amount < -0.01).map((b: any) => ({ ...b }));
 
-                const payments: { from: string; to: string; amount: number }[] = [];
+                const payments: { from: string; fromId: string; to: string; toId: string; amount: number }[] = [];
                 let debtorIdx = 0;
                 let creditorIdx = 0;
 
@@ -1792,7 +1797,9 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                   if (amountToPay > 0.01) {
                     payments.push({
                       from: d.name,
+                      fromId: d.userId,
                       to: c.name,
+                      toId: c.userId,
                       amount: amountToPay,
                     });
                   }
@@ -1830,14 +1837,39 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                             borderRadius: 8,
                             boxShadow: "0 1px 2px rgba(0,0,0,0.02)"
                           }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                               <span style={{ fontWeight: 600, color: "var(--danger)" }}>{p.from}</span>
                               <span className="muted" style={{ fontSize: "0.9rem" }}>deve dare</span>
                               <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--primary)" }}>€ {p.amount.toFixed(2)}</span>
                               <span className="muted" style={{ fontSize: "0.9rem" }}>a</span>
                               <span style={{ fontWeight: 600, color: "var(--success)" }}>{p.to}</span>
                             </div>
-                            <div style={{ fontSize: "1.2rem" }}>💸</div>
+                            <button
+                              className="btn secondary"
+                              style={{ padding: "6px 12px", fontSize: "0.8rem", borderRadius: 8, display: "flex", alignItems: "center", gap: 6 }}
+                              onClick={async (e) => {
+                                if (!confirm(`Sei sicuro di voler registrare il pagamento di € ${p.amount.toFixed(2)} da ${p.from} a ${p.to} per regolare i conti?`)) {
+                                  return;
+                                }
+                                const btn = e.currentTarget;
+                                btn.disabled = true;
+                                const origText = btn.innerHTML;
+                                btn.innerText = "Registrazione...";
+                                try {
+                                  const monthName = formatMonth(reportMonth + 1);
+                                  const desc = `Saldato regolamento conti - ${monthName} ${reportYear}`;
+                                  await settleDirectPayment(partnership.id, p.fromId, p.toId, p.amount, desc, reportYear, reportMonth);
+                                  await loadReport();
+                                  router.refresh();
+                                } catch (err: any) {
+                                  alert("Errore durante la registrazione: " + err.message);
+                                  btn.disabled = false;
+                                  btn.innerHTML = origText;
+                                }
+                              }}
+                            >
+                              <span>💸</span> Registra pagamento
+                            </button>
                           </div>
                         ))}
                       </div>
@@ -1912,42 +1944,73 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
 
             <div style={{ marginBottom: 24, padding: 16, background: "var(--bg-secondary)", borderRadius: 8 }}>
               <h3 style={{ marginTop: 0 }}>Nuova Transazione</h3>
-              <form action={addTransaction.bind(null, partnership.id)} className="grid grid-5" style={{ gap: 8, alignItems: "end" }}>
-                <div>
-                  <label style={{ fontSize: 12 }}>Data</label>
-                  <input className="input" type="date" name="date" required defaultValue={formatDateInput(new Date())} />
+              <form action={addTransaction.bind(null, partnership.id)} className="row" style={{ gap: 12, alignItems: "end", flexWrap: "wrap" }}>
+                <div style={{ flex: "1 1 140px" }}>
+                  <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: 4 }}>Data</label>
+                  <input className="input" type="date" name="date" required defaultValue={formatDateInput(new Date())} style={{ width: "100%", height: "40px" }} />
                 </div>
                 {partnership.disableSharedFund ? (
-                  <div>
-                    <label style={{ fontSize: 12 }}>Pagato da</label>
-                    <select className="select" name="userId" defaultValue={currentUserId}>
-                      {partnership.members.map((m: any) => (
-                        <option key={m.user.id} value={m.user.id}>
-                          {m.user.fullName || m.user.email}
-                        </option>
-                      ))}
-                    </select>
-                    <input type="hidden" name="type" value="MEMBER_EXPENSE" />
-                  </div>
+                  <>
+                    <div style={{ flex: "1 1 180px" }}>
+                      <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: 4 }}>Tipo</label>
+                      <select 
+                        className="select" 
+                        name="type" 
+                        value={newTxType} 
+                        onChange={e => setNewTxType(e.target.value)}
+                        style={{ width: "100%", height: "40px" }}
+                      >
+                        <option value="MEMBER_EXPENSE">Spesa anticipata (Benzina, Olio...)</option>
+                        <option value="MEMBER_TRANSFER">Rimborso / Trasferimento tra soci</option>
+                      </select>
+                    </div>
+                    <div style={{ flex: "1 1 160px" }}>
+                      <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: 4 }}>
+                        {newTxType === "MEMBER_TRANSFER" ? "Inviato da" : "Pagato da"}
+                      </label>
+                      <select className="select" name="userId" defaultValue={currentUserId} style={{ width: "100%", height: "40px" }}>
+                        {partnership.members.map((m: any) => (
+                          <option key={m.user.id} value={m.user.id}>
+                            {m.user.fullName || m.user.email}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    {newTxType === "MEMBER_TRANSFER" && (
+                      <div style={{ flex: "1 1 160px" }}>
+                        <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: 4 }}>Ricevuto da</label>
+                        <select className="select" name="recipientId" required style={{ width: "100%", height: "40px" }}>
+                          <option value="">Seleziona socio...</option>
+                          {partnership.members.map((m: any) => (
+                            <option key={m.user.id} value={m.user.id}>
+                              {m.user.fullName || m.user.email}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </>
                 ) : (
-                  <div>
-                    <label style={{ fontSize: 12 }}>Tipo</label>
-                    <select className="select" name="type">
+                  <div style={{ flex: "1 1 180px" }}>
+                    <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: 4 }}>Tipo</label>
+                    <select className="select" name="type" style={{ width: "100%", height: "40px" }}>
                       <option value="INCOME">Ricarica / Versamento</option>
                       <option value="MEMBER_EXPENSE">Spesa anticipata (Benzina / Altro)</option>
                       {isAdmin && <option value="EXPENSE">Uscita Cassa Società</option>}
                     </select>
                   </div>
                 )}
-                <div style={{ gridColumn: "span 2" }}>
-                  <label style={{ fontSize: 12 }}>Descrizione</label>
-                  <input className="input" name="description" required placeholder={partnership.disableSharedFund ? "Es. Benzina, Hangar, Olio..." : "Es. Quota mese corrente..."} />
+                <div style={{ flex: "1 1 120px" }}>
+                  <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: 4 }}>Importo (€)</label>
+                  <input className="input" name="amount" type="number" step="0.01" min="0.01" required style={{ width: "100%", height: "40px" }} />
                 </div>
-                <div>
-                  <label style={{ fontSize: 12 }}>Importo (€)</label>
-                  <input className="input" name="amount" type="number" step="0.01" min="0.01" required />
+                <div style={{ flex: "1 1 100%" }}>
+                  <label style={{ display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: 4 }}>Descrizione</label>
+                  <input className="input" name="description" required placeholder={partnership.disableSharedFund ? (newTxType === "MEMBER_TRANSFER" ? "Es. Rimborso spese hangar..." : "Es. Benzina, Olio...") : "Es. Quota mese corrente..."} style={{ width: "100%", height: "40px" }} />
                 </div>
-                <SubmitButton style={{ gridColumn: "span 5" }}>Aggiungi Transazione</SubmitButton>
+                <div style={{ flex: "1 1 100%", marginTop: 8 }}>
+                  <SubmitButton style={{ width: "100%" }}>Aggiungi Transazione</SubmitButton>
+                </div>
               </form>
             </div>
 
@@ -1974,7 +2037,13 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                     <td>{new Date(t.date).toLocaleDateString("it-IT")}</td>
                     <td>
                       {partnership.disableSharedFund ? (
-                        <span>{t.user?.fullName || t.user?.email || "Socio sconosciuto"}</span>
+                        t.type === "MEMBER_TRANSFER" ? (
+                          <span style={{ color: "var(--primary)" }}>
+                            💸 Trasferimento: <strong>{t.user?.fullName || t.user?.email}</strong> ➔ <strong>{t.recipient?.fullName || t.recipient?.email || "Socio"}</strong>
+                          </span>
+                        ) : (
+                          <span>👤 Spesa da: {t.user?.fullName || t.user?.email || "Socio sconosciuto"}</span>
+                        )
                       ) : t.type === "INCOME" ? (
                         <span style={{ color: "var(--success)" }}>Ricarica da: {t.user?.fullName || t.user?.email || "Utente sconosciuto"}</span>
                       ) : t.type === "MEMBER_EXPENSE" ? (
