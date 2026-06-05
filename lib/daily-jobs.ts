@@ -729,7 +729,8 @@ async function runMonthlyReports(now: Date) {
             cost: data.cost
         })),
         memberCount: partnership.members.length,
-        advancedExpense
+        advancedExpense,
+        disableSharedFund: partnership.disableSharedFund
       });
 
       try {

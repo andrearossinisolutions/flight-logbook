@@ -127,10 +127,11 @@ model PartnershipMessage {
 }
 
 model Partnership {
-  id          String   @id @default(cuid())
-  name        String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String   @id @default(cuid())
+  name              String
+  disableSharedFund Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
   members      PartnershipMember[]
   aircrafts    PartnershipAircraft[]

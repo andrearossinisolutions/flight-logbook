@@ -540,15 +540,30 @@ export async function addTransaction(partnershipId: string, formData: FormData) 
   const member = partnership.members.find(m => m.userId === user.id);
   if (!member) return;
 
+  let transactionType = type;
+  if (partnership.disableSharedFund) {
+    transactionType = "MEMBER_EXPENSE";
+  }
+
   // Only admins can add expenses
-  if (type === "EXPENSE" && member.role !== "ADMIN") return;
+  if (transactionType === "EXPENSE" && member.role !== "ADMIN") return;
+
+  // Read the payer from form data if provided (useful when cassa is disabled and one member registers expenses for others)
+  const formUserId = formData.get("userId") ? String(formData.get("userId")) : null;
+  let targetUserId = user.id;
+  if (formUserId) {
+    const targetMember = partnership.members.find(m => m.userId === formUserId);
+    if (targetMember) {
+      targetUserId = formUserId;
+    }
+  }
 
   await prisma.partnershipTransaction.create({
     data: {
       partnershipId,
-      userId: (type === "INCOME" || type === "MEMBER_EXPENSE") ? user.id : null,
+      userId: (transactionType === "INCOME" || transactionType === "MEMBER_EXPENSE") ? targetUserId : null,
       amount,
-      type,
+      type: transactionType,
       description,
       date: parsedDate,
     }
@@ -580,9 +595,10 @@ export async function deleteTransaction(partnershipId: string, transactionId: st
   revalidatePath(`/societa/${partnershipId}`);
 }
 
-export async function updatePartnershipName(partnershipId: string, formData: FormData) {
+export async function updatePartnershipSettings(partnershipId: string, formData: FormData) {
   const user = await requireUser();
   const name = String(formData.get("name") || "").trim();
+  const disableSharedFund = formData.get("disableSharedFund") === "on";
 
   if (!name) return;
 
@@ -594,7 +610,10 @@ export async function updatePartnershipName(partnershipId: string, formData: For
 
   await prisma.partnership.update({
     where: { id: partnershipId },
-    data: { name }
+    data: { 
+      name,
+      disableSharedFund
+    }
   });
 
   revalidatePath(`/societa/${partnershipId}`);

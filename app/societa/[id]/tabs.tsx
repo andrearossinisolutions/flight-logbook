@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipName, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog, addRecommendedReminders, addBooking, deleteBooking, updateBooking } from "./actions";
+import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipSettings, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog, addRecommendedReminders, addBooking, deleteBooking, updateBooking } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateDisplay, daysFromDate, formatDateTimeInput, getRomeDateTimeParts, formatDateInput } from "@/lib/utils";
 import {
@@ -368,10 +368,10 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             className={`navbar-tab ${activeTab === "CASSA" ? "active" : ""}`}
             style={{ border: "none", cursor: "pointer", background: activeTab === "CASSA" ? "white" : "transparent" }}
             onClick={() => setActiveTab("CASSA")}
-            title="Cassa"
+            title={partnership.disableSharedFund ? "Spese Soci" : "Cassa"}
           >
             <WalletIcon size={18} />
-            <span className="navbar-tab-text">Cassa</span>
+            <span className="navbar-tab-text">{partnership.disableSharedFund ? "Spese Soci" : "Cassa"}</span>
           </button>
           <button
             type="button"
@@ -1611,6 +1611,90 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                   ))}
                 </tbody>
               </table>
+
+              {/* Regolamento dei Conti (se la cassa è disattivata) */}
+              {partnership.disableSharedFund && reportData && reportData.reports && reportData.reports.length > 1 && (() => {
+                const reports = reportData.reports;
+                const totalCostSum = reports.reduce((acc: number, r: any) => acc + r.totalCost, 0);
+                const averageCost = totalCostSum / reports.length;
+
+                const balances = reports.map((r: any) => ({
+                  userId: r.userId,
+                  name: r.fullName,
+                  amount: r.totalCost - averageCost,
+                }));
+
+                const debtors = balances.filter((b: any) => b.amount > 0.01).map((b: any) => ({ ...b }));
+                const creditors = balances.filter((b: any) => b.amount < -0.01).map((b: any) => ({ ...b }));
+
+                const payments: { from: string; to: string; amount: number }[] = [];
+                let debtorIdx = 0;
+                let creditorIdx = 0;
+
+                debtors.sort((a: any, b: any) => b.amount - a.amount);
+                creditors.sort((a: any, b: any) => a.amount - b.amount);
+
+                while (debtorIdx < debtors.length && creditorIdx < creditors.length) {
+                  const d = debtors[debtorIdx];
+                  const c = creditors[creditorIdx];
+                  const amountToPay = Math.min(d.amount, -c.amount);
+
+                  if (amountToPay > 0.01) {
+                    payments.push({
+                      from: d.name,
+                      to: c.name,
+                      amount: amountToPay,
+                    });
+                  }
+
+                  d.amount -= amountToPay;
+                  c.amount += amountToPay;
+
+                  if (d.amount <= 0.01) debtorIdx++;
+                  if (c.amount >= -0.01) creditorIdx++;
+                }
+
+                return (
+                  <div style={{ marginTop: 32, padding: 20, background: "rgba(37, 99, 235, 0.04)", border: "1px solid rgba(37, 99, 235, 0.15)", borderRadius: 12 }}>
+                    <h3 style={{ marginTop: 0, color: "var(--primary-strong)", display: "flex", alignItems: "center", gap: 8 }}>
+                      <span>🤝</span> Regolamento dei Conti
+                    </h3>
+                    <p className="muted" style={{ fontSize: "0.9rem", marginTop: 4, marginBottom: 16 }}>
+                      La cassa comune è disattivata. Per pareggiare le spese e i voli di questo mese, i soci devono effettuare i seguenti trasferimenti diretti:
+                    </p>
+
+                    {payments.length === 0 ? (
+                      <div style={{ padding: "12px 16px", background: "white", border: "1px solid var(--border)", borderRadius: 8, color: "var(--success)", fontWeight: 500 }}>
+                        ✅ I conti sono perfettamente in pareggio. Non è necessario alcun trasferimento!
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        {payments.map((p, idx) => (
+                          <div key={idx} style={{ 
+                            display: "flex", 
+                            alignItems: "center", 
+                            justifyContent: "space-between", 
+                            background: "white", 
+                            padding: "12px 16px", 
+                            border: "1px solid var(--border)", 
+                            borderRadius: 8,
+                            boxShadow: "0 1px 2px rgba(0,0,0,0.02)"
+                          }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                              <span style={{ fontWeight: 600, color: "var(--danger)" }}>{p.from}</span>
+                              <span className="muted" style={{ fontSize: "0.9rem" }}>deve dare</span>
+                              <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--primary)" }}>€ {p.amount.toFixed(2)}</span>
+                              <span className="muted" style={{ fontSize: "0.9rem" }}>a</span>
+                              <span style={{ fontWeight: 600, color: "var(--success)" }}>{p.to}</span>
+                            </div>
+                            <div style={{ fontSize: "1.2rem" }}>💸</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </>
           ) : (
             <div className="error">Errore nel caricamento del rendiconto.</div>
@@ -1625,23 +1709,30 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
 
         return (
           <div className="card">
-            <h2 style={{ marginTop: 0 }}>Cassa Società</h2>
-            <div className="grid grid-3" style={{ marginBottom: 24 }}>
-              <div className="card" style={{ background: "var(--bg-secondary)" }}>
-                <div className="muted">Totale Entrate</div>
-                <div className="big-number" style={{ color: "var(--success, #16a34a)" }}>€ {totalIncome.toFixed(2)}</div>
+            <h2 style={{ marginTop: 0 }}>
+              {partnership.disableSharedFund ? "Spese dei Soci" : "Cassa Società"}
+            </h2>
+            
+            {!partnership.disableSharedFund ? (
+              <div className="grid grid-3" style={{ marginBottom: 24 }}>
+                <div className="card" style={{ background: "var(--bg-secondary)" }}>
+                  <div className="muted">Totale Entrate</div>
+                  <div className="big-number" style={{ color: "var(--success, #16a34a)" }}>€ {totalIncome.toFixed(2)}</div>
+                </div>
+                <div className="card" style={{ background: "var(--bg-secondary)" }}>
+                  <div className="muted">Totale Uscite</div>
+                  <div className="big-number" style={{ color: "var(--danger, #dc2626)" }}>€ {totalExpense.toFixed(2)}</div>
+                </div>
+                <div className="card" style={{ background: "var(--bg-secondary)", border: balance < 0 ? "2px solid var(--danger)" : "2px solid var(--success)" }}>
+                  <div className="muted">Saldo Cassa</div>
+                  <div className="big-number">€ {balance.toFixed(2)}</div>
+                </div>
               </div>
-              <div className="card" style={{ background: "var(--bg-secondary)" }}>
-                <div className="muted">Totale Uscite</div>
-                <div className="big-number" style={{ color: "var(--danger, #dc2626)" }}>€ {totalExpense.toFixed(2)}</div>
-              </div>
-              <div className="card" style={{ background: "var(--bg-secondary)", border: balance < 0 ? "2px solid var(--danger)" : "2px solid var(--success)" }}>
-                <div className="muted">Saldo Cassa</div>
-                <div className="big-number">€ {balance.toFixed(2)}</div>
-              </div>
-            </div>
+            ) : null}
 
-            <h3 style={{ marginTop: 24 }}>Riepilogo Crediti Versati / Anticipati dai Soci</h3>
+            <h3 style={{ marginTop: partnership.disableSharedFund ? 0 : 24 }}>
+              {partnership.disableSharedFund ? "Riepilogo Spese Anticipate dai Soci" : "Riepilogo Crediti Versati / Anticipati dai Soci"}
+            </h3>
             <div className="grid grid-3" style={{ marginBottom: 24 }}>
               {partnership.members.map((m: any) => {
                 const memberVersamenti = partnership.transactions.filter((t: any) => t.userId === m.user?.id && t.type === "INCOME").reduce((acc: number, t: any) => acc + t.amount, 0);
@@ -1650,12 +1741,20 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                 return (
                   <div key={m.user?.id} className="card" style={{ padding: 12, background: "var(--bg-secondary)" }}>
                     <div className="muted" style={{ fontSize: 12 }}>{m.user?.fullName || m.user?.email}</div>
-                    <div style={{ fontSize: 16, fontWeight: "bold", marginTop: 4, color: totalCredit > 0 ? "var(--success)" : "inherit" }}>
-                      Credito Totale: € {totalCredit.toFixed(2)}
-                    </div>
-                    <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
-                      Ricariche: € {memberVersamenti.toFixed(2)} | Anticipi: € {memberAnticipi.toFixed(2)}
-                    </div>
+                    {partnership.disableSharedFund ? (
+                      <div style={{ fontSize: 16, fontWeight: "bold", marginTop: 4, color: memberAnticipi > 0 ? "var(--success)" : "inherit" }}>
+                        Totale Anticipato: € {memberAnticipi.toFixed(2)}
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 16, fontWeight: "bold", marginTop: 4, color: totalCredit > 0 ? "var(--success)" : "inherit" }}>
+                          Credito Totale: € {totalCredit.toFixed(2)}
+                        </div>
+                        <div className="muted" style={{ fontSize: 11, marginTop: 4 }}>
+                          Ricariche: € {memberVersamenti.toFixed(2)} | Anticipi: € {memberAnticipi.toFixed(2)}
+                        </div>
+                      </>
+                    )}
                   </div>
                 );
               })}
@@ -1668,17 +1767,31 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                   <label style={{ fontSize: 12 }}>Data</label>
                   <input className="input" type="date" name="date" required defaultValue={formatDateInput(new Date())} />
                 </div>
-                <div>
-                  <label style={{ fontSize: 12 }}>Tipo</label>
-                  <select className="select" name="type">
-                    <option value="INCOME">Ricarica / Versamento</option>
-                    <option value="MEMBER_EXPENSE">Spesa anticipata (Benzina / Altro)</option>
-                    {isAdmin && <option value="EXPENSE">Uscita Cassa Società</option>}
-                  </select>
-                </div>
+                {partnership.disableSharedFund ? (
+                  <div>
+                    <label style={{ fontSize: 12 }}>Pagato da</label>
+                    <select className="select" name="userId" defaultValue={currentUserId}>
+                      {partnership.members.map((m: any) => (
+                        <option key={m.user.id} value={m.user.id}>
+                          {m.user.fullName || m.user.email}
+                        </option>
+                      ))}
+                    </select>
+                    <input type="hidden" name="type" value="MEMBER_EXPENSE" />
+                  </div>
+                ) : (
+                  <div>
+                    <label style={{ fontSize: 12 }}>Tipo</label>
+                    <select className="select" name="type">
+                      <option value="INCOME">Ricarica / Versamento</option>
+                      <option value="MEMBER_EXPENSE">Spesa anticipata (Benzina / Altro)</option>
+                      {isAdmin && <option value="EXPENSE">Uscita Cassa Società</option>}
+                    </select>
+                  </div>
+                )}
                 <div style={{ gridColumn: "span 2" }}>
                   <label style={{ fontSize: 12 }}>Descrizione</label>
-                  <input className="input" name="description" required placeholder="Es. Quota mese corrente..." />
+                  <input className="input" name="description" required placeholder={partnership.disableSharedFund ? "Es. Benzina, Hangar, Olio..." : "Es. Quota mese corrente..."} />
                 </div>
                 <div>
                   <label style={{ fontSize: 12 }}>Importo (€)</label>
@@ -1692,10 +1805,16 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               <thead>
                 <tr>
                   <th>Data</th>
-                  <th>Utente / Tipo</th>
+                  <th>{partnership.disableSharedFund ? "Socio pagatore" : "Utente / Tipo"}</th>
                   <th>Descrizione</th>
-                  <th>Entrata</th>
-                  <th>Uscita</th>
+                  {partnership.disableSharedFund ? (
+                    <th>Importo spesa</th>
+                  ) : (
+                    <>
+                      <th>Entrata</th>
+                      <th>Uscita</th>
+                    </>
+                  )}
                   {isAdmin && <th>Azioni</th>}
                 </tr>
               </thead>
@@ -1704,7 +1823,9 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                   <tr key={t.id} className="transaction-row">
                     <td>{new Date(t.date).toLocaleDateString("it-IT")}</td>
                     <td>
-                      {t.type === "INCOME" ? (
+                      {partnership.disableSharedFund ? (
+                        <span>{t.user?.fullName || t.user?.email || "Socio sconosciuto"}</span>
+                      ) : t.type === "INCOME" ? (
                         <span style={{ color: "var(--success)" }}>Ricarica da: {t.user?.fullName || t.user?.email || "Utente sconosciuto"}</span>
                       ) : t.type === "MEMBER_EXPENSE" ? (
                         <span style={{ color: "var(--warning, #d97706)" }}>Anticipo da: {t.user?.fullName || t.user?.email || "Utente sconosciuto"}</span>
@@ -1713,8 +1834,14 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                       )}
                     </td>
                     <td>{t.description}</td>
-                    <td>{t.type === "INCOME" ? `€ ${t.amount.toFixed(2)}` : "-"}</td>
-                    <td>{t.type === "EXPENSE" || t.type === "MEMBER_EXPENSE" ? `€ ${t.amount.toFixed(2)}` : "-"}</td>
+                    {partnership.disableSharedFund ? (
+                      <td style={{ fontWeight: 600 }}>€ {t.amount.toFixed(2)}</td>
+                    ) : (
+                      <>
+                        <td>{t.type === "INCOME" ? `€ ${t.amount.toFixed(2)}` : "-"}</td>
+                        <td>{t.type === "EXPENSE" || t.type === "MEMBER_EXPENSE" ? `€ ${t.amount.toFixed(2)}` : "-"}</td>
+                      </>
+                    )}
                     {isAdmin && (
                       <td>
                         <button
@@ -1734,7 +1861,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                 ))}
                 {partnership.transactions.length === 0 && (
                   <tr>
-                    <td colSpan={isAdmin ? 6 : 5} style={{ textAlign: "center", padding: 24 }} className="muted">
+                    <td colSpan={partnership.disableSharedFund ? (isAdmin ? 5 : 4) : (isAdmin ? 6 : 5)} style={{ textAlign: "center", padding: 24 }} className="muted">
                       Nessuna transazione registrata.
                     </td>
                   </tr>
@@ -2654,8 +2781,8 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             </p>
 
             <form action={async (fd) => {
-              await updatePartnershipName(partnership.id, fd);
-            }} className="grid">
+              await updatePartnershipSettings(partnership.id, fd);
+            }} className="grid" style={{ gap: 16 }}>
               <div className="field">
                 <label htmlFor="name" style={{ fontSize: "0.85rem" }}>Nome della Società</label>
                 <input
@@ -2667,6 +2794,23 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                   placeholder="Es. Aero Club Milano"
                 />
               </div>
+
+              <div className="field" style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 4 }}>
+                <input
+                  type="checkbox"
+                  id="disableSharedFund"
+                  name="disableSharedFund"
+                  defaultChecked={partnership.disableSharedFund}
+                  style={{ width: 18, height: 18, cursor: "pointer" }}
+                />
+                <label htmlFor="disableSharedFund" style={{ fontSize: "0.9rem", cursor: "pointer", fontWeight: 500 }}>
+                  Disattiva cassa di società (gestione spese diretta tra i soci)
+                </label>
+              </div>
+              <p className="muted" style={{ fontSize: "0.8rem", marginTop: -8, marginLeft: 28, lineHeight: 1.4 }}>
+                Se attivato, il saldo della cassa comune verrà nascosto e il rendiconto mensile calcolerà i trasferimenti diretti necessari tra i soci per pareggiare le spese sostenute.
+              </p>
+
               <SubmitButton style={{ marginTop: 4 }}>
                 Salva modifiche
               </SubmitButton>
