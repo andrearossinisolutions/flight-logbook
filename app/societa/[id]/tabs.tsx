@@ -175,6 +175,51 @@ function getMaintenanceSplit(log: any, aircraft: any, partnershipFlights: any[],
 export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFlights = [], partnershipFlights = [] }: any) {
   const [activeTab, setActiveTab] = useState("BACHECA");
 
+  // Precompute computed start/end engine hours for all flights grouped by aircraft
+  const flightHoursMap = React.useMemo(() => {
+    const map = new Map<string, { startHours: number; endHours: number }>();
+    if (!partnership.aircrafts) return map;
+
+    for (const a of partnership.aircrafts) {
+      // Get all flights for this aircraft in chronological order
+      const aircraftFlights = partnershipFlights
+        .filter((f: any) => f.partnershipAircraftId === a.id)
+        .map((f: any) => ({
+          ...f,
+          dateVal: new Date(f.movement.date).getTime()
+        }))
+        .sort((x: any, y: any) => x.dateVal - y.dateVal);
+
+      let currentHours = Number(a.initialHours);
+      for (const f of aircraftFlights) {
+        const durationHours = f.durationMinutes / 60;
+        const startHours = currentHours;
+        const endHours = currentHours + durationHours;
+        currentHours = endHours;
+        
+        map.set(f.id, { startHours, endHours });
+      }
+    }
+    return map;
+  }, [partnership.aircrafts, partnershipFlights]);
+
+  const getFlightOrametro = React.useCallback((flight: any) => {
+    if (flight.hobbsStartMinutes != null && flight.hobbsEndMinutes != null) {
+      return {
+        start: flight.hobbsStartMinutes / 60,
+        end: flight.hobbsEndMinutes / 60
+      };
+    }
+    const computed = flightHoursMap.get(flight.id);
+    if (computed) {
+      return {
+        start: computed.startHours,
+        end: computed.endHours
+      };
+    }
+    return null;
+  }, [flightHoursMap]);
+
   // Stato filtri per la scheda Logbook
   const [logbookAircraft, setLogbookAircraft] = useState("");
   const [logbookPilot, setLogbookPilot] = useState("");
@@ -690,12 +735,16 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                           <span>🛫 {flight.takeoffPlace || "?"} 🛬 {flight.arrivalPlace || "?"}</span>
                           <span style={{ color: "var(--border)" }}>•</span>
                           <span>⏱️ {formatMinutes(flight.durationMinutes)}</span>
-                          {flight.hobbsStartMinutes != null && flight.hobbsEndMinutes != null && (
-                            <>
-                              <span style={{ color: "var(--border)" }}>•</span>
-                              <span>Oram.: {(flight.hobbsStartMinutes / 60).toFixed(1)} ➔ {(flight.hobbsEndMinutes / 60).toFixed(1)}</span>
-                            </>
-                          )}
+                          {(() => {
+                            const orametro = getFlightOrametro(flight);
+                            if (!orametro) return null;
+                            return (
+                              <>
+                                <span style={{ color: "var(--border)" }}>•</span>
+                                <span>Oram.: {orametro.start.toFixed(1)} ➔ {orametro.end.toFixed(1)}</span>
+                              </>
+                            );
+                          })()}
                         </div>
 
                         {(flight.instructorName || flight.passengerName) && (
@@ -1430,11 +1479,15 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
 
                               {/* Right column: hobbs and crew */}
                               <div>
-                                {flight.hobbsStartMinutes != null && flight.hobbsEndMinutes != null && (
-                                  <div className="muted" style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                                    Oram.: {(flight.hobbsStartMinutes / 60).toFixed(1)} ➔ {(flight.hobbsEndMinutes / 60).toFixed(1)}
-                                  </div>
-                                )}
+                                {(() => {
+                                  const orametro = getFlightOrametro(flight);
+                                  if (!orametro) return null;
+                                  return (
+                                    <div className="muted" style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                                      Oram.: {orametro.start.toFixed(1)} ➔ {orametro.end.toFixed(1)}
+                                    </div>
+                                  );
+                                })()}
                                 {(flight.instructorName || flight.passengerName) && (
                                   <div className="muted" style={{ fontSize: "0.85rem", marginTop: 4 }}>
                                     {flight.instructorName ? `👨‍✈️ Istr. ${flight.instructorName}` : `👤 Pass. ${flight.passengerName}`}
