@@ -1076,22 +1076,22 @@ textarea {
     text-align: left;
   }
   
-  /* Add labels for middle data columns */
-  .report-table .report-row td:nth-child(2)::before { content: "Voli effettuati:"; color: var(--muted); font-size: 0.9rem; }
-  .report-table .report-row td:nth-child(3)::before { content: "Ore volate:"; color: var(--muted); font-size: 0.9rem; }
-  .report-table .report-row td:nth-child(4)::before { content: "Costo orario voli:"; color: var(--muted); font-size: 0.9rem; }
-  .report-table .report-row td:nth-child(5)::before { content: "Quota fissa:"; color: var(--muted); font-size: 0.9rem; }
-  .report-table .report-row td:nth-child(6)::before { content: "Spese anticipate:"; color: var(--muted); font-size: 0.9rem; }
+  /* Add labels for middle data columns using dynamic data-label */
+  .report-table .report-row td[data-label]::before {
+    content: attr(data-label);
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
   
   /* Highlight total at the bottom */
-  .report-table .report-row td:nth-child(7) {
+  .report-table .report-row td.td-total {
     border-top: 1px solid var(--border) !important;
     padding-top: 10px !important;
     margin-top: 4px;
     font-weight: 700;
   }
-  .report-table .report-row td:nth-child(7)::before {
-    content: "Totale da versare:";
+  .report-table .report-row td.td-total::before {
+    content: attr(data-label);
     color: var(--muted);
     font-weight: normal;
     font-size: 0.9rem;
@@ -1263,7 +1263,7 @@ textarea {
     border: none !important;
     padding: 4px 0 !important;
   }
-  .aircrafts-table .aircraft-row td:nth-child(1) {
+  .aircrafts-table .aircraft-row td.td-registration {
     font-size: 1.15rem;
     font-weight: 700;
     border-bottom: 1px solid var(--border) !important;
@@ -1273,17 +1273,17 @@ textarea {
     justify-content: space-between;
     width: 100%;
   }
-  .aircrafts-table .aircraft-row td:nth-child(2)::before {
+  .aircrafts-table .aircraft-row td.td-type::before {
     content: "Modello:";
     color: var(--muted);
     font-size: 0.9rem;
   }
-  .aircrafts-table .aircraft-row td:nth-child(3)::before {
+  .aircrafts-table .aircraft-row td.td-hourly-cost::before {
     content: "Costo orario:";
     color: var(--muted);
     font-size: 0.9rem;
   }
-  .aircrafts-table .aircraft-row td:nth-child(4) {
+  .aircrafts-table .aircraft-row td.td-actions {
     border-top: 1px dashed var(--border) !important;
     padding-top: 8px !important;
     margin-top: 4px;

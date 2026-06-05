@@ -653,11 +653,24 @@ export async function updatePartnershipSettings(partnershipId: string, formData:
 
   if (membership?.role !== "ADMIN") return;
 
-  await prisma.partnership.update({
-    where: { id: partnershipId },
-    data: { 
-      name,
-      disableSharedFund
+  await prisma.$transaction(async (tx) => {
+    await tx.partnership.update({
+      where: { id: partnershipId },
+      data: { 
+        name,
+        disableSharedFund
+      }
+    });
+
+    if (disableSharedFund) {
+      await tx.partnershipAircraft.updateMany({
+        where: { partnershipId },
+        data: {
+          hourlyFuelCost: 0,
+          hourlyMaintCost: 0,
+          hourlyEngineFund: 0,
+        }
+      });
     }
   });
 

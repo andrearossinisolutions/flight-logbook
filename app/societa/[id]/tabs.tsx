@@ -1733,7 +1733,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                     <th>Socio</th>
                     <th>Voli effettuati</th>
                     <th>Ore volate</th>
-                    <th>Costo orario voli</th>
+                    {!partnership.disableSharedFund && <th>Costo orario voli</th>}
                     <th>Quota fissa</th>
                     {partnership.disableSharedFund && <th>Quota manutenzioni</th>}
                     <th>Spese anticipate</th>
@@ -1747,17 +1747,19 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                         <strong>{r.fullName}</strong>
                         {r.userId === currentUserId && " (Tu)"}
                       </td>
-                      <td>{r.flightsCount == 1 ? "1 volo" : `${r.flightsCount} voli`}</td>
-                      <td>{formatMinutes(r.durationMinutes)}</td>
-                      <td>€ {r.flightCost.toFixed(2)}</td>
-                      <td>€ {r.fixedCost.toFixed(2)}</td>
-                      {partnership.disableSharedFund && (
-                        <td>€ {(r.maintenanceShare || 0).toFixed(2)}</td>
+                      <td data-label="Voli effettuati:">{r.flightsCount == 1 ? "1 volo" : `${r.flightsCount} voli`}</td>
+                      <td data-label="Ore volate:">{formatMinutes(r.durationMinutes)}</td>
+                      {!partnership.disableSharedFund && (
+                        <td data-label="Costo orario voli:">€ {r.flightCost.toFixed(2)}</td>
                       )}
-                      <td style={{ color: r.advancedExpense > 0 ? "var(--success)" : "inherit" }}>
+                      <td data-label="Quota fissa:">€ {r.fixedCost.toFixed(2)}</td>
+                      {partnership.disableSharedFund && (
+                        <td data-label="Quota manutenzioni:">€ {(r.maintenanceShare || 0).toFixed(2)}</td>
+                      )}
+                      <td data-label="Spese anticipate:" style={{ color: r.advancedExpense > 0 ? "var(--success)" : "inherit" }}>
                         {r.advancedExpense > 0 ? `- € ${r.advancedExpense.toFixed(2)}` : "-"}
                       </td>
-                      <td>
+                      <td className="td-total" data-label={partnership.disableSharedFund ? "Saldo finale:" : "Totale da versare:"}>
                         <strong style={{ fontSize: 18, color: r.totalCost < 0 ? "var(--success)" : "inherit" }}>
                           € {r.totalCost.toFixed(2)}
                         </strong>
@@ -2105,7 +2107,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                   <tr>
                     <th>Marche</th>
                     <th>Tipo</th>
-                    <th>Costo orario</th>
+                    {!partnership.disableSharedFund && <th>Costo orario</th>}
                     {isAdmin && <th>Azioni</th>}
                   </tr>
                 </thead>
@@ -2116,7 +2118,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                       <React.Fragment key={a.id}>
                         <tr className="aircraft-row">
                           {isEditing ? (
-                            <td colSpan={isAdmin ? 4 : 3} style={{ padding: "16px" }}>
+                            <td colSpan={isAdmin ? (partnership.disableSharedFund ? 3 : 4) : (partnership.disableSharedFund ? 2 : 3)} style={{ padding: "16px" }}>
                               <form action={async (fd) => {
                                 await updateAircraft(partnership.id, a.id, fd);
                                 setEditingAircraftId(null);
@@ -2140,25 +2142,33 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                   </div>
                                 </div>
 
-                                <div style={{ marginTop: "8px" }}>
-                                  <label style={{ fontWeight: 600, color: "var(--muted)", display: "block", marginBottom: "12px" }}>
-                                    Costi per ora di volo dovuti alla società (€/h)
-                                  </label>
-                                  <div className="grid grid-3" style={{ gap: 16 }}>
-                                    <div className="field">
-                                      <label style={{ fontSize: "0.8rem", marginBottom: "4px", display: "block" }}>Benzina</label>
-                                      <input className="input" name="hourlyFuelCost" type="number" step="0.01" min="0" defaultValue={a.hourlyFuelCost} required />
-                                    </div>
-                                    <div className="field">
-                                      <label style={{ fontSize: "0.8rem", marginBottom: "4px", display: "block" }}>Manutenzione</label>
-                                      <input className="input" name="hourlyMaintCost" type="number" step="0.01" min="0" defaultValue={a.hourlyMaintCost} required />
-                                    </div>
-                                    <div className="field">
-                                      <label style={{ fontSize: "0.8rem", marginBottom: "4px", display: "block" }}>Fondo Motore</label>
-                                      <input className="input" name="hourlyEngineFund" type="number" step="0.01" min="0" defaultValue={a.hourlyEngineFund} required />
+                                {partnership.disableSharedFund ? (
+                                  <>
+                                    <input type="hidden" name="hourlyFuelCost" value="0" />
+                                    <input type="hidden" name="hourlyMaintCost" value="0" />
+                                    <input type="hidden" name="hourlyEngineFund" value="0" />
+                                  </>
+                                ) : (
+                                  <div style={{ marginTop: "8px" }}>
+                                    <label style={{ fontWeight: 600, color: "var(--muted)", display: "block", marginBottom: "12px" }}>
+                                      Costi per ora di volo dovuti alla società (€/h)
+                                    </label>
+                                    <div className="grid grid-3" style={{ gap: 16 }}>
+                                      <div className="field">
+                                        <label style={{ fontSize: "0.8rem", marginBottom: "4px", display: "block" }}>Benzina</label>
+                                        <input className="input" name="hourlyFuelCost" type="number" step="0.01" min="0" defaultValue={a.hourlyFuelCost} required />
+                                      </div>
+                                      <div className="field">
+                                        <label style={{ fontSize: "0.8rem", marginBottom: "4px", display: "block" }}>Manutenzione</label>
+                                        <input className="input" name="hourlyMaintCost" type="number" step="0.01" min="0" defaultValue={a.hourlyMaintCost} required />
+                                      </div>
+                                      <div className="field">
+                                        <label style={{ fontSize: "0.8rem", marginBottom: "4px", display: "block" }}>Fondo Motore</label>
+                                        <input className="input" name="hourlyEngineFund" type="number" step="0.01" min="0" defaultValue={a.hourlyEngineFund} required />
+                                      </div>
                                     </div>
                                   </div>
-                                </div>
+                                )}
 
                                 <div className="row" style={{ justifyContent: "flex-end", gap: 12, marginTop: "8px", borderTop: "1px solid var(--border)", paddingTop: "12px" }}>
                                   <button className="btn secondary" type="button" onClick={() => setEditingAircraftId(null)}>
@@ -2170,16 +2180,18 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                             </td>
                           ) : (
                             <>
-                              <td>
+                              <td className="td-registration">
                                 <strong>{a.registration}</strong>
                                 <div className="muted" style={{ fontSize: "0.8rem", marginTop: 4 }}>
                                   ⏱️ {a.totalHours.toFixed(1)} ore totali
                                 </div>
                               </td>
-                              <td>{a.type}</td>
-                              <td>€ {(a.hourlyFuelCost + a.hourlyMaintCost + a.hourlyEngineFund).toFixed(2)} / h</td>
+                              <td className="td-type">{a.type}</td>
+                              {!partnership.disableSharedFund && (
+                                <td className="td-hourly-cost">€ {(a.hourlyFuelCost + a.hourlyMaintCost + a.hourlyEngineFund).toFixed(2)} / h</td>
+                              )}
                               {isAdmin && (
-                                <td>
+                                <td className="td-actions">
                                   <div className="row" style={{ gap: 8 }}>
                                     <button
                                       className="btn secondary"
@@ -2207,7 +2219,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                         </tr>
                         {!isEditing && (
                           <tr key={`${a.id}-reminders`} className="aircraft-reminders-row">
-                            <td colSpan={isAdmin ? 4 : 3} style={{ padding: "12px 24px 24px 24px", backgroundColor: "var(--bg)", borderTop: "none" }}>
+                            <td colSpan={isAdmin ? (partnership.disableSharedFund ? 3 : 4) : (partnership.disableSharedFund ? 2 : 3)} style={{ padding: "12px 24px 24px 24px", backgroundColor: "var(--bg)", borderTop: "none" }}>
                               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                                 <div className="between" style={{ borderBottom: "1px solid var(--border)", paddingBottom: 8, alignItems: "center" }}>
                                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -2725,23 +2737,31 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                       <input className="input" name="initialHours" type="number" step="0.1" min="0" defaultValue="0" required />
                     </div>
                   </div>
-                  <div className="grid grid-3">
-                    <label style={{ fontWeight: 600, color: "var(--muted)", display: "block", marginTop: "12px" }}>
-                      Costi per ora di volo dovuti alla società (€/h)
-                    </label>
-                    <div className="field">
-                      <label>Benzina (€/h)</label>
-                      <input className="input" name="hourlyFuelCost" type="number" step="0.01" min="0" required />
+                  {partnership.disableSharedFund ? (
+                    <>
+                      <input type="hidden" name="hourlyFuelCost" value="0" />
+                      <input type="hidden" name="hourlyMaintCost" value="0" />
+                      <input type="hidden" name="hourlyEngineFund" value="0" />
+                    </>
+                  ) : (
+                    <div className="grid grid-3">
+                      <label style={{ fontWeight: 600, color: "var(--muted)", display: "block", marginTop: "12px" }}>
+                        Costi per ora di volo dovuti alla società (€/h)
+                      </label>
+                      <div className="field">
+                        <label>Benzina (€/h)</label>
+                        <input className="input" name="hourlyFuelCost" type="number" step="0.01" min="0" required />
+                      </div>
+                      <div className="field">
+                        <label>Manutenzione (€/h)</label>
+                        <input className="input" name="hourlyMaintCost" type="number" step="0.01" min="0" required />
+                      </div>
+                      <div className="field">
+                        <label>Fondo motore (€/h)</label>
+                        <input className="input" name="hourlyEngineFund" type="number" step="0.01" min="0" required />
+                      </div>
                     </div>
-                    <div className="field">
-                      <label>Manutenzione (€/h)</label>
-                      <input className="input" name="hourlyMaintCost" type="number" step="0.01" min="0" required />
-                    </div>
-                    <div className="field">
-                      <label>Fondo motore (€/h)</label>
-                      <input className="input" name="hourlyEngineFund" type="number" step="0.01" min="0" required />
-                    </div>
-                  </div>
+                  )}
                   <div style={{ marginTop: 8, marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
                     <input type="checkbox" name="addRecommended" id="addRecommended" style={{ width: "auto", cursor: "pointer" }} />
                     <label htmlFor="addRecommended" style={{ fontSize: "0.85rem", fontWeight: 500, cursor: "pointer", userSelect: "none", color: "var(--text)" }}>
