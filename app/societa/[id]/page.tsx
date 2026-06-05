@@ -227,6 +227,7 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
     createdAt: f.createdAt.toISOString(),
     movement: {
       id: f.movement.id,
+      userId: f.movement.userId,
       date: f.movement.date.toISOString(),
       notes: f.movement.notes,
       user: {
@@ -239,6 +240,7 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
 
   const serializedPartnershipFlights = partnershipFlights.map(f => ({
     id: f.id,
+    partnershipAircraftId: f.partnershipAircraftId,
     aircraftRegistration: f.aircraftRegistration,
     aircraftType: f.aircraftType,
     durationMinutes: f.durationMinutes,
@@ -255,6 +257,7 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
     createdAt: f.createdAt.toISOString(),
     movement: {
       id: f.movement.id,
+      userId: f.movement.userId,
       date: f.movement.date.toISOString(),
       notes: f.movement.notes,
       user: {

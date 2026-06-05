@@ -11,6 +11,7 @@ import {
   hasTime,
 } from "@/lib/utils";
 import { buildMonthlyReportEmail } from "@/lib/monthly-report-email";
+import { getMonthlyMaintenanceShares } from "@/lib/maintenance";
 
 const ONE_MINUTE_MS = 60 * 1000;
 const DAILY_RUN_HOUR = 9;
@@ -661,6 +662,7 @@ async function runMonthlyReports(now: Date) {
     const movements = await prisma.movement.findMany({
       where: {
         type: "FLIGHT",
+        isDraft: false,
         date: {
           gte: startOfMonth,
           lt: endOfMonth,
@@ -687,6 +689,39 @@ async function runMonthlyReports(now: Date) {
       }
     });
 
+    // Calculate maintenance shares if shared fund is disabled
+    let maintenanceShares: { [userId: string]: number } = {};
+    if (partnership.disableSharedFund && aircraftIds.length > 0) {
+      const aircraftsWithLogs = await prisma.partnershipAircraft.findMany({
+        where: { partnershipId: partnership.id },
+        include: {
+          maintenanceLogs: {
+            orderBy: { date: 'desc' }
+          }
+        }
+      });
+
+      const allHistoricalFlights = await prisma.flight.findMany({
+        where: {
+          partnershipAircraftId: { in: aircraftIds },
+          movement: { isDraft: false }
+        },
+        include: {
+          movement: {
+            include: { user: true }
+          }
+        }
+      });
+
+      maintenanceShares = getMonthlyMaintenanceShares(
+        startOfMonth,
+        endOfMonth,
+        aircraftsWithLogs,
+        allHistoricalFlights,
+        partnership.members
+      );
+    }
+
     for (const member of partnership.members) {
       const userMovements = movements.filter(mov => mov.userId === member.userId);
       let flightCost = 0;
@@ -712,8 +747,9 @@ async function runMonthlyReports(now: Date) {
 
       const userExpenses = memberExpenses.filter(t => t.userId === member.userId);
       const advancedExpense = userExpenses.reduce((acc, t) => acc + Number(t.amount), 0);
+      const maintenanceShare = maintenanceShares[member.userId] || 0;
 
-      const totalCost = fixedCostPerMember + flightCost - advancedExpense;
+      const totalCost = fixedCostPerMember + flightCost + maintenanceShare - advancedExpense;
 
       const email = buildMonthlyReportEmail({
         monthName: startOfMonth.toLocaleString('it-IT', { month: 'long', year: 'numeric' }),
@@ -730,7 +766,8 @@ async function runMonthlyReports(now: Date) {
         })),
         memberCount: partnership.members.length,
         advancedExpense,
-        disableSharedFund: partnership.disableSharedFund
+        disableSharedFund: partnership.disableSharedFund,
+        maintenanceShare
       });
 
       try {

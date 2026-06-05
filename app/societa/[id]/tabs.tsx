@@ -141,7 +141,7 @@ function getMaintenanceSplit(log: any, aircraft: any, partnershipFlights: any[],
 
   let totalDurationMinutes = 0;
   for (const f of intervalFlights) {
-    const uid = f.movement.userId;
+    const uid = f.movement.userId || f.movement.user?.id;
     if (userDurations[uid] === undefined) {
       userDurations[uid] = 0;
     }
@@ -1666,8 +1666,9 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                     <th>Ore volate</th>
                     <th>Costo orario voli</th>
                     <th>Quota fissa</th>
+                    {partnership.disableSharedFund && <th>Quota manutenzioni</th>}
                     <th>Spese anticipate</th>
-                    <th>Totale da versare</th>
+                    <th>{partnership.disableSharedFund ? "Saldo finale" : "Totale da versare"}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1681,6 +1682,9 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                       <td>{formatMinutes(r.durationMinutes)}</td>
                       <td>€ {r.flightCost.toFixed(2)}</td>
                       <td>€ {r.fixedCost.toFixed(2)}</td>
+                      {partnership.disableSharedFund && (
+                        <td>€ {(r.maintenanceShare || 0).toFixed(2)}</td>
+                      )}
                       <td style={{ color: r.advancedExpense > 0 ? "var(--success)" : "inherit" }}>
                         {r.advancedExpense > 0 ? `- € ${r.advancedExpense.toFixed(2)}` : "-"}
                       </td>
@@ -2346,7 +2350,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                                   setLoggingReminderId(null);
                                                 }} className="grid" style={{ gap: 8, marginTop: 12, padding: 12, border: "1px solid var(--border)", borderRadius: 8, backgroundColor: "var(--bg)" }}>
                                                   <div style={{ fontWeight: 600, fontSize: "0.8rem" }}>Registra manutenzione effettuata: {r.description}</div>
-                                                  <div className="grid grid-4" style={{ gap: 12 }}>
+                                                  <div className={partnership.disableSharedFund ? "grid grid-5" : "grid grid-4"} style={{ gap: 12 }}>
                                                     <div className="field">
                                                       <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Ore aereo all'esecuzione</label>
                                                       <input className="input" name="performedAtHours" type="number" step="0.1" min="0" defaultValue={a.totalHours.toFixed(1)} required style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
@@ -2359,6 +2363,19 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                                       <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Costo (€)</label>
                                                       <input className="input" name="cost" type="number" step="0.01" min="0" placeholder="Es. 300" style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
                                                     </div>
+                                                    {partnership.disableSharedFund && (
+                                                      <div className="field">
+                                                        <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Chi ha pagato?</label>
+                                                        <select className="input" name="payerId" style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }}>
+                                                          <option value="SHARED">Tutti in divisione</option>
+                                                          {partnership.members.map((m: any) => (
+                                                            <option key={m.userId} value={m.userId}>
+                                                              {m.user.fullName || m.user.email}
+                                                            </option>
+                                                          ))}
+                                                        </select>
+                                                      </div>
+                                                    )}
                                                     <div className="field">
                                                       <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Note / Intervento</label>
                                                       <input className="input" name="notes" placeholder="Es. olio 15W50" style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
@@ -2489,7 +2506,18 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                                 <td>{new Date(log.date).toLocaleDateString("it-IT")}</td>
                                                 <td><strong>{log.description}</strong></td>
                                                 <td>{log.performedAtHours.toFixed(1)} h</td>
-                                                <td style={{ fontWeight: 600 }}>{log.cost ? `€ ${log.cost.toFixed(2)}` : "—"}</td>
+                                                <td style={{ fontWeight: 600 }}>
+                                                  {log.cost ? `€ ${log.cost.toFixed(2)}` : "—"}
+                                                  {log.cost && partnership.disableSharedFund && (() => {
+                                                    const payer = partnership.members.find((m: any) => m.userId === log.payerId);
+                                                    const payerName = payer ? (payer.user.fullName || payer.user.email) : "Tutti in divisione";
+                                                    return (
+                                                      <div style={{ fontSize: "0.7rem", color: "var(--muted)", fontWeight: 400, marginTop: 2 }}>
+                                                        Pagato da: {payerName}
+                                                      </div>
+                                                    );
+                                                  })()}
+                                                </td>
                                                 <td>
                                                   <div>{log.notes || "—"}</div>
                                                   {split && (

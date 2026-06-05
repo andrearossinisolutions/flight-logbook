@@ -8,6 +8,7 @@ import type { Route } from "next";
 import { sendEmail } from "@/lib/mail";
 import { renderBoardMessageEmail } from "@/lib/board-message-email";
 import { parseRomeDateTime } from "@/lib/utils";
+import { getMonthlyMaintenanceShares } from "@/lib/maintenance";
 
 async function createRecommendedRemindersDb(tx: any, aircraftId: string) {
   // 1. Sostituzione gomme
@@ -456,6 +457,7 @@ export async function getMonthlyReport(partnershipId: string, year: number, mont
   const movements = await prisma.movement.findMany({
     where: {
       type: "FLIGHT",
+      isDraft: false,
       date: {
         gte: startOfMonth,
         lt: endOfMonth,
@@ -483,6 +485,39 @@ export async function getMonthlyReport(partnershipId: string, year: number, mont
     }
   });
 
+  // Calculate maintenance shares if shared fund is disabled
+  let maintenanceShares: { [userId: string]: number } = {};
+  if (partnership.disableSharedFund && aircraftIds.length > 0) {
+    const aircraftsWithLogs = await prisma.partnershipAircraft.findMany({
+      where: { partnershipId },
+      include: {
+        maintenanceLogs: {
+          orderBy: { date: 'desc' }
+        }
+      }
+    });
+
+    const allHistoricalFlights = await prisma.flight.findMany({
+      where: {
+        partnershipAircraftId: { in: aircraftIds },
+        movement: { isDraft: false }
+      },
+      include: {
+        movement: {
+          include: { user: true }
+        }
+      }
+    });
+
+    maintenanceShares = getMonthlyMaintenanceShares(
+      startOfMonth,
+      endOfMonth,
+      aircraftsWithLogs,
+      allHistoricalFlights,
+      partnership.members
+    );
+  }
+
   const memberReports = partnership.members.map(m => {
     const userMovements = movements.filter(mov => mov.userId === m.userId);
     let flightCost = 0;
@@ -500,14 +535,16 @@ export async function getMonthlyReport(partnershipId: string, year: number, mont
 
     const userExpenses = memberExpenses.filter(t => t.userId === m.userId);
     const advancedExpense = userExpenses.reduce((acc, t) => acc + Number(t.amount), 0);
+    const maintenanceShare = maintenanceShares[m.userId] || 0;
 
     return {
       userId: m.userId,
       fullName: m.user.fullName || m.user.email,
       fixedCost: fixedCostPerMember,
       flightCost,
+      maintenanceShare,
       advancedExpense,
-      totalCost: fixedCostPerMember + flightCost - advancedExpense,
+      totalCost: fixedCostPerMember + flightCost + maintenanceShare - advancedExpense,
       durationMinutes,
       flightsCount: userMovements.length,
     };
@@ -872,6 +909,12 @@ export async function logAircraftMaintenance(partnershipId: string, reminderId: 
   });
   if (membership?.role !== "ADMIN") return;
 
+  const partnership = await prisma.partnership.findUnique({
+    where: { id: partnershipId },
+    include: { members: true }
+  });
+  if (!partnership) return;
+
   const reminder = await prisma.partnershipAircraftReminder.findUnique({
     where: { id: reminderId },
     include: { 
@@ -907,6 +950,7 @@ export async function logAircraftMaintenance(partnershipId: string, reminderId: 
   const notes = String(formData.get("notes") || "").trim();
   const costRaw = formData.get("cost");
   const cost = costRaw && costRaw !== "" ? Number(costRaw) : null;
+  const payerId = formData.get("payerId") ? String(formData.get("payerId")) : null;
 
   await prisma.$transaction(async (tx) => {
     // 1. Update reminder last completed hours & date
@@ -919,7 +963,7 @@ export async function logAircraftMaintenance(partnershipId: string, reminderId: 
     });
 
     // 2. Create history log
-    await tx.partnershipAircraftMaintenanceLog.create({
+    const mainLog = await tx.partnershipAircraftMaintenanceLog.create({
       data: {
         aircraftId: reminder.aircraftId,
         description: `Esecuzione: ${reminder.description}`,
@@ -927,8 +971,46 @@ export async function logAircraftMaintenance(partnershipId: string, reminderId: 
         date,
         notes: notes || null,
         cost,
+        payerId: (payerId && payerId !== "SHARED") ? payerId : null
       }
     });
+
+    // Create automatic transactions if cost is positive and shared fund is disabled
+    if (partnership.disableSharedFund && cost && cost > 0) {
+      if (!payerId || payerId === "SHARED") {
+        // "Tutti in divisione": split cost equally among all members
+        const shareAmount = cost / partnership.members.length;
+        for (const member of partnership.members) {
+          await tx.partnershipTransaction.create({
+            data: {
+              partnershipId,
+              userId: member.userId,
+              amount: shareAmount,
+              type: "MEMBER_EXPENSE",
+              description: `Quota manutenzione (divisa): Esecuzione: ${reminder.description}`,
+              date,
+              maintenanceLogId: mainLog.id
+            }
+          });
+        }
+      } else {
+        // Specific payer
+        const targetMember = partnership.members.find(m => m.userId === payerId);
+        if (targetMember) {
+          await tx.partnershipTransaction.create({
+            data: {
+              partnershipId,
+              userId: payerId,
+              amount: cost,
+              type: "MEMBER_EXPENSE",
+              description: `Pagamento manutenzione: Esecuzione: ${reminder.description}`,
+              date,
+              maintenanceLogId: mainLog.id
+            }
+          });
+        }
+      }
+    }
 
     // 3. Update all covered reminders
     for (const covered of allCoveredReminders) {
@@ -948,6 +1030,8 @@ export async function logAircraftMaintenance(partnershipId: string, reminderId: 
           performedAtHours,
           date,
           notes: notes ? `Tramite ${reminder.description}. Note: ${notes}` : `Eseguita tramite ${reminder.description}`,
+          cost: null,
+          payerId: null
         }
       });
     }

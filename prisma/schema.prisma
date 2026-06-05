@@ -32,6 +32,7 @@ model User {
   resetToken          String?    @unique
   resetTokenExpiresAt DateTime?
   bookings              PartnershipBooking[]
+  paidMaintenances      PartnershipAircraftMaintenanceLog[] @relation("MaintenancePayer")
   createdAt             DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
@@ -206,6 +207,9 @@ model PartnershipAircraftMaintenanceLog {
   date             DateTime            @default(now())
   notes            String?
   cost             Decimal?
+  payerId          String?
+  payer            User?               @relation("MaintenancePayer", fields: [payerId], references: [id], onDelete: SetNull)
+  transactions     PartnershipTransaction[]
   
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
@@ -238,6 +242,8 @@ model PartnershipTransaction {
   type           String      // "INCOME" (versamento soci) o "EXPENSE" (spese società)
   description    String
   date           DateTime    @default(now())
+  maintenanceLogId String?
+  maintenanceLog   PartnershipAircraftMaintenanceLog? @relation(fields: [maintenanceLogId], references: [id], onDelete: Cascade)
   
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
