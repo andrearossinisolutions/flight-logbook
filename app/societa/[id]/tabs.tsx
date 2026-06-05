@@ -1531,20 +1531,25 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             <table className="table members-table">
               <thead>
                 <tr>
-                  <th>Nome</th>
-                  <th>Email</th>
+                  <th>Socio</th>
                   <th>Ruolo</th>
-                  {isAdmin && <th>Azioni</th>}
+                  {isAdmin && <th style={{ textAlign: "right" }}>Azioni</th>}
                 </tr>
               </thead>
               <tbody>
                 {partnership.members.map((m: any) => (
                   <tr key={m.id}>
-                    <td>{m.user.fullName || "Utente senza nome"} {m.user.id === currentUserId ? "(Tu)" : ""}</td>
-                    <td>{m.user.email}</td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: "var(--text)" }}>
+                        {m.user.fullName || "Utente senza nome"} {m.user.id === currentUserId ? " (Tu)" : ""}
+                      </div>
+                      <div className="muted" style={{ fontSize: "0.85rem", marginTop: 2 }}>
+                        {m.user.email}
+                      </div>
+                    </td>
                     <td>{m.role === "ADMIN" ? "Amministratore" : "Socio"}</td>
                     {isAdmin && (
-                      <td>
+                      <td style={{ textAlign: "right" }}>
                         {m.user.id !== currentUserId && (
                           <button
                             className="btn secondary"
@@ -1564,11 +1569,17 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                 ))}
                 {partnership.invitations && partnership.invitations.map((inv: any) => (
                   <tr key={inv.id} style={{ opacity: 0.75 }}>
-                    <td><span className="muted" style={{ fontStyle: "italic" }}>Invito in attesa</span></td>
-                    <td>{inv.email}</td>
+                    <td>
+                      <div style={{ fontWeight: 600, color: "var(--muted)", fontStyle: "italic" }}>
+                        Invito in attesa
+                      </div>
+                      <div className="muted" style={{ fontSize: "0.85rem", marginTop: 2 }}>
+                        {inv.email}
+                      </div>
+                    </td>
                     <td>Socio (in attesa)</td>
                     {isAdmin && (
-                      <td>
+                      <td style={{ textAlign: "right" }}>
                         <button
                           className="btn secondary"
                           style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
