@@ -1140,10 +1140,25 @@ export async function addBooking(partnershipId: string, formData: FormData) {
     throw new Error(`L'aereo è già prenotato da ${occupantName} nel periodo selezionato.`);
   }
 
+  let targetUserId = user.id;
+  if (membership.role === "ADMIN") {
+    const formUserId = formData.get("userId") ? String(formData.get("userId")).trim() : null;
+    if (formUserId) {
+      const targetMember = await prisma.partnershipMember.findUnique({
+        where: { partnershipId_userId: { partnershipId, userId: formUserId } }
+      });
+      if (targetMember) {
+        targetUserId = formUserId;
+      } else {
+        throw new Error("Il socio selezionato non fa parte di questa società.");
+      }
+    }
+  }
+
   await prisma.partnershipBooking.create({
     data: {
       partnershipId,
-      userId: user.id,
+      userId: targetUserId,
       aircraftId,
       startTime: startDateTime,
       endTime: endDateTime,
@@ -1247,9 +1262,25 @@ export async function updateBooking(partnershipId: string, bookingId: string, fo
     throw new Error(`L'aereo è già prenotato da ${occupantName} nel periodo selezionato.`);
   }
 
+  let targetUserId = booking.userId;
+  if (membership.role === "ADMIN") {
+    const formUserId = formData.get("userId") ? String(formData.get("userId")).trim() : null;
+    if (formUserId) {
+      const targetMember = await prisma.partnershipMember.findUnique({
+        where: { partnershipId_userId: { partnershipId, userId: formUserId } }
+      });
+      if (targetMember) {
+        targetUserId = formUserId;
+      } else {
+        throw new Error("Il socio selezionato non fa parte di questa società.");
+      }
+    }
+  }
+
   await prisma.partnershipBooking.update({
     where: { id: bookingId },
     data: {
+      userId: targetUserId,
       aircraftId,
       startTime: startDateTime,
       endTime: endDateTime,

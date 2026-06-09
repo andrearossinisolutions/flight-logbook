@@ -1184,7 +1184,8 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                               aircraftId: b.aircraftId,
                                               startTime: startLocal,
                                               endTime: endLocal,
-                                              notes: b.notes || ""
+                                              notes: b.notes || "",
+                                              userId: b.userId
                                             });
                                             
                                             const formCol = document.querySelector(".bookings-form-col");
@@ -1272,6 +1273,25 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                           ))}
                         </select>
                       </div>
+
+                      {isAdmin && (
+                        <div className="field">
+                          <label style={{ fontWeight: 600, fontSize: "0.88rem" }}>Socio</label>
+                          <select
+                            name="userId"
+                            className="select"
+                            required
+                            defaultValue={editingBooking ? editingBooking.userId : currentUserId}
+                            style={{ borderRadius: 12 }}
+                          >
+                            {partnership.members.map((m: any) => (
+                              <option key={m.userId} value={m.userId}>
+                                {m.user.fullName || m.user.email} {m.userId === currentUserId ? " (Tu)" : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
 
                       <div className="grid grid-2" style={{ gap: 16 }}>
                         <div className="field">
