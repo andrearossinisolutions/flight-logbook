@@ -476,12 +476,33 @@ textarea {
     border-radius: 18px;
   }
 
+  .navbar-brand {
+    gap: 8px;
+  }
+
+  .navbar-logo {
+    width: 36px;
+    height: 36px;
+    border-radius: 11px;
+  }
+
+  .navbar-logo svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .navbar-tabs {
+    gap: 4px;
+    padding: 4px;
+    border-radius: 14px;
+  }
+
   .navbar-tab-text {
     display: none;
   }
 
   .navbar-tab {
-    padding: 10px 14px;
+    padding: 8px 10px;
   }
 
   .navbar-logout-text {
@@ -489,7 +510,14 @@ textarea {
   }
   
   .navbar-logout-btn {
-    padding: 10px;
+    padding: 8px;
+    border-radius: 10px;
+  }
+}
+
+@media (max-width: 540px) {
+  .navbar-title-group {
+    display: none;
   }
 }
 

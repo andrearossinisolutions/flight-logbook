@@ -8,6 +8,9 @@ export function LogoutButton() {
   const [loading, setLoading] = useState(false);
 
   async function onClick() {
+    if (!window.confirm("Sei sicuro di voler uscire?")) {
+      return;
+    }
     setLoading(true);
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");

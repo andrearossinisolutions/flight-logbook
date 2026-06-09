@@ -13,6 +13,9 @@ export function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const [loggingOut, setLoggingOut] = useState(false);
 
   async function handleLogout() {
+    if (!window.confirm("Sei sicuro di voler uscire?")) {
+      return;
+    }
     setLoggingOut(true);
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
