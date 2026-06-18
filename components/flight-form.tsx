@@ -8,7 +8,7 @@ import {
   formatDateTimeInput,
   minutesToHoursMinutes,
 } from "@/lib/utils";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import type { FlightFormValues } from "@/lib/flight-form";
 
 type FlightFormProps = {
@@ -125,6 +125,61 @@ export default function FlightForm({
 
   const [warmupMinutes, setWarmupMinutes] = useState(initial.warmupMinutes);
   const [notes, setNotes] = useState(initial.notes);
+
+  const lastFetchedRegistrationRef = useRef("");
+
+  useEffect(() => {
+    if (
+      mode !== "create" ||
+      insertMode !== "PAST" ||
+      inputMode !== "HOBBS" ||
+      !aircraftRegistration.trim()
+    ) {
+      return;
+    }
+
+    if (aircraftRegistration.toUpperCase() === lastFetchedRegistrationRef.current) {
+      return;
+    }
+
+    let active = true;
+
+    async function fetchLastHobbs() {
+      try {
+        const res = await fetch(
+          `/api/aircraft/last-hobbs?registration=${encodeURIComponent(aircraftRegistration)}`
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!active) return;
+
+        lastFetchedRegistrationRef.current = aircraftRegistration.toUpperCase();
+
+        if (
+          data.lastFlight &&
+          data.lastFlight.inputMode === "HOBBS" &&
+          data.lastFlight.hobbsEndMinutes !== null
+        ) {
+          const totalMinutes = data.lastFlight.hobbsEndMinutes;
+          const hours = Math.floor(totalMinutes / 60);
+          const minutes = totalMinutes % 60;
+          setHobbsStartHours(String(hours));
+          setHobbsStartMinutes(String(minutes));
+        } else {
+          setHobbsStartHours("");
+          setHobbsStartMinutes("");
+        }
+      } catch (err) {
+        console.error("Failed to fetch last hobbs:", err);
+      }
+    }
+
+    fetchLastHobbs();
+
+    return () => {
+      active = false;
+    };
+  }, [aircraftRegistration, insertMode, inputMode, mode]);
 
   const durationMinutes = useMemo(() => {
     if (inputMode === "HOBBS") {
