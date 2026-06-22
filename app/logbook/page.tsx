@@ -18,7 +18,7 @@ import {
   PlusIcon,
 } from "@/components/icons";
 import { requireUser } from "@/lib/require-user";
-import { eur, formatDateDisplay, formatTimeDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate, daysToDate, hasTime, getRomeDateTimeParts, romeLocalDateTimeToUtcDate } from "@/lib/utils";
+import { eur, formatDateDisplay, formatTimeDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate, daysToDate, hasTime, getRomeDateTimeParts, romeLocalDateTimeToUtcDate, formatHoursToHHMM } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 
 function isToday(date: Date) {
@@ -117,7 +117,7 @@ export default async function DashboardPage({
             isOverdue = true;
           }
           
-          detailsParts.push(`Scadenza a ${nextDeadlineHours.toFixed(1)}h (ogni ${hoursInt}h)`);
+          detailsParts.push(`Scadenza a ${formatHoursToHHMM(nextDeadlineHours)} (ogni ${hoursInt}h)`);
         }
         
         if (r.monthsInterval !== null && r.monthsInterval !== undefined && r.lastCompletedDate) {
@@ -156,9 +156,9 @@ export default async function DashboardPage({
           
           if (isHoursMoreUrgent) {
             if (hoursRemainingNum <= 0) {
-              labelText = `SCADUTO da ${Math.abs(hoursRemainingNum).toFixed(1)} ore!`;
+              labelText = `SCADUTO da ${formatHoursToHHMM(Math.abs(hoursRemainingNum))}!`;
             } else {
-              labelText = `In scadenza! Mancano solo ${hoursRemainingNum.toFixed(1)} ore.`;
+              labelText = `In scadenza! Mancano solo ${formatHoursToHHMM(hoursRemainingNum)}.`;
             }
           } else if (hasMonths) {
             if (daysRemainingNum <= 0) {

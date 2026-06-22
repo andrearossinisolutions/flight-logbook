@@ -126,6 +126,29 @@ export function minutesToHoursMinutes(totalMinutes: number) {
   return `${hours}:${minutes < 10 ? "0" : ""}${minutes}`;
 }
 
+export function formatHoursToHHMM(decimalHours: number | null | undefined): string {
+  if (decimalHours === null || decimalHours === undefined || Number.isNaN(Number(decimalHours))) {
+    return "";
+  }
+  const decimalHoursNum = Number(decimalHours);
+  const isNegative = decimalHoursNum < 0;
+  const absHours = Math.abs(decimalHoursNum);
+  const hrs = Math.floor(absHours);
+  const mins = Math.round((absHours - hrs) * 60);
+  
+  let finalHrs = hrs;
+  let finalMins = mins;
+  if (finalMins === 60) {
+    finalHrs += 1;
+    finalMins = 0;
+  }
+  
+  const paddedHrs = String(finalHrs).padStart(2, "0");
+  const paddedMins = String(finalMins).padStart(2, "0");
+  
+  return `${isNegative ? "-" : ""}${paddedHrs}:${paddedMins}`;
+}
+
 export function defaultWarmupMinutesForDate(date: Date | string) {
   const month = new Date(date).getMonth() + 1;
   return month >= 4 && month <= 10 ? 10 : 15;

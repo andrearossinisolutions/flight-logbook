@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipSettings, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog, addRecommendedReminders, addBooking, deleteBooking, updateBooking, settleDirectPayment } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
-import { formatDateDisplay, daysFromDate, formatDateTimeInput, getRomeDateTimeParts, formatDateInput } from "@/lib/utils";
+import { formatDateDisplay, daysFromDate, formatDateTimeInput, getRomeDateTimeParts, formatDateInput, formatHoursToHHMM } from "@/lib/utils";
 import {
   DashboardIcon,
   UsersIcon,
@@ -257,7 +257,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             isOverdue = true;
           }
           
-          detailsParts.push(`Scadenza a ${nextDeadlineHours.toFixed(1)}h (ogni ${hoursInt}h)`);
+          detailsParts.push(`Scadenza a ${formatHoursToHHMM(nextDeadlineHours)} (ogni ${hoursInt}h)`);
         }
         
         if (r.monthsInterval !== null && r.monthsInterval !== undefined && r.lastCompletedDate) {
@@ -296,9 +296,9 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
           
           if (isHoursMoreUrgent) {
             if (hoursRemainingNum <= 0) {
-              labelText = `SCADUTO da ${Math.abs(hoursRemainingNum).toFixed(1)} ore!`;
+              labelText = `SCADUTO da ${formatHoursToHHMM(Math.abs(hoursRemainingNum))}!`;
             } else {
-              labelText = `In scadenza! Mancano solo ${hoursRemainingNum.toFixed(1)} ore.`;
+              labelText = `In scadenza! Mancano solo ${formatHoursToHHMM(hoursRemainingNum)}.`;
             }
           } else if (hasMonths) {
             if (daysRemainingNum <= 0) {
@@ -746,7 +746,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                             return (
                               <>
                                 <span style={{ color: "var(--border)" }}>•</span>
-                                <span>Oram.: {orametro.start.toFixed(1)} ➔ {orametro.end.toFixed(1)}</span>
+                                <span>Oram.: {formatHoursToHHMM(orametro.start)} ➔ {formatHoursToHHMM(orametro.end)}</span>
                               </>
                             );
                           })()}
@@ -1509,7 +1509,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                   if (!orametro) return null;
                                   return (
                                     <div className="muted" style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                                      Oram.: {orametro.start.toFixed(1)} ➔ {orametro.end.toFixed(1)}
+                                      Oram.: {formatHoursToHHMM(orametro.start)} ➔ {formatHoursToHHMM(orametro.end)}
                                     </div>
                                   );
                                 })()}
@@ -2203,7 +2203,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                               <td className="td-registration">
                                 <strong>{a.registration}</strong>
                                 <div className="muted" style={{ fontSize: "0.8rem", marginTop: 4 }}>
-                                  ⏱️ {a.totalHours.toFixed(1)} ore totali
+                                  ⏱️ {formatHoursToHHMM(a.totalHours)} ore totali
                                 </div>
                               </td>
                               <td className="td-type">{a.type}</td>
@@ -2246,7 +2246,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                     <h4 style={{ margin: 0, fontSize: "0.95rem", color: "var(--primary-strong)" }}>🔔 Scadenze Manutenzione ({a.registration})</h4>
                                   </div>
                                   <span className="muted" style={{ fontSize: "0.85rem" }}>
-                                    Stato motore: <strong>{a.totalHours.toFixed(1)} h</strong> (Base: {a.initialHours.toFixed(1)}h)
+                                    Stato motore: <strong>{formatHoursToHHMM(a.totalHours)}</strong> (Base: {formatHoursToHHMM(a.initialHours)})
                                   </span>
                                 </div>
 
@@ -2273,12 +2273,12 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                         
                                         if (remainingHours <= 0) {
                                           isOverdue = true;
-                                          hoursText = `SCADUTO da ${Math.abs(remainingHours).toFixed(1)}h (limite: ${nextDeadlineHours.toFixed(1)}h)`;
+                                          hoursText = `SCADUTO da ${formatHoursToHHMM(Math.abs(remainingHours))} (limite: ${formatHoursToHHMM(nextDeadlineHours)})`;
                                         } else if (remainingHours <= 10) {
                                           isWarning = true;
-                                          hoursText = `In scadenza: mancano ${remainingHours.toFixed(1)}h (limite: ${nextDeadlineHours.toFixed(1)}h)`;
+                                          hoursText = `In scadenza: mancano ${formatHoursToHHMM(remainingHours)} (limite: ${formatHoursToHHMM(nextDeadlineHours)})`;
                                         } else {
-                                          hoursText = `Mancano ${remainingHours.toFixed(1)}h (limite: ${nextDeadlineHours.toFixed(1)}h)`;
+                                          hoursText = `Mancano ${formatHoursToHHMM(remainingHours)} (limite: ${formatHoursToHHMM(nextDeadlineHours)})`;
                                         }
                                       }
                                       
@@ -2424,7 +2424,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                                 <div>
                                                   <div style={{ fontWeight: 600, fontSize: "0.9rem" }}>{r.description}</div>
                                                   <div className="muted" style={{ fontSize: "0.8rem", marginTop: 4 }}>
-                                                    {r.hoursInterval !== null && `Ogni ${Number(r.hoursInterval).toFixed(0)}h (Ultima: a ${Number(r.lastCompletedHours).toFixed(1)}h)`}
+                                                    {r.hoursInterval !== null && `Ogni ${Number(r.hoursInterval).toFixed(0)}h (Ultima: a ${formatHoursToHHMM(Number(r.lastCompletedHours))})`}
                                                     {r.hoursInterval !== null && r.monthsInterval !== null && ` o `}
                                                     {r.monthsInterval !== null && `Ogni ${r.monthsInterval} mes${r.monthsInterval === 1 ? 'e' : 'i'} (Ultima: il ${r.lastCompletedDate ? new Date(r.lastCompletedDate).toLocaleDateString("it-IT") : 'mai'})`}
                                                   </div>
@@ -2611,7 +2611,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                       </div>
                                       <div className="field">
                                         <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Ultimo eseguito a (ore)</label>
-                                        <input className="input" name="lastCompletedHours" type="number" step="0.1" min="0" placeholder={`Opzionale (default: ${a.totalHours.toFixed(1)})`} style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
+                                        <input className="input" name="lastCompletedHours" type="number" step="0.1" min="0" placeholder={`Opzionale (default: ${formatHoursToHHMM(a.totalHours)})`} style={{ padding: "6px 8px", borderRadius: 8, fontSize: "0.85rem" }} />
                                       </div>
                                       <div className="field">
                                         <label style={{ fontSize: "0.75rem", fontWeight: 500 }}>Ultimo eseguito il</label>
@@ -2669,7 +2669,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                                 <td>
                                                   <strong>{log.description}</strong>
                                                   <div style={{ fontSize: "0.72rem", color: "var(--muted)", marginTop: 4 }}>
-                                                    {new Date(log.date).toLocaleDateString("it-IT")} · a {log.performedAtHours.toFixed(1)} h
+                                                    {new Date(log.date).toLocaleDateString("it-IT")} · a {formatHoursToHHMM(log.performedAtHours)}
                                                   </div>
                                                 </td>
                                                 <td style={{ fontWeight: 600 }}>
@@ -2689,14 +2689,14 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                                   {split && (
                                                     <div style={{ marginTop: 6, padding: "8px 10px", background: "rgba(37, 99, 235, 0.04)", borderRadius: 8, fontSize: "0.75rem", border: "1px solid rgba(37, 99, 235, 0.1)", maxWidth: "280px" }}>
                                                       <div style={{ fontWeight: 600, color: "var(--primary-strong)", marginBottom: 6 }}>
-                                                        Ripartizione ({split.prevHours.toFixed(1)}h ➔ {split.logHours.toFixed(1)}h):
+                                                        Ripartizione ({formatHoursToHHMM(split.prevHours)} ➔ {formatHoursToHHMM(split.logHours)}):
                                                       </div>
                                                       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                                                         {split.shares.map((sh: any) => (
                                                           <div key={sh.userId} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
                                                             <span style={{ fontWeight: 500 }}>{sh.name}</span>
                                                             <span style={{ color: "var(--muted)" }}>
-                                                              € {sh.amount.toFixed(2)} {sh.minutes > 0 ? `(${sh.hours.toFixed(1)}h)` : " (no ore)"}
+                                                              € {sh.amount.toFixed(2)} {sh.minutes > 0 ? `(${formatHoursToHHMM(sh.hours)})` : " (no ore)"}
                                                             </span>
                                                           </div>
                                                         ))}
