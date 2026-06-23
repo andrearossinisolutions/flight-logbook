@@ -22,8 +22,9 @@ export function buildMonthlyReportEmail(args: {
   advancedExpense?: number;
   disableSharedFund?: boolean;
   maintenanceShare?: number;
+  hoursExpenseShare?: number;
 }) {
-  const { monthName, partnershipName, fixedCostPerMember, fixedCostTotal, flightCost, totalCost, durationMinutes, aircraftDetails, memberCount, advancedExpense = 0, disableSharedFund = false, maintenanceShare = 0 } = args;
+  const { monthName, partnershipName, fixedCostPerMember, fixedCostTotal, flightCost, totalCost, durationMinutes, aircraftDetails, memberCount, advancedExpense = 0, disableSharedFund = false, maintenanceShare = 0, hoursExpenseShare = 0 } = args;
 
   const subject = `Rendiconto Mensile ${partnershipName} - ${monthName}`;
 
@@ -44,6 +45,7 @@ Dettagli:
 - Quota fissa mensile: ${eur(fixedCostPerMember)} (Totale società: ${eur(fixedCostTotal)} diviso per ${memberCount} soci)
 - Costo totale voli: ${eur(flightCost)} per ${minutesToHoursMinutes(durationMinutes)} ore di volo
 ${disableSharedFund && maintenanceShare > 0 ? `- Quota manutenzioni addebitata: ${eur(maintenanceShare)}\n` : ""}
+${disableSharedFund && hoursExpenseShare > 0 ? `- Quota spese ore volo addebitata: ${eur(hoursExpenseShare)}\n` : ""}
 ${advancedExpense > 0 ? `- Spese anticipate pagate da te: -${eur(advancedExpense)}\n` : ""}
 Voli per aereo:
 ${aircraftText}
@@ -127,6 +129,21 @@ ${aircraftText}
                   </div>
                   <div style="font-size: 13px; color: #5b718c;">
                     I costi delle manutenzioni eseguite in questo mese sono stati ripartiti in proporzione alle ore volate da ciascun socio dall'ultima manutenzione.
+                  </div>
+                </div>
+              </div>
+            ` : ""}
+
+            ${disableSharedFund && hoursExpenseShare > 0 ? `
+              <div style="margin: 0 0 28px;">
+                <div style="font-size: 18px; font-weight: 800; color: #17324d; margin: 0 0 14px;">Dettaglio Quota Spese Ore Volo</div>
+                <div style="padding: 16px; border: 1px solid #dbe5f0; border-radius: 16px;">
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                    <span style="color: #4c5f76;">Quota spese ore volo addebitata</span>
+                    <strong style="color: #17324d;">${escapeHtml(eur(hoursExpenseShare))}</strong>
+                  </div>
+                  <div style="font-size: 13px; color: #5b718c;">
+                    I costi di tipo "anticipo spese per ore di volo" di questo mese sono stati ripartiti in proporzione alle ore di volo effettuate da ciascun socio in questo mese.
                   </div>
                 </div>
               </div>

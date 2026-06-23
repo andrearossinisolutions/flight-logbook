@@ -1756,6 +1756,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                     {!partnership.disableSharedFund && <th>Costo orario voli</th>}
                     <th>Quota fissa</th>
                     {partnership.disableSharedFund && <th>Quota manutenzioni</th>}
+                    {partnership.disableSharedFund && <th>Spese ore volo</th>}
                     <th>Spese anticipate</th>
                     <th>{partnership.disableSharedFund ? "Saldo finale" : "Totale da versare"}</th>
                   </tr>
@@ -1775,6 +1776,9 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                       <td data-label="Quota fissa:">€ {r.fixedCost.toFixed(2)}</td>
                       {partnership.disableSharedFund && (
                         <td data-label="Quota manutenzioni:">€ {(r.maintenanceShare || 0).toFixed(2)}</td>
+                      )}
+                      {partnership.disableSharedFund && (
+                        <td data-label="Spese ore volo:">€ {(r.hoursExpenseShare || 0).toFixed(2)}</td>
                       )}
                       <td data-label="Spese anticipate:" style={{ color: r.advancedExpense > 0 ? "var(--success)" : "inherit" }}>
                         {r.advancedExpense > 0 ? `- € ${r.advancedExpense.toFixed(2)}` : "-"}
@@ -1908,7 +1912,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
 
       {activeTab === "CASSA" && (() => {
         const totalIncome = partnership.transactions.filter((t: any) => t.type === "INCOME").reduce((acc: number, t: any) => acc + t.amount, 0);
-        const totalExpense = partnership.transactions.filter((t: any) => t.type === "EXPENSE" || t.type === "MEMBER_EXPENSE").reduce((acc: number, t: any) => acc + t.amount, 0);
+        const totalExpense = partnership.transactions.filter((t: any) => t.type === "EXPENSE" || t.type === "MEMBER_EXPENSE" || t.type === "MEMBER_EXPENSE_HOURS").reduce((acc: number, t: any) => acc + t.amount, 0);
         const balance = totalIncome - totalExpense;
 
         return (
@@ -1940,7 +1944,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             <div className="grid grid-3" style={{ marginBottom: 24 }}>
               {partnership.members.map((m: any) => {
                 const memberVersamenti = partnership.transactions.filter((t: any) => t.userId === m.user?.id && t.type === "INCOME").reduce((acc: number, t: any) => acc + t.amount, 0);
-                const memberAnticipi = partnership.transactions.filter((t: any) => t.userId === m.user?.id && t.type === "MEMBER_EXPENSE").reduce((acc: number, t: any) => acc + t.amount, 0);
+                const memberAnticipi = partnership.transactions.filter((t: any) => t.userId === m.user?.id && (t.type === "MEMBER_EXPENSE" || t.type === "MEMBER_EXPENSE_HOURS")).reduce((acc: number, t: any) => acc + t.amount, 0);
                 const totalCredit = memberVersamenti + memberAnticipi;
                 return (
                   <div key={m.user?.id} className="card" style={{ padding: 12, background: "var(--bg-secondary)" }}>
@@ -1982,7 +1986,8 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                         onChange={e => setNewTxType(e.target.value)}
                         style={{ width: "100%", height: "40px" }}
                       >
-                        <option value="MEMBER_EXPENSE">Spesa anticipata (Benzina, Olio...)</option>
+                        <option value="MEMBER_EXPENSE">Anticipo spesa per quota</option>
+                        <option value="MEMBER_EXPENSE_HOURS">Anticipo spesa per ore di volo</option>
                         <option value="MEMBER_TRANSFER">Rimborso / Trasferimento tra soci</option>
                       </select>
                     </div>
@@ -2064,12 +2069,17 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                             💸 Trasferimento: <strong>{t.user?.fullName || t.user?.email}</strong> ➔ <strong>{t.recipient?.fullName || t.recipient?.email || "Socio"}</strong>
                           </span>
                         ) : (
-                          <span>👤 Spesa da: {t.user?.fullName || t.user?.email || "Socio sconosciuto"}</span>
+                          <span>
+                            👤 {t.type === "MEMBER_EXPENSE_HOURS" ? "Anticipo per ore di volo da: " : "Anticipo per quota da: "}
+                            <strong>{t.user?.fullName || t.user?.email || "Socio sconosciuto"}</strong>
+                          </span>
                         )
                       ) : t.type === "INCOME" ? (
                         <span style={{ color: "var(--success)" }}>Ricarica da: {t.user?.fullName || t.user?.email || "Utente sconosciuto"}</span>
                       ) : t.type === "MEMBER_EXPENSE" ? (
-                        <span style={{ color: "var(--warning, #d97706)" }}>Anticipo da: {t.user?.fullName || t.user?.email || "Utente sconosciuto"}</span>
+                        <span style={{ color: "var(--warning, #d97706)" }}>Anticipo per quota da: {t.user?.fullName || t.user?.email || "Utente sconosciuto"}</span>
+                      ) : t.type === "MEMBER_EXPENSE_HOURS" ? (
+                        <span style={{ color: "var(--warning, #d97706)" }}>Anticipo per ore di volo da: {t.user?.fullName || t.user?.email || "Utente sconosciuto"}</span>
                       ) : (
                         <span style={{ color: "var(--danger)" }}>Uscita Cassa Società</span>
                       )}
@@ -2080,7 +2090,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                     ) : (
                       <>
                         <td>{t.type === "INCOME" ? `€ ${t.amount.toFixed(2)}` : "-"}</td>
-                        <td>{t.type === "EXPENSE" || t.type === "MEMBER_EXPENSE" ? `€ ${t.amount.toFixed(2)}` : "-"}</td>
+                        <td>{t.type === "EXPENSE" || t.type === "MEMBER_EXPENSE" || t.type === "MEMBER_EXPENSE_HOURS" ? `€ ${t.amount.toFixed(2)}` : "-"}</td>
                       </>
                     )}
                     {isAdmin && (

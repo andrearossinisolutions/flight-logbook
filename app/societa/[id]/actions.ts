@@ -477,7 +477,7 @@ export async function getMonthlyReport(partnershipId: string, year: number, mont
   const memberExpenses = await prisma.partnershipTransaction.findMany({
     where: {
       partnershipId,
-      type: { in: ["MEMBER_EXPENSE", "MEMBER_TRANSFER"] },
+      type: { in: ["MEMBER_EXPENSE", "MEMBER_EXPENSE_HOURS", "MEMBER_TRANSFER"] },
       date: {
         gte: startOfMonth,
         lt: endOfMonth,
@@ -518,6 +518,18 @@ export async function getMonthlyReport(partnershipId: string, year: number, mont
     );
   }
 
+  // Calculate total flight minutes of the month and total hours-split expenses
+  const totalDurationMinutes = movements.reduce((acc, mov) => {
+    const f = mov.flight;
+    const pa = f?.partnershipAircraft;
+    if (!f || !pa) return acc;
+    return acc + f.durationMinutes;
+  }, 0);
+
+  const totalHoursExpenses = memberExpenses
+    .filter(t => t.type === "MEMBER_EXPENSE_HOURS")
+    .reduce((acc, t) => acc + Number(t.amount), 0);
+
   const memberReports = partnership.members.map(m => {
     const userMovements = movements.filter(mov => mov.userId === m.userId);
     let flightCost = 0;
@@ -540,14 +552,24 @@ export async function getMonthlyReport(partnershipId: string, year: number, mont
       userReceivedTransfers.reduce((acc, t) => acc + Number(t.amount), 0);
     const maintenanceShare = maintenanceShares[m.userId] || 0;
 
+    let hoursExpenseShare = 0;
+    if (totalHoursExpenses > 0) {
+      if (totalDurationMinutes > 0) {
+        hoursExpenseShare = totalHoursExpenses * (durationMinutes / totalDurationMinutes);
+      } else {
+        hoursExpenseShare = totalHoursExpenses / partnership.members.length;
+      }
+    }
+
     return {
       userId: m.userId,
       fullName: m.user.fullName || m.user.email,
       fixedCost: fixedCostPerMember,
       flightCost,
       maintenanceShare,
+      hoursExpenseShare,
       advancedExpense,
-      totalCost: fixedCostPerMember + flightCost + maintenanceShare - advancedExpense,
+      totalCost: fixedCostPerMember + flightCost + maintenanceShare + hoursExpenseShare - advancedExpense,
       durationMinutes,
       flightsCount: userMovements.length,
     };
@@ -582,7 +604,7 @@ export async function addTransaction(partnershipId: string, formData: FormData) 
 
   let transactionType = type;
   if (partnership.disableSharedFund) {
-    if (type !== "MEMBER_TRANSFER") {
+    if (type !== "MEMBER_TRANSFER" && type !== "MEMBER_EXPENSE_HOURS") {
       transactionType = "MEMBER_EXPENSE";
     }
   }
@@ -605,7 +627,7 @@ export async function addTransaction(partnershipId: string, formData: FormData) 
   await prisma.partnershipTransaction.create({
     data: {
       partnershipId,
-      userId: (transactionType === "INCOME" || transactionType === "MEMBER_EXPENSE" || transactionType === "MEMBER_TRANSFER") ? targetUserId : null,
+      userId: (transactionType === "INCOME" || transactionType === "MEMBER_EXPENSE" || transactionType === "MEMBER_EXPENSE_HOURS" || transactionType === "MEMBER_TRANSFER") ? targetUserId : null,
       recipientId: transactionType === "MEMBER_TRANSFER" ? recipientId : null,
       amount,
       type: transactionType,
