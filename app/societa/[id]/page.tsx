@@ -45,6 +45,20 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
             orderBy: {
               date: 'desc'
             }
+          },
+          documents: {
+            select: {
+              id: true,
+              aircraftId: true,
+              name: true,
+              contentType: true,
+              size: true,
+              createdAt: true,
+              updatedAt: true
+            },
+            orderBy: {
+              createdAt: 'desc'
+            }
           }
         }
       },
@@ -173,6 +187,11 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
           date: l.date.toISOString(),
           createdAt: l.createdAt.toISOString(),
           updatedAt: l.updatedAt.toISOString(),
+        })),
+        documents: (a.documents || []).map(d => ({
+          ...d,
+          createdAt: d.createdAt.toISOString(),
+          updatedAt: d.updatedAt.toISOString(),
         })),
       };
     }),

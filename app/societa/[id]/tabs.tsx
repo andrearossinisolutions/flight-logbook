@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipSettings, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog, addRecommendedReminders, addBooking, deleteBooking, updateBooking, settleDirectPayment } from "./actions";
+import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipSettings, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog, addRecommendedReminders, addBooking, deleteBooking, updateBooking, settleDirectPayment, uploadAircraftDocument, deleteAircraftDocument } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateDisplay, daysFromDate, formatDateTimeInput, getRomeDateTimeParts, formatDateInput, formatHoursToHHMM } from "@/lib/utils";
 import {
@@ -20,6 +20,16 @@ function formatMinutes(minutes: number) {
   const m = minutes % 60;
   return `${h}:${m < 10 ? '0' : ''}${m}`;
 }
+
+function formatBytes(bytes: number, decimals = 1) {
+  if (!bytes) return "0 Bytes";
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+}
+
 
 function formatMonth(monthNum: number | null | undefined): string {
   if (!monthNum) return "";
@@ -787,10 +797,11 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                 Vai al logbook societario
               </button>
             </div>
+
           </div>
 
           {/* Colonna Destra: Bacheca Messaggi */}
-          <div className="bacheca-content">
+          <div className="bacheca-content" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div className="card">
               <div>
               <h2 style={{ marginTop: 0, marginBottom: 8, fontSize: "1.25rem" }}>Bacheca Messaggi</h2>
@@ -867,6 +878,70 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               )}
             </div>
           </div>
+
+          {/* Card: Documenti Aerei */}
+            <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div>
+                <h2 style={{ marginTop: 0, marginBottom: 8, fontSize: "1.25rem", display: "flex", alignItems: "center", gap: 8 }}>
+                  📄 Documenti Aerei
+                </h2>
+                <p className="muted" style={{ margin: 0, fontSize: "0.9rem" }}>
+                  Documenti e manuali dei velivoli societari.
+                </p>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {(() => {
+                  const aircraftsWithDocs = (partnership.aircrafts || []).filter(
+                    (a: any) => a.documents && a.documents.length > 0
+                  );
+
+                  if (aircraftsWithDocs.length === 0) {
+                    return (
+                      <div className="muted" style={{ 
+                        padding: 20, 
+                        border: "1px dashed var(--border)", 
+                        borderRadius: 16,
+                        textAlign: "center",
+                        fontSize: "0.95rem"
+                      }}>
+                        Nessun documento disponibile.
+                      </div>
+                    );
+                  }
+
+                  return aircraftsWithDocs.map((a: any) => (
+                    <div key={a.id} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center" }}>
+                        <span className="pill" style={{ backgroundColor: "var(--bg)", color: "var(--text)", fontSize: "0.75rem", padding: "2px 8px", fontWeight: 600 }}>
+                          {a.registration}
+                        </span>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, paddingLeft: 4 }}>
+                        {a.documents.map((doc: any) => (
+                          <div key={doc.id} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.85rem" }}>
+                            <span>📄</span>
+                            <a 
+                              href={`/api/documents/${doc.id}`} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              style={{ color: "var(--primary-strong)", textDecoration: "none", fontWeight: 500 }}
+                              onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
+                              onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
+                            >
+                              {doc.name}
+                            </a>
+                            <span className="muted" style={{ fontSize: "0.75rem" }}>
+                              ({formatBytes(doc.size)})
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
         </div>
       </div>
     </div>
@@ -2738,6 +2813,82 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                     </div>
                                   </div>
                                 )}
+
+                                 {/* 📄 Documenti Velivolo */}
+                                 <div style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+                                   <div style={{ fontWeight: 600, fontSize: "0.95rem", color: "var(--primary-strong)", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                                     <span>📄 Documenti Velivolo ({a.registration})</span>
+                                   </div>
+
+                                   {(!a.documents || a.documents.length === 0) ? (
+                                     <div className="muted" style={{ fontSize: "0.85rem", fontStyle: "italic", marginBottom: 12 }}>
+                                       Nessun documento allegato a questo aereo.
+                                     </div>
+                                   ) : (
+                                     <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+                                       {a.documents.map((doc: any) => (
+                                         <div key={doc.id} className="between" style={{ padding: "8px 12px", background: "white", border: "1px solid var(--border)", borderRadius: 8, alignItems: "center" }}>
+                                           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                             <span style={{ fontSize: "1.1rem" }}>📄</span>
+                                             <div style={{ display: "flex", flexDirection: "column" }}>
+                                               <a 
+                                                 href={`/api/documents/${doc.id}`} 
+                                                 target="_blank" 
+                                                 rel="noopener noreferrer"
+                                                 style={{ fontWeight: 600, fontSize: "0.85rem", color: "var(--primary-strong)", textDecoration: "none" }}
+                                                 onMouseEnter={(e) => e.currentTarget.style.textDecoration = "underline"}
+                                                 onMouseLeave={(e) => e.currentTarget.style.textDecoration = "none"}
+                                               >
+                                                 {doc.name}
+                                               </a>
+                                               <span className="muted" style={{ fontSize: "0.75rem", marginTop: 2 }}>
+                                                 {formatBytes(doc.size)} · Caricato il {new Date(doc.createdAt).toLocaleDateString("it-IT")}
+                                               </span>
+                                             </div>
+                                           </div>
+                                           {isAdmin && (
+                                             <form 
+                                               action={deleteAircraftDocument.bind(null, partnership.id, doc.id)}
+                                               onSubmit={(e) => {
+                                                 if (!confirm(`Sei sicuro di voler eliminare il documento "${doc.name}"?`)) {
+                                                   e.preventDefault();
+                                                 }
+                                               }}
+                                             >
+                                               <button className="btn secondary" style={{ padding: "4px 8px", fontSize: 11, color: "var(--danger)" }} type="submit">
+                                                 Elimina
+                                               </button>
+                                             </form>
+                                           )}
+                                         </div>
+                                       ))}
+                                     </div>
+                                   )}
+
+                                   {isAdmin && (
+                                     <form 
+                                       action={uploadAircraftDocument.bind(null, partnership.id, a.id)}
+                                       className="row" 
+                                       style={{ gap: 12, alignItems: "flex-end", flexWrap: "wrap", background: "white", padding: 12, borderRadius: 8, border: "1px dashed var(--border)" }}
+                                     >
+                                       <div className="field" style={{ flex: 1, minWidth: 200, margin: 0 }}>
+                                         <label style={{ fontSize: "0.75rem", fontWeight: 500, display: "block", marginBottom: 6 }}>
+                                           Carica un nuovo documento (PDF, immagini, etc.)
+                                         </label>
+                                         <input 
+                                           className="input" 
+                                           name="file" 
+                                           type="file" 
+                                           required 
+                                           style={{ padding: "4px 8px", borderRadius: 8, fontSize: "0.85rem", border: "1px solid var(--border)", width: "100%", height: "auto" }} 
+                                         />
+                                       </div>
+                                       <SubmitButton style={{ padding: "8px 16px", borderRadius: 8, fontSize: "0.85rem", height: 38 }}>
+                                         Carica
+                                       </SubmitButton>
+                                     </form>
+                                   )}
+                                 </div>
                               </div>
                             </td>
                           </tr>

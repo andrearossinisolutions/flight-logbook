@@ -1363,4 +1363,76 @@ export async function settleDirectPayment(
   revalidatePath(`/societa/${partnershipId}`);
 }
 
+export async function uploadAircraftDocument(partnershipId: string, aircraftId: string, formData: FormData) {
+  const user = await requireUser();
+
+  const membership = await prisma.partnershipMember.findUnique({
+    where: { partnershipId_userId: { partnershipId, userId: user.id } }
+  });
+
+  if (membership?.role !== "ADMIN") {
+    throw new Error("Unauthorized");
+  }
+
+  const file = formData.get("file");
+  if (!file || typeof file === "string") {
+    throw new Error("File non valido");
+  }
+
+  const name = file.name;
+  const contentType = file.type || "application/octet-stream";
+  const size = file.size;
+
+  if (size === 0) {
+    throw new Error("Il file è vuoto");
+  }
+
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+
+  await prisma.partnershipAircraftDocument.create({
+    data: {
+      aircraftId,
+      name,
+      contentType,
+      size,
+      content: buffer
+    }
+  });
+
+  revalidatePath(`/societa/${partnershipId}`);
+}
+
+export async function deleteAircraftDocument(partnershipId: string, documentId: string) {
+  const user = await requireUser();
+
+  const membership = await prisma.partnershipMember.findUnique({
+    where: { partnershipId_userId: { partnershipId, userId: user.id } }
+  });
+
+  if (membership?.role !== "ADMIN") {
+    throw new Error("Unauthorized");
+  }
+
+  const doc = await prisma.partnershipAircraftDocument.findFirst({
+    where: {
+      id: documentId,
+      aircraft: {
+        partnershipId
+      }
+    }
+  });
+
+  if (!doc) {
+    throw new Error("Documento non trovato");
+  }
+
+  await prisma.partnershipAircraftDocument.delete({
+    where: { id: documentId }
+  });
+
+  revalidatePath(`/societa/${partnershipId}`);
+}
+
+
 
