@@ -125,7 +125,7 @@ function paymentTypeLabel(item: PaymentMovement) {
   return "Ricarica credito";
 }
 
-function buildDailyDigestEmail(args: {
+export function buildDailyDigestEmail(args: {
   tomorrowFlights: FlightMovement[];
   duePayments: PaymentMovement[];
   todayReminders: ReminderMovement[];
@@ -179,9 +179,14 @@ function buildDailyDigestEmail(args: {
 
           const notes = item.notes ? `\n  Note: ${item.notes}` : "";
 
+          const appUrl = process.env.APP_URL || "http://localhost:3000";
+          const routeParam = [item.flight?.takeoffPlace, item.flight?.arrivalPlace].filter(Boolean).join(" - ") || item.notes || "";
+          const briefingUrl = `${appUrl}/briefing?icao=${encodeURIComponent(routeParam)}&date=${encodeURIComponent(item.date.toISOString())}`;
+          const briefingLinkText = `\n  Briefing Meteo: ${briefingUrl}`;
+
           return `${index + 1}. ${formatDateDisplay(item.date)} ${formatTimeDisplay(item.date)} · ${flightType(item.flight)} · ` +
             `${item.flight?.aircraftRegistration ?? "I-4150"} (${item.flight?.aircraftType ?? "P92"}) · ` +
-            `${minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}${route}${notes}`;
+            `${minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}${route}${notes}${briefingLinkText}`;
         }),
       ].join("\n")
     : null;
@@ -276,6 +281,10 @@ function buildDailyDigestEmail(args: {
               `
               : "";
 
+            const appUrl = process.env.APP_URL || "http://localhost:3000";
+            const routeParam = [item.flight?.takeoffPlace, item.flight?.arrivalPlace].filter(Boolean).join(" - ") || item.notes || "";
+            const briefingUrl = `${appUrl}/briefing?icao=${encodeURIComponent(routeParam)}&date=${encodeURIComponent(item.date.toISOString())}`;
+
             return `
               <div style="margin: 0 0 14px; padding: 18px; border: 1px solid #dbe5f0; border-radius: 20px; background: #ffffff;">
                 <div style="display: flex; justify-content: space-between; gap: 12px; align-items: flex-start;">
@@ -302,6 +311,12 @@ function buildDailyDigestEmail(args: {
 
                 ${route}
                 ${notes}
+
+                <div style="margin-top: 16px;">
+                  <a href="${briefingUrl}" style="display: inline-block; background-color: #16a34a; color: #ffffff; padding: 8px 16px; font-size: 13px; font-weight: 700; text-decoration: none; border-radius: 8px; border: 1px solid #15803d;">
+                    🌤️ Briefing Meteo
+                  </a>
+                </div>
               </div>
             `;
           })
