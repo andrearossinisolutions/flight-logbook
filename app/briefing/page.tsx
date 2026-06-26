@@ -20,6 +20,7 @@ import {
 } from "@/lib/weather";
 import Link from "next/link";
 import type { Route } from "next";
+import { WeatherMap } from "@/components/weather-map";
 
 export const dynamic = "force-dynamic";
 
@@ -37,11 +38,38 @@ export default async function BriefingPage({
     });
   }
 
-  const { icao } = await searchParams;
+  const { icao, date } = await searchParams;
   const defaultBase = user?.settings?.defaultBase || "LIML";
   const targetIcao = typeof icao === "string" ? icao.trim() : (session ? defaultBase : "");
 
   const swllCharts = await fetchSwllCharts();
+
+  // Parsing e formattazione della data di pianificazione
+  let targetDate = new Date();
+  if (typeof date === "string" && !isNaN(Date.parse(date))) {
+    targetDate = new Date(date);
+  }
+
+  const formattedDateStr = targetDate.toLocaleString("it-IT", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Rome"
+  }) + " (Locali)";
+
+  const vYear = targetDate.getUTCFullYear();
+  const vMonth = (targetDate.getUTCMonth() + 1).toString().padStart(2, "0");
+  const vDay = targetDate.getUTCDate().toString().padStart(2, "0");
+  const vHour = targetDate.getUTCHours().toString().padStart(2, "0");
+  const ventuskyTimeParam = `${vYear}${vMonth}${vDay}/${vHour}`;
+
+  // Informazioni aeroporto base di default
+  const baseApt = ITALIAN_AIRPORTS[defaultBase];
+  const baseLat = baseApt?.lat ?? 45.461;
+  const baseLon = baseApt?.lon ?? 9.263;
 
   const showIntro = !targetIcao;
 
@@ -69,7 +97,9 @@ export default async function BriefingPage({
             icao: icaoCode,
             name: apt?.name || metar?.name || taf?.name || "Aeroporto",
             metar,
-            taf
+            taf,
+            lat: apt?.lat ?? metar?.lat ?? 45.461,
+            lon: apt?.lon ?? metar?.lon ?? 9.263
           };
         }
 
@@ -103,7 +133,9 @@ export default async function BriefingPage({
           taf: null,
           nearestReportingIcao: nearestIcao,
           nearestMetar,
-          nearestTaf
+          nearestTaf,
+          lat: searchLat,
+          lon: searchLon
         };
       })
     );
@@ -128,6 +160,37 @@ export default async function BriefingPage({
       const arrStation = stationsData.find(s => s.icao === arrIcao);
       const arrQnh = arrStation?.metar?.altim || arrStation?.nearestMetar?.altim || 1013.25;
       arrivalDetails = await getLocationWeatherDetails(arrivalName, arrQnh);
+    }
+  }
+
+  let mapLat = baseLat;
+  let mapLon = baseLon;
+  let mapZoom = 8;
+
+  if (validStations.length > 0) {
+    const coords = validStations.filter(s => s.lat !== undefined && s.lon !== undefined);
+    if (coords.length > 0) {
+      const lats = coords.map(c => c.lat);
+      const lons = coords.map(c => c.lon);
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLon = Math.min(...lons);
+      const maxLon = Math.max(...lons);
+      
+      mapLat = (minLat + maxLat) / 2;
+      mapLon = (minLon + maxLon) / 2;
+
+      // Calcolo zoom dinamico in base alla distanza massima tra i punti
+      const dLat = maxLat - minLat;
+      const dLon = maxLon - minLon;
+      const maxDelta = Math.max(dLat, dLon * Math.cos(mapLat * Math.PI / 180));
+
+      if (maxDelta < 0.1) mapZoom = 11;
+      else if (maxDelta < 0.5) mapZoom = 9;
+      else if (maxDelta < 1.5) mapZoom = 8;
+      else if (maxDelta < 3) mapZoom = 7;
+      else if (maxDelta < 6) mapZoom = 6;
+      else mapZoom = 5;
     }
   }
 
@@ -230,9 +293,22 @@ export default async function BriefingPage({
         </div>
       </div>
 
-      {/* Se non è stata inserita alcuna query di ricerca */}
+      {/* Barra di Navigazione Rapida Sezioni */}
+      <div className="row no-print" style={{ gap: 12, marginBottom: 24, justifyContent: "flex-start", flexWrap: "wrap" }}>
+        <a href="#weather-map" className="btn secondary" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "0.9rem", padding: "8px 16px", textDecoration: "none", fontWeight: 700 }}>
+          📍 Mappa Meteo
+        </a>
+        <a href="#swll-charts" className="btn secondary" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "0.9rem", padding: "8px 16px", textDecoration: "none", fontWeight: 700 }}>
+          🗺️ Carte SWLL
+        </a>
+        <a href="#station-details" className="btn secondary" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "0.9rem", padding: "8px 16px", textDecoration: "none", fontWeight: 700 }}>
+          ✈️ Dettagli Stazioni (METAR)
+        </a>
+      </div>
+
+      {/* Sezione di Benvenuto o Segnalazione Errore */}
       {showIntro ? (
-        <div className="card" style={{ textAlign: "center", padding: "48px 24px" }}>
+        <div className="card" style={{ textAlign: "center", padding: "48px 24px", marginBottom: 24 }}>
           <span style={{ fontSize: "3rem" }}>🌤️</span>
           <h2 style={{ marginTop: 16 }}>Inserisci una località o rotta per iniziare</h2>
           <p className="muted" style={{ maxWidth: 500, margin: "8px auto 24px" }}>
@@ -240,7 +316,7 @@ export default async function BriefingPage({
           </p>
         </div>
       ) : validStations.length === 0 ? (
-        <div className="card" style={{ textAlign: "center", padding: "48px 24px", borderColor: "var(--danger)" }}>
+        <div className="card" style={{ textAlign: "center", padding: "48px 24px", borderColor: "var(--danger)", marginBottom: 24 }}>
           <span style={{ fontSize: "3rem" }}>⚠️</span>
           <h2 style={{ marginTop: 16 }}>Nessun dato disponibile</h2>
           <p className="muted" style={{ maxWidth: 500, margin: "8px auto 24px" }}>
@@ -251,8 +327,135 @@ export default async function BriefingPage({
             Torna al Campo Base ({defaultBase})
           </Link>
         </div>
-      ) : (
-        <div className="grid" style={{ gap: 24 }}>
+      ) : null}
+
+      {/* 1. Mappa Meteo Interattiva (Ventusky) */}
+      <div id="weather-map" style={{ scrollMarginTop: 24, marginBottom: 32 }}>
+        <WeatherMap 
+          lat={mapLat} 
+          lon={mapLon} 
+          zoom={mapZoom} 
+          timeParam={ventuskyTimeParam} 
+          formattedDateStr={formattedDateStr}
+        />
+      </div>
+
+      {/* 2. Carte SWLL (Aeronautica Militare) */}
+      <div id="swll-charts" className="card" style={{ scrollMarginTop: 24, marginBottom: 32, padding: "24px 30px" }}>
+        <h3 style={{ margin: "0 0 8px 0", fontSize: "1.3rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}>
+          <span>🗺️</span> Carte Aeronautiche Significative Low Level (SWLL)
+        </h3>
+        <p className="muted" style={{ margin: "0 0 24px 0", fontSize: "0.9rem" }}>
+          Mappe meteo del tempo significativo per i bassi livelli (dal suolo a FL100) emesse a cadenza esaoraria dal Servizio Meteorologico dell'Aeronautica Militare Italiana (CNMCA).
+        </p>
+
+        {swllCharts.length === 0 ? (
+          <div style={{ padding: "16px 20px", backgroundColor: "rgba(245, 158, 11, 0.05)", border: "1px solid rgba(245, 158, 11, 0.2)", borderRadius: 12, color: "#d97706", fontSize: "0.9rem" }}>
+            ⚠️ Non è stato possibile recuperare le carte SWLL aggiornate al momento. 
+            Puoi verificarle direttamente sul sito ufficiale di <a href="https://www.meteoam.it" target="_blank" rel="noopener noreferrer" style={{ color: "#b45309", fontWeight: 700, textDecoration: "underline" }}>MeteoAM</a>.
+          </div>
+        ) : (
+          <>
+            <style dangerouslySetInnerHTML={{ __html: `
+              .swll-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+                gap: 24px;
+              }
+              .swll-card {
+                background: var(--card);
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+              }
+              .swll-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06);
+              }
+              .swll-img-container {
+                position: relative;
+                width: 100%;
+                height: 0;
+                padding-bottom: 75%; /* Aspect ratio 4:3 */
+                background-color: var(--border);
+                overflow: hidden;
+                border-bottom: 1px solid var(--border);
+              }
+              .swll-img {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                transition: transform 0.3s ease;
+              }
+              .swll-card:hover .swll-img {
+                transform: scale(1.03);
+              }
+              .swll-info {
+                padding: 16px;
+              }
+              .swll-title {
+                font-size: 0.95rem;
+                font-weight: 700;
+                margin: 0 0 12px 0;
+                color: var(--text);
+              }
+              .swll-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 14px;
+                font-size: 0.85rem;
+                font-weight: 700;
+                color: var(--primary);
+                background-color: rgba(31, 111, 91, 0.06);
+                border: 1px solid rgba(31, 111, 91, 0.12);
+                border-radius: 8px;
+                text-decoration: none;
+                transition: background-color 0.2s ease, color 0.2s ease;
+              }
+              .swll-btn:hover {
+                background-color: var(--primary);
+                color: white;
+              }
+            `}} />
+            
+            <div className="swll-grid">
+              {swllCharts.map((chart, idx) => (
+                <div key={idx} className="swll-card">
+                  <div className="swll-img-container">
+                    <img 
+                      src={chart.url} 
+                      alt={chart.label} 
+                      className="swll-img"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="swll-info">
+                    <h4 className="swll-title">{chart.label}</h4>
+                    <a 
+                      href={chart.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="swll-btn"
+                    >
+                      Apri originale ↗
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* 3. Dettagli Stazioni (METAR) */}
+      {!showIntro && validStations.length > 0 && (
+        <div id="station-details" className="grid" style={{ scrollMarginTop: 24, gap: 24 }}>
           
           {/* SINTESI METEO DELLA ROTTA (Visualizzato solo se ci sono più aeroporti) */}
           {validStations.length > 1 && (
@@ -786,119 +989,6 @@ export default async function BriefingPage({
           
         </div>
       )}
-
-      {/* Carte Aeronautiche Significative Low Level (SWLL) */}
-      <div className="card" style={{ marginTop: 32, padding: "24px 30px" }}>
-        <h3 style={{ margin: "0 0 8px 0", fontSize: "1.3rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}>
-          <span>🗺️</span> Carte Aeronautiche Significative Low Level (SWLL)
-        </h3>
-        <p className="muted" style={{ margin: "0 0 24px 0", fontSize: "0.9rem" }}>
-          Mappe meteo del tempo significativo per i bassi livelli (dal suolo a FL100) emesse a cadenza esaoraria dal Servizio Meteorologico dell'Aeronautica Militare Italiana (CNMCA).
-        </p>
-
-        {swllCharts.length === 0 ? (
-          <div style={{ padding: "16px 20px", backgroundColor: "rgba(245, 158, 11, 0.05)", border: "1px solid rgba(245, 158, 11, 0.2)", borderRadius: 12, color: "#d97706", fontSize: "0.9rem" }}>
-            ⚠️ Non è stato possibile recuperare le carte SWLL aggiornate al momento. 
-            Puoi verificarle direttamente sul sito ufficiale di <a href="https://www.meteoam.it" target="_blank" rel="noopener noreferrer" style={{ color: "#b45309", fontWeight: 700, textDecoration: "underline" }}>MeteoAM</a>.
-          </div>
-        ) : (
-          <>
-            <style dangerouslySetInnerHTML={{ __html: `
-              .swll-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-                gap: 24px;
-              }
-              .swll-card {
-                background: var(--card);
-                border: 1px solid var(--border);
-                border-radius: 12px;
-                overflow: hidden;
-                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-                transition: transform 0.2s ease, box-shadow 0.2s ease;
-              }
-              .swll-card:hover {
-                transform: translateY(-4px);
-                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06);
-              }
-              .swll-img-container {
-                position: relative;
-                width: 100%;
-                height: 0;
-                padding-bottom: 75%; /* Aspect ratio 4:3 */
-                background-color: var(--border);
-                overflow: hidden;
-                border-bottom: 1px solid var(--border);
-              }
-              .swll-img {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                object-fit: cover;
-                transition: transform 0.3s ease;
-              }
-              .swll-card:hover .swll-img {
-                transform: scale(1.03);
-              }
-              .swll-info {
-                padding: 16px;
-              }
-              .swll-title {
-                font-size: 0.95rem;
-                font-weight: 700;
-                margin: 0 0 12px 0;
-                color: var(--text);
-              }
-              .swll-btn {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                padding: 8px 14px;
-                font-size: 0.85rem;
-                font-weight: 700;
-                color: var(--primary);
-                background-color: rgba(31, 111, 91, 0.06);
-                border: 1px solid rgba(31, 111, 91, 0.12);
-                border-radius: 8px;
-                text-decoration: none;
-                transition: background-color 0.2s ease, color 0.2s ease;
-              }
-              .swll-btn:hover {
-                background-color: var(--primary);
-                color: white;
-              }
-            `}} />
-            
-            <div className="swll-grid">
-              {swllCharts.map((chart, idx) => (
-                <div key={idx} className="swll-card">
-                  <div className="swll-img-container">
-                    <img 
-                      src={chart.url} 
-                      alt={chart.label} 
-                      className="swll-img"
-                      loading="lazy"
-                    />
-                  </div>
-                  <div className="swll-info">
-                    <h4 className="swll-title">{chart.label}</h4>
-                    <a 
-                      href={chart.url} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className="swll-btn"
-                    >
-                      Apri originale ↗
-                    </a>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
     </AppShell>
   );
 }
