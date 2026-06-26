@@ -850,3 +850,87 @@ export async function getLocationWeatherDetails(name: string, defaultQnh: number
   };
 }
 
+export interface SwllChart {
+  url: string;
+  date: Date;
+  label: string;
+}
+
+export async function fetchSwllCharts(): Promise<SwllChart[]> {
+  try {
+    const res = await fetch("https://www.deskaeronautico.it/carte-meteo/", {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+      },
+      next: { revalidate: 1800 } // cache per 30 minuti
+    });
+
+    if (!res.ok) {
+      console.warn(`Impossibile recuperare la pagina delle carte meteo: HTTP ${res.status}`);
+      return [];
+    }
+
+    const html = await res.text();
+    const regex = /https:\/\/www\.deskaeronautico\.it\/swll\/SWLL_[0-9]{6}_[a-z0-9]{4}\.png/g;
+    const matches = html.match(regex);
+
+    if (!matches) {
+      return [];
+    }
+
+    const uniqueUrls = Array.from(new Set(matches));
+
+    const parsed = uniqueUrls.map((url) => {
+      const match = url.match(/SWLL_([0-9]{2})([0-9]{2})00_[a-z0-9]{4}\.png/);
+      if (!match) {
+        return { url, date: new Date(0), label: "Ora Sconosciuta" };
+      }
+      const day = parseInt(match[1], 10);
+      const hour = parseInt(match[2], 10);
+
+      const now = new Date();
+      let year = now.getUTCFullYear();
+      let month = now.getUTCMonth(); // 0-indexed
+
+      // Gestione cambio mese (se giorno carta > giorno odierno + 5, la carta è del mese scorso)
+      if (day > now.getUTCDate() + 5) {
+        month -= 1;
+        if (month < 0) {
+          month = 11;
+          year -= 1;
+        }
+      }
+      // Gestione cambio mese (se giorno carta < giorno odierno - 5, la carta è del mese successivo)
+      else if (day < now.getUTCDate() - 5) {
+        month += 1;
+        if (month > 11) {
+          month = 0;
+          year += 1;
+        }
+      }
+
+      const date = new Date(Date.UTC(year, month, day, hour, 0, 0));
+
+      const localTimeStr = date.toLocaleString("it-IT", {
+        weekday: "long",
+        day: "numeric",
+        month: "short",
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Europe/Rome"
+      });
+
+      const label = `Carta del ${localTimeStr} (Locali) - ${hour.toString().padStart(2, "0")}:00 UTC`;
+
+      return { url, date, label };
+    });
+
+    // Ordina cronologicamente
+    return parsed.sort((a, b) => a.date.getTime() - b.date.getTime());
+  } catch (err) {
+    console.error("Errore nel recupero delle carte SWLL:", err);
+    return [];
+  }
+}
+
+

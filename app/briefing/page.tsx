@@ -15,7 +15,8 @@ import {
   getLocationWeatherDetails,
   findNearestIcao,
   getCoordinatesFromName,
-  ITALIAN_AIRPORTS
+  ITALIAN_AIRPORTS,
+  fetchSwllCharts
 } from "@/lib/weather";
 import Link from "next/link";
 import type { Route } from "next";
@@ -39,6 +40,8 @@ export default async function BriefingPage({
   const { icao } = await searchParams;
   const defaultBase = user?.settings?.defaultBase || "LIML";
   const targetIcao = typeof icao === "string" ? icao.trim() : (session ? defaultBase : "");
+
+  const swllCharts = await fetchSwllCharts();
 
   const showIntro = !targetIcao;
 
@@ -783,6 +786,119 @@ export default async function BriefingPage({
           
         </div>
       )}
+
+      {/* Carte Aeronautiche Significative Low Level (SWLL) */}
+      <div className="card" style={{ marginTop: 32, padding: "24px 30px" }}>
+        <h3 style={{ margin: "0 0 8px 0", fontSize: "1.3rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}>
+          <span>🗺️</span> Carte Aeronautiche Significative Low Level (SWLL)
+        </h3>
+        <p className="muted" style={{ margin: "0 0 24px 0", fontSize: "0.9rem" }}>
+          Mappe meteo del tempo significativo per i bassi livelli (dal suolo a FL100) emesse a cadenza esaoraria dal Servizio Meteorologico dell'Aeronautica Militare Italiana (CNMCA).
+        </p>
+
+        {swllCharts.length === 0 ? (
+          <div style={{ padding: "16px 20px", backgroundColor: "rgba(245, 158, 11, 0.05)", border: "1px solid rgba(245, 158, 11, 0.2)", borderRadius: 12, color: "#d97706", fontSize: "0.9rem" }}>
+            ⚠️ Non è stato possibile recuperare le carte SWLL aggiornate al momento. 
+            Puoi verificarle direttamente sul sito ufficiale di <a href="https://www.meteoam.it" target="_blank" rel="noopener noreferrer" style={{ color: "#b45309", fontWeight: 700, textDecoration: "underline" }}>MeteoAM</a>.
+          </div>
+        ) : (
+          <>
+            <style dangerouslySetInnerHTML={{ __html: `
+              .swll-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+                gap: 24px;
+              }
+              .swll-card {
+                background: var(--card);
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+              }
+              .swll-card:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06);
+              }
+              .swll-img-container {
+                position: relative;
+                width: 100%;
+                height: 0;
+                padding-bottom: 75%; /* Aspect ratio 4:3 */
+                background-color: var(--border);
+                overflow: hidden;
+                border-bottom: 1px solid var(--border);
+              }
+              .swll-img {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                transition: transform 0.3s ease;
+              }
+              .swll-card:hover .swll-img {
+                transform: scale(1.03);
+              }
+              .swll-info {
+                padding: 16px;
+              }
+              .swll-title {
+                font-size: 0.95rem;
+                font-weight: 700;
+                margin: 0 0 12px 0;
+                color: var(--text);
+              }
+              .swll-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 14px;
+                font-size: 0.85rem;
+                font-weight: 700;
+                color: var(--primary);
+                background-color: rgba(31, 111, 91, 0.06);
+                border: 1px solid rgba(31, 111, 91, 0.12);
+                border-radius: 8px;
+                text-decoration: none;
+                transition: background-color 0.2s ease, color 0.2s ease;
+              }
+              .swll-btn:hover {
+                background-color: var(--primary);
+                color: white;
+              }
+            `}} />
+            
+            <div className="swll-grid">
+              {swllCharts.map((chart, idx) => (
+                <div key={idx} className="swll-card">
+                  <div className="swll-img-container">
+                    <img 
+                      src={chart.url} 
+                      alt={chart.label} 
+                      className="swll-img"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="swll-info">
+                    <h4 className="swll-title">{chart.label}</h4>
+                    <a 
+                      href={chart.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="swll-btn"
+                    >
+                      Apri originale ↗
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </AppShell>
   );
 }
