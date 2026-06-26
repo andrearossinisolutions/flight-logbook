@@ -341,7 +341,7 @@ export default async function BriefingPage({
       </div>
 
       {/* 2. Carte SWLL (Aeronautica Militare) */}
-      <div id="swll-charts" className="card" style={{ scrollMarginTop: 24, marginBottom: 32, padding: "24px 30px" }}>
+      <div id="swll-charts" className="card briefing-card">
         <h3 style={{ margin: "0 0 8px 0", fontSize: "1.3rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}>
           <span>🗺️</span> Carte Aeronautiche Significative Low Level (SWLL)
         </h3>
@@ -357,9 +357,14 @@ export default async function BriefingPage({
         ) : (
           <>
             <style dangerouslySetInnerHTML={{ __html: `
+              .briefing-card {
+                scroll-margin-top: 24px;
+                margin-bottom: 32px;
+                padding: 24px 30px;
+              }
               .swll-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
                 gap: 24px;
               }
               .swll-card {
@@ -375,21 +380,15 @@ export default async function BriefingPage({
                 box-shadow: 0 10px 20px rgba(0, 0, 0, 0.06);
               }
               .swll-img-container {
-                position: relative;
                 width: 100%;
-                height: 0;
-                padding-bottom: 75%; /* Aspect ratio 4:3 */
-                background-color: var(--border);
+                background-color: #ffffff;
                 overflow: hidden;
                 border-bottom: 1px solid var(--border);
               }
               .swll-img {
-                position: absolute;
-                top: 0;
-                left: 0;
+                display: block;
                 width: 100%;
-                height: 100%;
-                object-fit: cover;
+                height: auto;
                 transition: transform 0.3s ease;
               }
               .swll-card:hover .swll-img {
@@ -421,6 +420,15 @@ export default async function BriefingPage({
               .swll-btn:hover {
                 background-color: var(--primary);
                 color: white;
+              }
+              @media (max-width: 768px) {
+                .briefing-card {
+                  padding: 16px;
+                }
+                .swll-grid {
+                  grid-template-columns: 1fr;
+                  gap: 16px;
+                }
               }
             `}} />
             
