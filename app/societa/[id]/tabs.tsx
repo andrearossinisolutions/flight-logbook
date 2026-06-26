@@ -1833,7 +1833,9 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                     {partnership.disableSharedFund && <th>Quota manutenzioni</th>}
                     {partnership.disableSharedFund && <th>Spese ore volo</th>}
                     <th>Spese anticipate</th>
-                    <th>{partnership.disableSharedFund ? "Saldo finale" : "Totale da versare"}</th>
+                    {partnership.disableSharedFund && <th>Saldo mese</th>}
+                    {partnership.disableSharedFund && <th>Mesi precedenti</th>}
+                    <th>{partnership.disableSharedFund ? "Saldo totale" : "Totale da versare"}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1858,10 +1860,34 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                       <td data-label="Spese anticipate:" style={{ color: r.advancedExpense > 0 ? "var(--success)" : "inherit" }}>
                         {r.advancedExpense > 0 ? `- € ${r.advancedExpense.toFixed(2)}` : "-"}
                       </td>
-                      <td className="td-total" data-label={partnership.disableSharedFund ? "Saldo finale:" : "Totale da versare:"}>
-                        <strong style={{ fontSize: 18, color: r.totalCost < 0 ? "var(--success)" : "inherit" }}>
-                          € {r.totalCost.toFixed(2)}
-                        </strong>
+                      {partnership.disableSharedFund && (
+                        <td data-label="Saldo mese:">
+                          <span style={{ color: r.totalCost < 0 ? "var(--success)" : "inherit" }}>
+                            € {r.totalCost.toFixed(2)}
+                          </span>
+                        </td>
+                      )}
+                      {partnership.disableSharedFund && (
+                        <td data-label="Mesi precedenti:">
+                          {r.previousDebt > 0.01 ? (
+                            <span style={{ color: "var(--danger, #dc2626)" }}>€ {r.previousDebt.toFixed(2)}</span>
+                          ) : r.previousDebt < -0.01 ? (
+                            <span style={{ color: "var(--success, #16a34a)" }}>- € {Math.abs(r.previousDebt).toFixed(2)}</span>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+                      )}
+                      <td className="td-total" data-label={partnership.disableSharedFund ? "Saldo totale:" : "Totale da versare:"}>
+                        {partnership.disableSharedFund ? (
+                          <strong style={{ fontSize: 18, color: r.totalBalance < -0.01 ? "var(--success)" : r.totalBalance > 0.01 ? "var(--danger)" : "inherit" }}>
+                            {r.totalBalance < -0.01 ? `- € ${Math.abs(r.totalBalance).toFixed(2)}` : `€ ${r.totalBalance.toFixed(2)}`}
+                          </strong>
+                        ) : (
+                          <strong style={{ fontSize: 18, color: r.totalCost < 0 ? "var(--success)" : "inherit" }}>
+                            € {r.totalCost.toFixed(2)}
+                          </strong>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -1871,13 +1897,10 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               {/* Regolamento dei Conti (se la cassa è disattivata) */}
               {partnership.disableSharedFund && reportData && reportData.reports && reportData.reports.length > 1 && (() => {
                 const reports = reportData.reports;
-                const totalCostSum = reports.reduce((acc: number, r: any) => acc + r.totalCost, 0);
-                const averageCost = totalCostSum / reports.length;
-
                 const balances = reports.map((r: any) => ({
                   userId: r.userId,
                   name: r.fullName,
-                  amount: r.totalCost - averageCost,
+                  amount: r.totalBalance || 0,
                 }));
 
                 const debtors = balances.filter((b: any) => b.amount > 0.01).map((b: any) => ({ ...b }));

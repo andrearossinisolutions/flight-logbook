@@ -23,8 +23,11 @@ export function buildMonthlyReportEmail(args: {
   disableSharedFund?: boolean;
   maintenanceShare?: number;
   hoursExpenseShare?: number;
+  localBalance?: number;
+  previousDebt?: number;
+  totalBalance?: number;
 }) {
-  const { monthName, partnershipName, fixedCostPerMember, fixedCostTotal, flightCost, totalCost, durationMinutes, aircraftDetails, memberCount, advancedExpense = 0, disableSharedFund = false, maintenanceShare = 0, hoursExpenseShare = 0 } = args;
+  const { monthName, partnershipName, fixedCostPerMember, fixedCostTotal, flightCost, totalCost, durationMinutes, aircraftDetails, memberCount, advancedExpense = 0, disableSharedFund = false, maintenanceShare = 0, hoursExpenseShare = 0, localBalance = 0, previousDebt = 0, totalBalance = 0 } = args;
 
   const subject = `Rendiconto Mensile ${partnershipName} - ${monthName}`;
 
@@ -37,7 +40,9 @@ Rendiconto Mensile: ${partnershipName}
 Mese: ${monthName}
 
 ${disableSharedFund 
-  ? `La cassa comune è disattivata. Ecco il tuo saldo per questo mese:\n\n${totalCost >= 0 ? `Saldo a debito (da dare ai soci): ${eur(totalCost)}` : `Saldo a credito (da ricevere dai soci): ${eur(Math.abs(totalCost))}`}`
+  ? `La cassa comune è disattivata. Ecco il tuo saldo per questo mese:
+- Saldo mese corrente: ${localBalance >= 0 ? `A debito: ${eur(localBalance)}` : `A credito: ${eur(Math.abs(localBalance))}`}
+${previousDebt !== 0 ? `- Saldo mesi precedenti (non regolato): ${previousDebt >= 0 ? `A debito: ${eur(previousDebt)}` : `A credito: ${eur(Math.abs(previousDebt))}`}\n` : ""}- Saldo totale da regolare: ${totalBalance >= 0 ? `A debito: ${eur(totalBalance)}` : `A credito: ${eur(Math.abs(totalBalance))}`}`
   : `Ecco il riepilogo delle spese da versare per questo mese:\n\nTotale da versare: ${eur(totalCost)}`
 }
 
@@ -79,13 +84,26 @@ ${aircraftText}
           <div style="text-align: center; margin-bottom: 32px; padding: 24px; border-radius: 16px; background: #f8fafc;">
             <div style="font-size: 14px; color: #4c5f76; margin-bottom: 8px;">
               ${disableSharedFund 
-                ? (totalCost >= 0 ? "Saldo a debito (da dare ai soci)" : "Saldo a credito (da ricevere dai soci)") 
+                ? (totalBalance >= 0 ? "Saldo totale a debito (da dare ai soci)" : "Saldo totale a credito (da ricevere dai soci)") 
                 : "Totale da versare"}
             </div>
-            <div style="font-size: 36px; font-weight: 800; color: ${disableSharedFund && totalCost < 0 ? "#16a34a" : "#17324d"};">
-              ${escapeHtml(eur(disableSharedFund ? Math.abs(totalCost) : totalCost))}
+            <div style="font-size: 36px; font-weight: 800; color: ${disableSharedFund && totalBalance < 0 ? "#16a34a" : "#17324d"};">
+              ${escapeHtml(eur(disableSharedFund ? Math.abs(totalBalance) : totalCost))}
             </div>
           </div>
+
+          ${disableSharedFund && previousDebt !== 0 ? `
+            <div style="margin: 0 0 28px; padding: 16px; border: 1px solid #dbe5f0; border-radius: 16px; background: #f8fafc;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="color: #4c5f76;">Saldo mese corrente</span>
+                <strong style="color: #17324d;">${eur(localBalance)}</strong>
+              </div>
+              <div style="display: flex; justify-content: space-between;">
+                <span style="color: #4c5f76;">Saldo mesi precedenti (non regolato)</span>
+                <strong style="color: ${previousDebt > 0 ? "#dc2626" : "#16a34a"};">${previousDebt > 0 ? "" : "-"}${eur(Math.abs(previousDebt))}</strong>
+              </div>
+            </div>
+          ` : ""}
 
           <div style="margin: 0 0 28px;">
             <div style="font-size: 18px; font-weight: 800; color: #17324d; margin: 0 0 14px;">Dettaglio Costi Fissi</div>

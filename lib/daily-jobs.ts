@@ -12,6 +12,8 @@ import {
 } from "@/lib/utils";
 import { buildMonthlyReportEmail } from "@/lib/monthly-report-email";
 import { getMonthlyMaintenanceShares } from "@/lib/maintenance";
+import { calculateHistoricalReports } from "@/lib/reports";
+
 
 const ONE_MINUTE_MS = 60 * 1000;
 const DAILY_RUN_HOUR = 9;
@@ -631,180 +633,54 @@ async function runMonthlyReports(now: Date) {
   const partnerships = await prisma.partnership.findMany({
     include: {
       members: { include: { user: true } },
-      fixedCosts: true,
-      aircrafts: true,
     }
   });
 
-  const startOfMonth = new Date(Date.UTC(targetYear, targetMonth - 1, 1));
-  const endOfMonth = new Date(Date.UTC(parts.year, parts.month - 1, 1));
+  const startOfMonth = new Date(targetYear, targetMonth - 1, 1);
 
   for (const partnership of partnerships) {
     if (partnership.members.length === 0) continue;
 
-    const fixedCostTotal = partnership.fixedCosts.reduce((acc, c) => {
-      if (c.period === 'MONTHLY') return acc + Number(c.amount);
-      if (c.period === 'YEARLY_PRORATED' || c.period === 'YEARLY') return acc + (Number(c.amount) / 12);
-      if (c.period === 'YEARLY_ONCE') {
-        return (c.billingMonth === targetMonth) ? acc + Number(c.amount) : acc;
-      }
-      if (c.period === 'ONE_OFF') {
-        return (c.billingMonth === targetMonth && c.billingYear === targetYear) ? acc + Number(c.amount) : acc;
-      }
-      return acc;
-    }, 0);
-    const fixedCostPerMember = fixedCostTotal / partnership.members.length;
+    try {
+      const reportData = await calculateHistoricalReports(partnership.id, targetYear, targetMonth - 1);
 
-    const aircraftIds = partnership.aircrafts.map(a => a.id);
-    
-    if (aircraftIds.length === 0 && fixedCostTotal === 0) continue;
+      for (const member of partnership.members) {
+        const userReport = reportData.reports.find(r => r.userId === member.userId);
+        if (!userReport) continue;
 
-    const movements = await prisma.movement.findMany({
-      where: {
-        type: "FLIGHT",
-        isDraft: false,
-        date: {
-          gte: startOfMonth,
-          lt: endOfMonth,
-        },
-        flight: {
-          partnershipAircraftId: { in: aircraftIds }
-        }
-      },
-      include: {
-        flight: {
-          include: { partnershipAircraft: true }
-        }
-      }
-    });
-
-    const memberExpenses = await prisma.partnershipTransaction.findMany({
-      where: {
-        partnershipId: partnership.id,
-        type: { in: ["MEMBER_EXPENSE", "MEMBER_EXPENSE_HOURS", "MEMBER_TRANSFER"] },
-        date: {
-          gte: startOfMonth,
-          lt: endOfMonth,
-        }
-      }
-    });
-
-    const totalDurationMinutes = movements.reduce((acc, mov) => {
-      const f = mov.flight;
-      const pa = f?.partnershipAircraft;
-      if (!f || !pa) return acc;
-      return acc + f.durationMinutes;
-    }, 0);
-
-    const totalHoursExpenses = memberExpenses
-      .filter(t => t.type === "MEMBER_EXPENSE_HOURS")
-      .reduce((acc, t) => acc + Number(t.amount), 0);
-
-    // Calculate maintenance shares if shared fund is disabled
-    let maintenanceShares: { [userId: string]: number } = {};
-    if (partnership.disableSharedFund && aircraftIds.length > 0) {
-      const aircraftsWithLogs = await prisma.partnershipAircraft.findMany({
-        where: { partnershipId: partnership.id },
-        include: {
-          maintenanceLogs: {
-            orderBy: { date: 'desc' }
-          }
-        }
-      });
-
-      const allHistoricalFlights = await prisma.flight.findMany({
-        where: {
-          partnershipAircraftId: { in: aircraftIds },
-          movement: { isDraft: false }
-        },
-        include: {
-          movement: {
-            include: { user: true }
-          }
-        }
-      });
-
-      maintenanceShares = getMonthlyMaintenanceShares(
-        startOfMonth,
-        endOfMonth,
-        aircraftsWithLogs,
-        allHistoricalFlights,
-        partnership.members
-      );
-    }
-
-    for (const member of partnership.members) {
-      const userMovements = movements.filter(mov => mov.userId === member.userId);
-      let flightCost = 0;
-      let durationMinutes = 0;
-      
-      const aircraftDetails = new Map<string, { duration: number, cost: number }>();
-
-      for (const mov of userMovements) {
-        const f = mov.flight;
-        const pa = f?.partnershipAircraft;
-        if (!f || !pa) continue;
-        
-        durationMinutes += f.durationMinutes;
-        const hourlyCost = Number(pa.hourlyFuelCost) + Number(pa.hourlyMaintCost) + Number(pa.hourlyEngineFund);
-        const cost = (f.durationMinutes / 60) * hourlyCost;
-        flightCost += cost;
-
-        const current = aircraftDetails.get(pa.registration) || { duration: 0, cost: 0 };
-        current.duration += f.durationMinutes;
-        current.cost += cost;
-        aircraftDetails.set(pa.registration, current);
-      }
-
-      const userSentExpenses = memberExpenses.filter(t => t.userId === member.userId);
-      const userReceivedTransfers = memberExpenses.filter(t => t.type === "MEMBER_TRANSFER" && t.recipientId === member.userId);
-      const advancedExpense = 
-        userSentExpenses.reduce((acc, t) => acc + Number(t.amount), 0) -
-        userReceivedTransfers.reduce((acc, t) => acc + Number(t.amount), 0);
-      const maintenanceShare = maintenanceShares[member.userId] || 0;
-
-      let hoursExpenseShare = 0;
-      if (totalHoursExpenses > 0) {
-        if (totalDurationMinutes > 0) {
-          hoursExpenseShare = totalHoursExpenses * (durationMinutes / totalDurationMinutes);
-        } else {
-          hoursExpenseShare = totalHoursExpenses / partnership.members.length;
-        }
-      }
-
-      const totalCost = fixedCostPerMember + flightCost + maintenanceShare + hoursExpenseShare - advancedExpense;
-
-      const email = buildMonthlyReportEmail({
-        monthName: startOfMonth.toLocaleString('it-IT', { month: 'long', year: 'numeric' }),
-        partnershipName: partnership.name,
-        fixedCostPerMember,
-        fixedCostTotal,
-        flightCost,
-        totalCost,
-        durationMinutes,
-        aircraftDetails: Array.from(aircraftDetails.entries()).map(([reg, data]) => ({
-            registration: reg,
-            durationMinutes: data.duration,
-            cost: data.cost
-        })),
-        memberCount: partnership.members.length,
-        advancedExpense,
-        disableSharedFund: partnership.disableSharedFund,
-        maintenanceShare,
-        hoursExpenseShare
-      });
-
-      try {
-        await sendUserEmail({
-          userId: member.userId,
-          subject: email.subject,
-          text: email.text,
-          html: email.html,
+        const email = buildMonthlyReportEmail({
+          monthName: startOfMonth.toLocaleString('it-IT', { month: 'long', year: 'numeric' }),
+          partnershipName: partnership.name,
+          fixedCostPerMember: userReport.fixedCost,
+          fixedCostTotal: reportData.fixedCostTotal,
+          flightCost: userReport.flightCost,
+          totalCost: userReport.totalCost,
+          localBalance: userReport.localBalance,
+          previousDebt: userReport.previousDebt,
+          totalBalance: userReport.totalBalance,
+          durationMinutes: userReport.durationMinutes,
+          aircraftDetails: userReport.aircraftDetails,
+          memberCount: partnership.members.length,
+          advancedExpense: userReport.advancedExpense,
+          disableSharedFund: partnership.disableSharedFund,
+          maintenanceShare: userReport.maintenanceShare,
+          hoursExpenseShare: userReport.hoursExpenseShare
         });
-        console.log(`[daily-jobs] Inviato report mensile a ${member.userId} per società ${partnership.name}`);
-      } catch(e) {
-        console.error(`[daily-jobs] Errore invio report mensile a ${member.userId}`, e);
+
+        try {
+          await sendUserEmail({
+            userId: member.userId,
+            subject: email.subject,
+            text: email.text,
+            html: email.html,
+          });
+          console.log(`[daily-jobs] Inviato report mensile a ${member.userId} per società ${partnership.name}`);
+        } catch(e) {
+          console.error(`[daily-jobs] Errore invio report mensile a ${member.userId}`, e);
+        }
       }
+    } catch(err) {
+      console.error(`[daily-jobs] Errore calcolo report mensile per società ${partnership.id}`, err);
     }
   }
 

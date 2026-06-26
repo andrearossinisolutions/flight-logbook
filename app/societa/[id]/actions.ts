@@ -8,7 +8,10 @@ import type { Route } from "next";
 import { sendEmail } from "@/lib/mail";
 import { renderBoardMessageEmail } from "@/lib/board-message-email";
 import { parseRomeDateTime } from "@/lib/utils";
+import { getRomeDateTimeParts } from "@/lib/utils";
 import { getMonthlyMaintenanceShares } from "@/lib/maintenance";
+import { calculateHistoricalReports } from "@/lib/reports";
+
 
 async function createRecommendedRemindersDb(tx: any, aircraftId: string) {
   // 1. Sostituzione gomme
@@ -425,162 +428,9 @@ export async function getMonthlyReport(partnershipId: string, year: number, mont
     throw new Error("Non hai accesso a questa società");
   }
 
-  const partnership = await prisma.partnership.findUnique({
-    where: { id: partnershipId },
-    include: {
-      members: { include: { user: true } },
-      fixedCosts: true,
-      aircrafts: true,
-    }
-  });
-
-  if (!partnership) throw new Error("Società non trovata");
-
-  const startOfMonth = new Date(year, month, 1);
-  const endOfMonth = new Date(year, month + 1, 1);
-
-  const fixedCostTotal = partnership.fixedCosts.reduce((acc, c) => {
-    if (c.period === 'MONTHLY') return acc + Number(c.amount);
-    if (c.period === 'YEARLY_PRORATED' || c.period === 'YEARLY') return acc + (Number(c.amount) / 12);
-    if (c.period === 'YEARLY_ONCE') {
-      return (c.billingMonth === month + 1) ? acc + Number(c.amount) : acc;
-    }
-    if (c.period === 'ONE_OFF') {
-      return (c.billingMonth === month + 1 && c.billingYear === year) ? acc + Number(c.amount) : acc;
-    }
-    return acc;
-  }, 0);
-  const fixedCostPerMember = partnership.members.length > 0 ? fixedCostTotal / partnership.members.length : 0;
-
-  const aircraftIds = partnership.aircrafts.map(a => a.id);
-
-  const movements = await prisma.movement.findMany({
-    where: {
-      type: "FLIGHT",
-      isDraft: false,
-      date: {
-        gte: startOfMonth,
-        lt: endOfMonth,
-      },
-      flight: {
-        partnershipAircraftId: { in: aircraftIds }
-      }
-    },
-    include: {
-      flight: {
-        include: { partnershipAircraft: true }
-      },
-      user: true,
-    }
-  });
-
-  const memberExpenses = await prisma.partnershipTransaction.findMany({
-    where: {
-      partnershipId,
-      type: { in: ["MEMBER_EXPENSE", "MEMBER_EXPENSE_HOURS", "MEMBER_TRANSFER"] },
-      date: {
-        gte: startOfMonth,
-        lt: endOfMonth,
-      }
-    }
-  });
-
-  // Calculate maintenance shares if shared fund is disabled
-  let maintenanceShares: { [userId: string]: number } = {};
-  if (partnership.disableSharedFund && aircraftIds.length > 0) {
-    const aircraftsWithLogs = await prisma.partnershipAircraft.findMany({
-      where: { partnershipId },
-      include: {
-        maintenanceLogs: {
-          orderBy: { date: 'desc' }
-        }
-      }
-    });
-
-    const allHistoricalFlights = await prisma.flight.findMany({
-      where: {
-        partnershipAircraftId: { in: aircraftIds },
-        movement: { isDraft: false }
-      },
-      include: {
-        movement: {
-          include: { user: true }
-        }
-      }
-    });
-
-    maintenanceShares = getMonthlyMaintenanceShares(
-      startOfMonth,
-      endOfMonth,
-      aircraftsWithLogs,
-      allHistoricalFlights,
-      partnership.members
-    );
-  }
-
-  // Calculate total flight minutes of the month and total hours-split expenses
-  const totalDurationMinutes = movements.reduce((acc, mov) => {
-    const f = mov.flight;
-    const pa = f?.partnershipAircraft;
-    if (!f || !pa) return acc;
-    return acc + f.durationMinutes;
-  }, 0);
-
-  const totalHoursExpenses = memberExpenses
-    .filter(t => t.type === "MEMBER_EXPENSE_HOURS")
-    .reduce((acc, t) => acc + Number(t.amount), 0);
-
-  const memberReports = partnership.members.map(m => {
-    const userMovements = movements.filter(mov => mov.userId === m.userId);
-    let flightCost = 0;
-    let durationMinutes = 0;
-
-    for (const mov of userMovements) {
-      const f = mov.flight;
-      const pa = f?.partnershipAircraft;
-      if (!f || !pa) continue;
-      durationMinutes += f.durationMinutes;
-
-      const hourlyCost = Number(pa.hourlyFuelCost) + Number(pa.hourlyMaintCost) + Number(pa.hourlyEngineFund);
-      flightCost += (f.durationMinutes / 60) * hourlyCost;
-    }
-
-    const userSentExpenses = memberExpenses.filter(t => t.userId === m.userId);
-    const userReceivedTransfers = memberExpenses.filter(t => t.type === "MEMBER_TRANSFER" && t.recipientId === m.userId);
-    const advancedExpense = 
-      userSentExpenses.reduce((acc, t) => acc + Number(t.amount), 0) -
-      userReceivedTransfers.reduce((acc, t) => acc + Number(t.amount), 0);
-    const maintenanceShare = maintenanceShares[m.userId] || 0;
-
-    let hoursExpenseShare = 0;
-    if (totalHoursExpenses > 0) {
-      if (totalDurationMinutes > 0) {
-        hoursExpenseShare = totalHoursExpenses * (durationMinutes / totalDurationMinutes);
-      } else {
-        hoursExpenseShare = totalHoursExpenses / partnership.members.length;
-      }
-    }
-
-    return {
-      userId: m.userId,
-      fullName: m.user.fullName || m.user.email,
-      fixedCost: fixedCostPerMember,
-      flightCost,
-      maintenanceShare,
-      hoursExpenseShare,
-      advancedExpense,
-      totalCost: fixedCostPerMember + flightCost + maintenanceShare + hoursExpenseShare - advancedExpense,
-      durationMinutes,
-      flightsCount: userMovements.length,
-    };
-  });
-
-  return {
-    fixedCostTotal,
-    fixedCostPerMember,
-    reports: memberReports
-  };
+  return calculateHistoricalReports(partnershipId, year, month);
 }
+
 
 export async function addTransaction(partnershipId: string, formData: FormData) {
   const user = await requireUser();
