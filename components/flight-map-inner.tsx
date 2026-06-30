@@ -270,11 +270,18 @@ export default function FlightMapInner({ points, routes, onEditPlace }: FlightMa
 
   return (
     <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
+      {/* Stile CSS per spostare i controlli di zoom di Leaflet al di sotto della navbar flottante */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .leaflet-top {
+          top: 92px !important;
+        }
+      `}} />
+
       {/* Informazioni sovrapposte alla mappa in alto a destra */}
       <div
         style={{
           position: "absolute",
-          top: 12,
+          top: 96,
           right: 12,
           zIndex: 1000,
           background: "rgba(255, 255, 255, 0.9)",
@@ -301,10 +308,7 @@ export default function FlightMapInner({ points, routes, onEditPlace }: FlightMa
           flex: 1,
           width: "100%",
           height: "100%",
-          borderRadius: 20,
-          border: "1px solid var(--border)",
           overflow: "hidden",
-          boxShadow: "0 8px 30px rgba(20, 32, 51, 0.08)",
         }}
       />
     </div>

@@ -16,9 +16,6 @@ const FlightMapInner = dynamic(() => import("./flight-map-inner"), {
         alignItems: "center",
         justifyContent: "center",
         background: "var(--card, #ffffff)",
-        borderRadius: 20,
-        border: "1px solid var(--border, #d9e0ea)",
-        minHeight: 400,
       }}
     >
       <div style={{ textAlign: "center", padding: 20 }}>

@@ -216,29 +216,15 @@ export default async function MapPage() {
   const routes = Array.from(routesMap.values()) as MapRoute[];
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
-      <Navbar isLoggedIn={true} />
-      <div
-        style={{
-          flex: 1,
-          padding: "0 24px 24px 24px",
-          maxWidth: "1100px",
-          width: "100%",
-          margin: "0 auto",
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
-      >
-        <div style={{ marginBottom: 12 }}>
-          <h1 style={{ margin: "0 0 4px 0", fontSize: "1.8rem" }}>Mappa dei Voli</h1>
-          <p className="muted" style={{ margin: 0, fontSize: "0.9rem" }}>
-            Visualizza la tua base operativa ed esplora tutte le destinazioni e le rotte che hai volato.
-          </p>
-        </div>
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
-          <FlightMap points={points} routes={routes} />
-        </div>
+    <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden" }}>
+      {/* Barra di navigazione flottante sopra la mappa */}
+      <div style={{ position: "relative", zIndex: 10 }}>
+        <Navbar isLoggedIn={true} />
+      </div>
+
+      {/* Mappa a tutto schermo (si estende dietro la barra di navigazione) */}
+      <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", zIndex: 1 }}>
+        <FlightMap points={points} routes={routes} />
       </div>
     </div>
   );
