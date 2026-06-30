@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { MapPoint } from "./flight-map-inner";
+import type { MapPoint, MapRoute } from "./flight-map-inner";
 
 const FlightMapInner = dynamic(() => import("./flight-map-inner"), {
   ssr: false,
@@ -28,12 +28,13 @@ const FlightMapInner = dynamic(() => import("./flight-map-inner"), {
   ),
 });
 
-export type { MapPoint };
+export type { MapPoint, MapRoute };
 
 interface FlightMapProps {
   points: MapPoint[];
+  routes: MapRoute[];
 }
 
-export default function FlightMap({ points }: FlightMapProps) {
-  return <FlightMapInner points={points} />;
+export default function FlightMap({ points, routes }: FlightMapProps) {
+  return <FlightMapInner points={points} routes={routes} />;
 }

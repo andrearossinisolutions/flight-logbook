@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { getCoordinatesFromName, ITALIAN_AIRPORTS, PLACE_TO_METAR } from "@/lib/weather";
 import FlightMap from "@/components/flight-map";
-import type { MapPoint } from "@/components/flight-map";
+import type { MapPoint, MapRoute } from "@/components/flight-map";
 
 export const dynamic = "force-dynamic";
 
@@ -146,6 +146,54 @@ export default async function MapPage() {
 
   const points = (await Promise.all(pointsPromise)).filter(Boolean) as MapPoint[];
 
+  // Costruisci una mappa delle coordinate per la risoluzione rapida delle rotte
+  const coordsMap = new Map<string, { lat: number; lon: number }>();
+  points.forEach((p) => {
+    coordsMap.set(p.name.toUpperCase(), { lat: p.lat, lon: p.lon });
+  });
+
+  // Calcola le rotte uniche
+  const routesMap = new Map<
+    string,
+    {
+      from: string;
+      to: string;
+      fromCoords: { lat: number; lon: number };
+      toCoords: { lat: number; lon: number };
+      count: number;
+    }
+  >();
+
+  movements.forEach((m) => {
+    if (!m.flight) return;
+    const dep = m.flight.takeoffPlace ? m.flight.takeoffPlace.trim().toUpperCase() : "";
+    const arr = m.flight.arrivalPlace ? m.flight.arrivalPlace.trim().toUpperCase() : "";
+
+    if (dep && arr && dep !== arr) {
+      const depCoords = coordsMap.get(dep);
+      const arrCoords = coordsMap.get(arr);
+
+      if (depCoords && arrCoords) {
+        // Consideriamo la rotta come bidirezionale (ordinando alfabeticamente)
+        const key = [dep, arr].sort().join("-");
+        const existing = routesMap.get(key);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          routesMap.set(key, {
+            from: dep,
+            to: arr,
+            fromCoords: depCoords,
+            toCoords: arrCoords,
+            count: 1,
+          });
+        }
+      }
+    }
+  });
+
+  const routes = Array.from(routesMap.values()) as MapRoute[];
+
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden" }}>
       <Navbar isLoggedIn={true} />
@@ -164,11 +212,11 @@ export default async function MapPage() {
         <div style={{ marginBottom: 12 }}>
           <h1 style={{ margin: "0 0 4px 0", fontSize: "1.8rem" }}>Mappa dei Voli</h1>
           <p className="muted" style={{ margin: 0, fontSize: "0.9rem" }}>
-            Visualizza la tua base operativa ed esplora tutte le destinazioni che hai visitato.
+            Visualizza la tua base operativa ed esplora tutte le destinazioni e le rotte che hai volato.
           </p>
         </div>
         <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", minHeight: 0 }}>
-          <FlightMap points={points} />
+          <FlightMap points={points} routes={routes} />
         </div>
       </div>
     </div>

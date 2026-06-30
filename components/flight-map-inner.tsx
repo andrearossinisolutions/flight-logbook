@@ -14,11 +14,20 @@ export interface MapPoint {
   lastVisit: string | null;
 }
 
-interface FlightMapProps {
-  points: MapPoint[];
+export interface MapRoute {
+  from: string;
+  to: string;
+  fromCoords: { lat: number; lon: number };
+  toCoords: { lat: number; lon: number };
+  count: number;
 }
 
-export default function FlightMapInner({ points }: FlightMapProps) {
+interface FlightMapProps {
+  points: MapPoint[];
+  routes: MapRoute[];
+}
+
+export default function FlightMapInner({ points, routes }: FlightMapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
 
@@ -40,9 +49,9 @@ export default function FlightMapInner({ points }: FlightMapProps) {
 
     const map = mapRef.current;
 
-    // Rimuovi eventuali marker esistenti prima di ri-disegnare
+    // Rimuovi marker e rotte esistenti prima di ri-disegnare
     map.eachLayer((layer) => {
-      if (layer instanceof L.Marker) {
+      if (layer instanceof L.Marker || layer instanceof L.Polyline) {
         map.removeLayer(layer);
       }
     });
@@ -169,6 +178,48 @@ export default function FlightMapInner({ points }: FlightMapProps) {
       marker.bindPopup(popupContent);
     });
 
+    // Aggiungi le rotte (linee di collegamento)
+    routes.forEach((r) => {
+      if (
+        typeof r.fromCoords.lat !== "number" ||
+        typeof r.fromCoords.lon !== "number" ||
+        typeof r.toCoords.lat !== "number" ||
+        typeof r.toCoords.lon !== "number"
+      ) {
+        return;
+      }
+
+      const path: L.LatLngTuple[] = [
+        [r.fromCoords.lat, r.fromCoords.lon],
+        [r.toCoords.lat, r.toCoords.lon],
+      ];
+
+      // Lo spessore varia in base al numero di voli effettuati su quella rotta
+      const weight = 2.0 + Math.min(5.0, r.count * 0.5);
+
+      const polyline = L.polyline(path, {
+        color: "var(--primary, #1f6f5b)",
+        weight: weight,
+        opacity: 0.55,
+        lineCap: "round",
+        lineJoin: "round",
+      }).addTo(map);
+
+      // Aggiungi un tooltip che segue il mouse lungo la rotta
+      polyline.bindTooltip(
+        `
+        <div style="font-family: sans-serif; font-size: 0.85rem; padding: 2px; color: #142033;">
+          Rotta: <strong>${r.from}</strong> ⇄ <strong>${r.to}</strong><br/>
+          Voli effettuati: <strong>${r.count}</strong>
+        </div>
+      `,
+        {
+          sticky: true,
+          opacity: 0.95,
+        }
+      );
+    });
+
     // Centra e adatta la mappa
     if (latLngs.length > 0) {
       if (latLngs.length === 1) {
@@ -185,7 +236,7 @@ export default function FlightMapInner({ points }: FlightMapProps) {
       // Centro sull'Italia se non ci sono punti
       map.setView([42.0, 12.5], 6);
     }
-  }, [points]);
+  }, [points, routes]);
 
   return (
     <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
