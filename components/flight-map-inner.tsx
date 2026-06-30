@@ -224,13 +224,13 @@ export default function FlightMapInner({ points, routes, onEditPlace }: FlightMa
         [r.toCoords.lat, r.toCoords.lon],
       ];
 
-      // Lo spessore varia in base al numero di voli effettuati su quella rotta
-      const weight = 2.0 + Math.min(5.0, r.count * 0.5);
+      // Lo spessore varia in base al numero di voli effettuati su quella rotta (spessore base aumentato a 4.0)
+      const weight = 4.0 + Math.min(6.0, r.count * 0.75);
 
       const polyline = L.polyline(path, {
-        color: "var(--primary, #1f6f5b)",
+        color: "#e6007e",
         weight: weight,
-        opacity: 0.55,
+        opacity: 1.0,
         lineCap: "round",
         lineJoin: "round",
       }).addTo(map);
