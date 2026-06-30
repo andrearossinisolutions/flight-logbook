@@ -35,6 +35,7 @@ type FlightFormProps = {
     type: string;
     hourlyCost: number;
   }>;
+  visitedPlaces?: string[];
 };
 
 function buildInitialValues(
@@ -82,6 +83,7 @@ export default function FlightForm({
   bookingId,
   partnershipAircrafts = [],
   rentalAircrafts = [],
+  visitedPlaces = [],
 }: FlightFormProps) {
   const initial = buildInitialValues(initialValues);
 
@@ -377,6 +379,7 @@ export default function FlightForm({
                 className="input"
                 id="takeoffPlace"
                 name="takeoffPlace"
+                list="visitedPlacesList"
                 value={takeoffPlace}
                 onChange={(e) => setTakeoffPlace(e.target.value)}
                 placeholder="Es. Dovera"
@@ -390,6 +393,7 @@ export default function FlightForm({
                   className="input"
                   id="arrivalPlace"
                   name="arrivalPlace"
+                  list="visitedPlacesList"
                   value={arrivalPlace}
                   onChange={(e) => setArrivalPlace(e.target.value)}
                   placeholder="Es. Dovera"
@@ -406,6 +410,12 @@ export default function FlightForm({
               </div>
             </div>
           </div>
+
+          <datalist id="visitedPlacesList">
+            {visitedPlaces.map((place) => (
+              <option key={place} value={place} />
+            ))}
+          </datalist>
         </div>
 
         <div className="card">

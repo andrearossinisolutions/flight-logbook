@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { Route } from "next";
 import { useState } from "react";
-import { AirplaneIcon, BriefingIcon, LogOutIcon, SettingsIcon, UsersIcon } from "./icons";
+import { AirplaneIcon, BriefingIcon, LogOutIcon, MapIcon, SettingsIcon, UsersIcon } from "./icons";
 import { version } from "../package.json";
 
 export function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
@@ -25,9 +25,11 @@ export function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   const navItems = [
     { name: "Logbook", href: "/logbook", icon: AirplaneIcon },
     { name: "Briefing", href: "/briefing", icon: BriefingIcon },
+    { name: "Mappa", href: "/map", icon: MapIcon },
     { name: "Società", href: "/societa", icon: UsersIcon },
     { name: "Impostazioni", href: "/settings", icon: SettingsIcon },
   ];
+
 
   return (
     <header className="navbar-container">

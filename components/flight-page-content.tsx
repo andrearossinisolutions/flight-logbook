@@ -90,6 +90,19 @@ export default async function FlightPageContent(
       0
   );
 
+  const visitedPlacesSet = new Set<string>();
+  for (const m of movements) {
+    if (m.type === "FLIGHT" && m.flight) {
+      if (m.flight.takeoffPlace) {
+        visitedPlacesSet.add(m.flight.takeoffPlace.trim().toUpperCase());
+      }
+      if (m.flight.arrivalPlace) {
+        visitedPlacesSet.add(m.flight.arrivalPlace.trim().toUpperCase());
+      }
+    }
+  }
+  const visitedPlaces = Array.from(visitedPlacesSet).sort();
+
   const movementToEdit =
     props.mode === "edit"
       ? movements.find((m) => m.id === props.movementId && m.type === "FLIGHT")
@@ -325,6 +338,7 @@ export default async function FlightPageContent(
         initialValues={initialValues}
         partnershipAircrafts={partnershipAircrafts}
         rentalAircrafts={rentalAircrafts}
+        visitedPlaces={visitedPlaces}
       />
     </AppShell>
   );
