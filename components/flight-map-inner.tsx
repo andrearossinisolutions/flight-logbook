@@ -11,6 +11,8 @@ export interface MapPoint {
   isBase: boolean;
   takeoffCount: number;
   arrivalCount: number;
+  address: string | null;
+  hasOverride: boolean;
   lastVisit: string | null;
 }
 
@@ -25,11 +27,18 @@ export interface MapRoute {
 interface FlightMapProps {
   points: MapPoint[];
   routes: MapRoute[];
+  onEditPlace: (name: string) => void;
 }
 
-export default function FlightMapInner({ points, routes }: FlightMapProps) {
+export default function FlightMapInner({ points, routes, onEditPlace }: FlightMapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const onEditPlaceRef = useRef(onEditPlace);
+
+  // Aggiorna il ref per evitare chiusure stantie
+  useEffect(() => {
+    onEditPlaceRef.current = onEditPlace;
+  }, [onEditPlace]);
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -45,6 +54,21 @@ export default function FlightMapInner({ points, routes }: FlightMapProps) {
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(mapRef.current);
+
+      // Gestione click sui pulsanti "Modifica posizione" dentro i popup Leaflet
+      mapRef.current.on("popupopen", (e) => {
+        const container = e.popup.getElement();
+        if (!container) return;
+        const btn = container.querySelector(".edit-location-btn");
+        if (btn) {
+          btn.addEventListener("click", () => {
+            const placeName = btn.getAttribute("data-place-name");
+            if (placeName) {
+              onEditPlaceRef.current(placeName);
+            }
+          });
+        }
+      });
     }
 
     const map = mapRef.current;
@@ -143,10 +167,13 @@ export default function FlightMapInner({ points, routes }: FlightMapProps) {
               <span style="color: var(--muted, #60708a);">Voli originati:</span>
               <strong>${p.takeoffCount}</strong>
             </div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.88rem;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 8px;">
               <span style="color: var(--muted, #60708a);">Voli arrivati:</span>
               <strong>${p.arrivalCount}</strong>
             </div>
+            <button class="edit-location-btn" data-place-name="${p.name}" style="background: none; border: none; color: var(--primary, #1f6f5b); text-decoration: underline; font-size: 0.82rem; padding: 0; margin-top: 8px; cursor: pointer; display: block; text-align: left; font-family: inherit;">
+              ✏️ Modifica posizione
+            </button>
           </div>
         `
         : `
@@ -166,12 +193,15 @@ export default function FlightMapInner({ points, routes }: FlightMapProps) {
             ${
               p.lastVisit
                 ? `
-              <div style="font-size: 0.8rem; color: var(--muted, #60708a); border-top: 1px dashed var(--border, #d9e0ea); padding-top: 6px; margin-top: 4px;">
+              <div style="font-size: 0.8rem; color: var(--muted, #60708a); border-top: 1px dashed var(--border, #d9e0ea); padding-top: 6px; margin-top: 4px; margin-bottom: 8px;">
                 Ultima visita: ${p.lastVisit}
               </div>
             `
                 : ""
             }
+            <button class="edit-location-btn" data-place-name="${p.name}" style="background: none; border: none; color: var(--primary, #1f6f5b); text-decoration: underline; font-size: 0.82rem; padding: 0; margin-top: 8px; cursor: pointer; display: block; text-align: left; font-family: inherit;">
+              ✏️ Modifica posizione
+            </button>
           </div>
         `;
 

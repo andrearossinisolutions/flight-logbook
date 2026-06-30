@@ -9,11 +9,23 @@ import type { MapPoint, MapRoute } from "@/components/flight-map";
 
 export const dynamic = "force-dynamic";
 
-async function resolveCoords(name: string): Promise<{ lat: number; lon: number } | null> {
+async function resolveCoords(
+  name: string,
+  customLocations: Array<{ name: string; lat: number; lon: number }>
+): Promise<{ lat: number; lon: number } | null> {
   const cleanName = name.trim().toUpperCase();
   if (!cleanName) return null;
 
-  // 1. Controlla in ITALIAN_AIRPORTS (es. Linate, Malpensa, ecc. tramite codice ICAO esatto)
+  // 1. Controlla prima le località personalizzate impostate dall'utente (massima priorità)
+  const custom = customLocations.find((loc) => loc.name === cleanName);
+  if (custom) {
+    return {
+      lat: custom.lat,
+      lon: custom.lon,
+    };
+  }
+
+  // 2. Controlla in ITALIAN_AIRPORTS (es. Linate, Malpensa, ecc. tramite codice ICAO esatto)
   if (ITALIAN_AIRPORTS[cleanName]) {
     return {
       lat: ITALIAN_AIRPORTS[cleanName].lat,
@@ -21,7 +33,7 @@ async function resolveCoords(name: string): Promise<{ lat: number; lon: number }
     };
   }
 
-  // 2. Controlla la posizione geografica reale tramite Nominatim / OpenStreetMap
+  // 3. Controlla la posizione geografica reale tramite Nominatim / OpenStreetMap
   const geo = await getCoordinatesFromName(name);
   if (geo) {
     return {
@@ -30,7 +42,7 @@ async function resolveCoords(name: string): Promise<{ lat: number; lon: number }
     };
   }
 
-  // 3. Come ultima risorsa, controlla se è associato a una stazione METAR nota (PLACE_TO_METAR)
+  // 4. Come ultima risorsa, controlla se è associato a una stazione METAR nota (PLACE_TO_METAR)
   const lowerName = name.trim().toLowerCase();
   const mappedIcao = PLACE_TO_METAR[lowerName];
   if (mappedIcao && ITALIAN_AIRPORTS[mappedIcao]) {
@@ -55,6 +67,10 @@ export default async function MapPage() {
   if (!settings?.onboardingCompleted) {
     redirect("/onboarding");
   }
+
+  const customLocations = await prisma.customLocation.findMany({
+    where: { userId: user.id },
+  });
 
   const baseName = settings?.defaultBase || null;
   const baseKey = baseName ? baseName.trim().toUpperCase() : null;
@@ -125,8 +141,11 @@ export default async function MapPage() {
 
   // Risoluzione parallela delle coordinate
   const pointsPromise = Array.from(statsMap.entries()).map(async ([key, stats]) => {
-    const coords = await resolveCoords(stats.name);
+    const coords = await resolveCoords(stats.name, customLocations);
     if (!coords) return null;
+
+    const custom = customLocations.find((loc) => loc.name === key);
+
     return {
       name: stats.name,
       lat: coords.lat,
@@ -134,6 +153,8 @@ export default async function MapPage() {
       isBase: key === baseKey,
       takeoffCount: stats.takeoffCount,
       arrivalCount: stats.arrivalCount,
+      address: custom?.address || null,
+      hasOverride: !!custom,
       lastVisit: stats.lastVisit
         ? stats.lastVisit.toLocaleDateString("it-IT", {
             day: "2-digit",

@@ -34,6 +34,7 @@ model User {
   bookings              PartnershipBooking[]
   paidMaintenances      PartnershipAircraftMaintenanceLog[] @relation("MaintenancePayer")
   partnershipReceivedTransactns PartnershipTransaction[] @relation("TransactionRecipient")
+  customLocations       CustomLocation[]
   createdAt             DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
@@ -311,6 +312,20 @@ model PartnershipAircraftDocument {
   updatedAt   DateTime            @updatedAt
 
   @@index([aircraftId])
+}
+
+model CustomLocation {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String   // Es. "ISOLONE" (salvato in maiuscolo)
+  lat       Float
+  lon       Float
+  address   String?  // L'indirizzo o coordinate inserite dall'utente
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, name])
 }
 
 
