@@ -949,42 +949,58 @@ export default async function DashboardPage({
                   </td>
 
                   <td>
-                    <div className="row" style={{ gap: 8, flexWrap: "nowrap", whiteSpace: "nowrap" }}>
-                      {m.type === "FLIGHT" && m.isDraft && m.date >= today && (
-                        <Link
-                          href={`/briefing?icao=${encodeURIComponent(
-                            [m.flight?.takeoffPlace, m.flight?.arrivalPlace].filter(Boolean).join(" - ") || m.notes || settings?.defaultBase || "LIML"
-                          )}&date=${encodeURIComponent(m.date.toISOString())}`}
-                          className="btn secondary icon-btn"
-                          style={{
-                            padding: 0,
-                            width: 40,
-                            height: 40,
-                            fontSize: "1.2rem",
-                            borderRadius: 14,
-                            display: "inline-flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            textDecoration: "none"
-                          }}
-                          title="Briefing Meteo"
-                        >
-                          🌤️
-                        </Link>
-                      )}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "stretch" }}>
+                      <div className="row" style={{ gap: 8, flexWrap: "nowrap", whiteSpace: "nowrap" }}>
+                        {m.type === "FLIGHT" && m.isDraft && m.date >= today && (
+                          <Link
+                            href={`/briefing?icao=${encodeURIComponent(
+                              [m.flight?.takeoffPlace, m.flight?.arrivalPlace].filter(Boolean).join(" - ") || m.notes || settings?.defaultBase || "LIML"
+                            )}&date=${encodeURIComponent(m.date.toISOString())}`}
+                            className="btn secondary icon-btn"
+                            style={{
+                              padding: 0,
+                              width: 40,
+                              height: 40,
+                              fontSize: "1.2rem",
+                              borderRadius: 14,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              textDecoration: "none"
+                            }}
+                            title="Briefing Meteo"
+                          >
+                            🌤️
+                          </Link>
+                        )}
 
-                      {((m.isDraft && m.date >= today) || (m.type === "REMINDER" && m.date >= today)) ? (
-                        <a
+                        {((m.isDraft && m.date >= today) || (m.type === "REMINDER" && m.date >= today)) ? (
+                          <a
+                            className="btn secondary icon-btn"
+                            href={buildCalendarLink(m)}
+                            aria-label="Aggiungi al calendario"
+                            title="Aggiungi al calendario"
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <CalendarPlusIcon size={18} />
+                          </a>
+                        ) : null}
+
+                        <Link
                           className="btn secondary icon-btn"
-                          href={buildCalendarLink(m)}
-                          aria-label="Aggiungi al calendario"
-                          title="Aggiungi al calendario"
-                          target="_blank"
-                          rel="noreferrer"
+                          href={m.type === "FLIGHT" ? `/edit-flight/${m.id}` : m.type === "REMINDER" ? `/edit-reminder/${m.id}` : `/edit-payment/${m.id}`}
+                          aria-label="Modifica"
+                          title="Modifica"
                         >
-                          <CalendarPlusIcon size={18} />
-                        </a>
-                      ) : null}
+                          <PencilIcon size={18} />
+                        </Link>
+
+                        <form action={deleteMovement}>
+                          <input type="hidden" name="movementId" value={m.id} />
+                          <DeleteMovementButton iconOnly />
+                        </form>
+                      </div>
 
                       {m.type === "FLIGHT" && m.isDraft && m.flight?.partnershipAircraftId && (() => {
                         const flightStart = new Date(m.date);
@@ -996,7 +1012,7 @@ export default async function DashboardPage({
                         );
                         if (!hasBooking) {
                           return (
-                            <form action={bookPlannedFlight}>
+                            <form action={bookPlannedFlight} style={{ display: "flex", width: "100%" }}>
                               <input type="hidden" name="movementId" value={m.id} />
                               <BookPlannedFlightButton />
                             </form>
@@ -1004,20 +1020,6 @@ export default async function DashboardPage({
                         }
                         return null;
                       })()}
-
-                      <Link
-                        className="btn secondary icon-btn"
-                        href={m.type === "FLIGHT" ? `/edit-flight/${m.id}` : m.type === "REMINDER" ? `/edit-reminder/${m.id}` : `/edit-payment/${m.id}`}
-                        aria-label="Modifica"
-                        title="Modifica"
-                      >
-                        <PencilIcon size={18} />
-                      </Link>
-
-                      <form action={deleteMovement}>
-                        <input type="hidden" name="movementId" value={m.id} />
-                        <DeleteMovementButton iconOnly />
-                      </form>
                     </div>
                   </td>
                 </tr>
