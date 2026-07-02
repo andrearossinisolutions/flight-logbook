@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { MapPoint, MapRoute } from "./flight-map-inner";
 
 const FlightMapInner = dynamic(() => import("./flight-map-inner"), {
@@ -32,9 +33,10 @@ export type { MapPoint, MapRoute };
 interface FlightMapProps {
   points: MapPoint[];
   routes: MapRoute[];
+  hasBase?: boolean;
 }
 
-export default function FlightMap({ points, routes }: FlightMapProps) {
+export default function FlightMap({ points, routes, hasBase }: FlightMapProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [editingPlaceName, setEditingPlaceName] = useState<string | null>(null);
@@ -127,6 +129,70 @@ export default function FlightMap({ points, routes }: FlightMapProps) {
   return (
     <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
       <FlightMapInner points={points} routes={routes} onEditPlace={handleEditPlace} />
+
+      {!hasBase && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: 24,
+            left: 0,
+            right: 0,
+            display: "flex",
+            justifyContent: "center",
+            zIndex: 1000,
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              pointerEvents: "auto",
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+              padding: "12px 20px",
+              borderRadius: 16,
+              background: "rgba(255, 255, 255, 0.85)",
+              backdropFilter: "blur(10px)",
+              boxShadow: "0 10px 30px rgba(20, 32, 51, 0.15)",
+              border: "1px solid rgba(255, 255, 255, 0.5)",
+              animation: "fadeInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+              maxWidth: "90%",
+              width: "max-content",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: "1.25rem" }}>🏠</span>
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                <span style={{ fontSize: "0.88rem", fontWeight: 700, color: "var(--text, #142033)" }}>
+                  Nessuna base operativa impostata
+                </span>
+                <span style={{ fontSize: "0.75rem", color: "var(--muted, #60708a)" }}>
+                  Imposta la tua base per visualizzarla sulla mappa e attivare statistiche specifiche.
+                </span>
+              </div>
+            </div>
+            <Link
+              href="/settings"
+              className="btn"
+              style={{
+                padding: "8px 14px",
+                fontSize: "0.82rem",
+                height: "auto",
+                whiteSpace: "nowrap",
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                borderRadius: 8,
+                background: "var(--primary, #1f6f5b)",
+                color: "white",
+                fontWeight: 600,
+              }}
+            >
+              Imposta Base
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Modal di modifica posizione */}
       {editingPlace && (

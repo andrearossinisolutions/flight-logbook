@@ -9,8 +9,7 @@ export interface MapPoint {
   lat: number;
   lon: number;
   isBase: boolean;
-  takeoffCount: number;
-  arrivalCount: number;
+  flightCount: number;
   address: string | null;
   hasOverride: boolean;
   lastVisit: string | null;
@@ -163,13 +162,9 @@ export default function FlightMapInner({ points, routes, onEditPlace }: FlightMa
               🏠 Base Operativa
             </h4>
             <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 8px;">${p.name}</div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 4px;">
-              <span style="color: var(--muted, #60708a);">Voli originati:</span>
-              <strong>${p.takeoffCount}</strong>
-            </div>
             <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 8px;">
-              <span style="color: var(--muted, #60708a);">Voli arrivati:</span>
-              <strong>${p.arrivalCount}</strong>
+              <span style="color: var(--muted, #60708a);">Numero voli:</span>
+              <strong>${p.flightCount}</strong>
             </div>
             <button class="edit-location-btn" data-place-name="${p.name}" style="background: none; border: none; color: var(--primary, #1f6f5b); text-decoration: underline; font-size: 0.82rem; padding: 0; margin-top: 8px; cursor: pointer; display: block; text-align: left; font-family: inherit;">
               ✏️ Modifica posizione
@@ -182,13 +177,9 @@ export default function FlightMapInner({ points, routes, onEditPlace }: FlightMa
               📍 Destinazione Visitata
             </h4>
             <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 8px;">${p.name}</div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 4px;">
-              <span style="color: var(--muted, #60708a);">Decolli da qui:</span>
-              <strong>${p.takeoffCount}</strong>
-            </div>
             <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 8px;">
-              <span style="color: var(--muted, #60708a);">Atterraggi:</span>
-              <strong>${p.arrivalCount}</strong>
+              <span style="color: var(--muted, #60708a);">Numero voli:</span>
+              <strong>${p.flightCount}</strong>
             </div>
             ${
               p.lastVisit

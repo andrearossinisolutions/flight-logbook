@@ -75,11 +75,12 @@ export default async function MapPage() {
   const baseName = settings?.defaultBase || null;
   const baseKey = baseName ? baseName.trim().toUpperCase() : null;
 
-  // Carica i movimenti di tipo FLIGHT
+  // Carica i movimenti di tipo FLIGHT non bozze (passati)
   const movements = await prisma.movement.findMany({
     where: {
       userId: user.id,
       type: "FLIGHT",
+      isDraft: false,
     },
     include: {
       flight: true,
@@ -88,8 +89,7 @@ export default async function MapPage() {
 
   interface PlaceStats {
     name: string;
-    takeoffCount: number;
-    arrivalCount: number;
+    flightCount: number;
     lastVisit: Date | null;
   }
 
@@ -99,42 +99,32 @@ export default async function MapPage() {
     if (!m.flight) return;
 
     const dep = m.flight.takeoffPlace ? m.flight.takeoffPlace.trim().toUpperCase() : "";
-    if (dep) {
-      const stats = statsMap.get(dep) || {
-        name: dep,
-        takeoffCount: 0,
-        arrivalCount: 0,
-        lastVisit: null,
-      };
-      stats.takeoffCount += 1;
-      if (!stats.lastVisit || m.date > stats.lastVisit) {
-        stats.lastVisit = m.date;
-      }
-      statsMap.set(dep, stats);
-    }
-
     const arr = m.flight.arrivalPlace ? m.flight.arrivalPlace.trim().toUpperCase() : "";
-    if (arr) {
-      const stats = statsMap.get(arr) || {
-        name: arr,
-        takeoffCount: 0,
-        arrivalCount: 0,
+
+    // Calcoliamo i luoghi unici coinvolti in questo volo
+    const places = new Set<string>();
+    if (dep) places.add(dep);
+    if (arr) places.add(arr);
+
+    places.forEach((place) => {
+      const stats = statsMap.get(place) || {
+        name: place,
+        flightCount: 0,
         lastVisit: null,
       };
-      stats.arrivalCount += 1;
+      stats.flightCount += 1;
       if (!stats.lastVisit || m.date > stats.lastVisit) {
         stats.lastVisit = m.date;
       }
-      statsMap.set(arr, stats);
-    }
+      statsMap.set(place, stats);
+    });
   });
 
   // Assicurati che la base sia presente nella mappa, anche se non ha voli associati
   if (baseKey && !statsMap.has(baseKey)) {
     statsMap.set(baseKey, {
       name: baseKey,
-      takeoffCount: 0,
-      arrivalCount: 0,
+      flightCount: 0,
       lastVisit: null,
     });
   }
@@ -151,8 +141,7 @@ export default async function MapPage() {
       lat: coords.lat,
       lon: coords.lon,
       isBase: key === baseKey,
-      takeoffCount: stats.takeoffCount,
-      arrivalCount: stats.arrivalCount,
+      flightCount: stats.flightCount,
       address: custom?.address || null,
       hasOverride: !!custom,
       lastVisit: stats.lastVisit
@@ -224,7 +213,7 @@ export default async function MapPage() {
 
       {/* Mappa a tutto schermo (si estende dietro la barra di navigazione) */}
       <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", zIndex: 1 }}>
-        <FlightMap points={points} routes={routes} />
+        <FlightMap points={points} routes={routes} hasBase={!!baseName} />
       </div>
     </div>
   );
