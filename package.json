@@ -1,6 +1,6 @@
 {
   "name": "digital-flight-logbook",
-  "version": "1.21.0",
+  "version": "1.22.0",
   "private": false,
   "scripts": {
     "dev": "next dev",
@@ -11,7 +11,8 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "changelog:generate": "node scratch/generate-changelog.js"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.7.0",

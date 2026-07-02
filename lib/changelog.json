@@ -1,0 +1,1741 @@
+[
+  {
+    "version": "1.22.0",
+    "date": "2026-07-02",
+    "commits": [
+      {
+        "hash": "3965bea",
+        "date": "2026-07-02",
+        "subject": "Added changelog"
+      }
+    ]
+  },
+  {
+    "version": "1.21.0",
+    "date": "2026-07-02",
+    "commits": [
+      {
+        "hash": "639678d",
+        "date": "2026-07-02",
+        "subject": "Added events"
+      },
+      {
+        "hash": "df7bac3",
+        "date": "2026-07-02",
+        "subject": "Added next event to logbook for easy booking and planning"
+      },
+      {
+        "hash": "34ece2d",
+        "date": "2026-07-02",
+        "subject": "Changed order of topbar items"
+      },
+      {
+        "hash": "2595402",
+        "date": "2026-07-02",
+        "subject": "Added \"leggi di più\""
+      }
+    ]
+  },
+  {
+    "version": "1.20.3",
+    "date": "2026-07-02",
+    "commits": [
+      {
+        "hash": "977b5d4",
+        "date": "2026-07-02",
+        "subject": "Optimised biefing meteo page loading"
+      }
+    ]
+  },
+  {
+    "version": "1.20.2",
+    "date": "2026-07-02",
+    "commits": [
+      {
+        "hash": "e7e43e5",
+        "date": "2026-07-02",
+        "subject": "Merged takeoffs/landings counters; Removed planned flights from map; Added add-base btn shortcut if missing base"
+      },
+      {
+        "hash": "3e7759a",
+        "date": "2026-07-02",
+        "subject": "Set mountains map layer"
+      }
+    ]
+  },
+  {
+    "version": "1.20.1",
+    "date": "2026-07-02",
+    "commits": [
+      {
+        "hash": "d11b974",
+        "date": "2026-07-02",
+        "subject": "Hidden bookings w/ already a flight; Added fast edit and delete of a booking, even if is a past one, from personal logbook"
+      },
+      {
+        "hash": "737c83e",
+        "date": "2026-07-02",
+        "subject": "Improved booking from logbook layout"
+      },
+      {
+        "hash": "f49d240",
+        "date": "2026-07-02",
+        "subject": "Improved booking from logbook flow"
+      }
+    ]
+  },
+  {
+    "version": "1.20.0",
+    "date": "2026-06-30",
+    "commits": [
+      {
+        "hash": "fa3f36b",
+        "date": "2026-06-30",
+        "subject": "Added destinations map"
+      },
+      {
+        "hash": "fcbf7e0",
+        "date": "2026-06-30",
+        "subject": "Added route lines"
+      },
+      {
+        "hash": "88d25d5",
+        "date": "2026-06-30",
+        "subject": "Added custom location for destination pins"
+      },
+      {
+        "hash": "e9f3e73",
+        "date": "2026-06-30",
+        "subject": "Set map fullscreen"
+      },
+      {
+        "hash": "db050a2",
+        "date": "2026-06-30",
+        "subject": "Changed color of route lines"
+      }
+    ]
+  },
+  {
+    "version": "1.19.0",
+    "date": "2026-06-26",
+    "commits": [
+      {
+        "hash": "15c5b07",
+        "date": "2026-06-26",
+        "subject": "Added automated emails before takeoff with metar and taf of the planned route"
+      }
+    ]
+  },
+  {
+    "version": "1.18.3",
+    "date": "2026-06-26",
+    "commits": [
+      {
+        "hash": "58fef57",
+        "date": "2026-06-26",
+        "subject": "Fixed layout of new briefing meteo"
+      }
+    ]
+  },
+  {
+    "version": "1.18.2",
+    "date": "2026-06-26",
+    "commits": [
+      {
+        "hash": "e3fa9d6",
+        "date": "2026-06-26",
+        "subject": "Added Briefing Meteo btn to emails"
+      }
+    ]
+  },
+  {
+    "version": "1.18.1",
+    "date": "2026-06-26",
+    "commits": [
+      {
+        "hash": "7bab6b5",
+        "date": "2026-06-26",
+        "subject": "Counting past debts in future months"
+      }
+    ]
+  },
+  {
+    "version": "1.18.0",
+    "date": "2026-06-26",
+    "commits": [
+      {
+        "hash": "e072176",
+        "date": "2026-06-26",
+        "subject": "Added SWLL charts in briefing meteo"
+      },
+      {
+        "hash": "a084b06",
+        "date": "2026-06-26",
+        "subject": "Added weather map"
+      }
+    ]
+  },
+  {
+    "version": "1.17.1",
+    "date": "2026-06-23",
+    "commits": [
+      {
+        "hash": "5ca404b",
+        "date": "2026-06-23",
+        "subject": "Increased upload limit to 10MB"
+      }
+    ]
+  },
+  {
+    "version": "1.17.0",
+    "date": "2026-06-23",
+    "commits": [
+      {
+        "hash": "e970c62",
+        "date": "2026-06-23",
+        "subject": "Added aircrafts' documents"
+      }
+    ]
+  },
+  {
+    "version": "1.16.0",
+    "date": "2026-06-23",
+    "commits": [
+      {
+        "hash": "05503b7",
+        "date": "2026-06-23",
+        "subject": "Added \"advance hourly expense\" method in società"
+      }
+    ]
+  },
+  {
+    "version": "1.15.5",
+    "date": "2026-06-22",
+    "commits": [
+      {
+        "hash": "33d2cb3",
+        "date": "2026-06-22",
+        "subject": "Converted all toFixed(1) times to HH:mm format"
+      }
+    ]
+  },
+  {
+    "version": "1.15.4",
+    "date": "2026-06-18",
+    "commits": [
+      {
+        "hash": "0783350",
+        "date": "2026-06-18",
+        "subject": "Precompiled orametro iniziale from last finale"
+      }
+    ]
+  },
+  {
+    "version": "1.15.3",
+    "date": "2026-06-09",
+    "commits": [
+      {
+        "hash": "6c3dd87",
+        "date": "2026-06-09",
+        "subject": "Fixed layout of tobar on mobile; Restored confirmation on logout click"
+      }
+    ]
+  },
+  {
+    "version": "1.15.2",
+    "date": "2026-06-09",
+    "commits": [
+      {
+        "hash": "f14a414",
+        "date": "2026-06-09",
+        "subject": "Added booking for others"
+      }
+    ]
+  },
+  {
+    "version": "1.15.1",
+    "date": "2026-06-05",
+    "commits": [
+      {
+        "hash": "7325c43",
+        "date": "2026-06-05",
+        "subject": "Hidden useless hourly cost of flights if disableSharedFund"
+      }
+    ]
+  },
+  {
+    "version": "1.15.0",
+    "date": "2026-06-05",
+    "commits": [
+      {
+        "hash": "37899af",
+        "date": "2026-06-05",
+        "subject": "Added internal transactions"
+      }
+    ]
+  },
+  {
+    "version": "1.14.3",
+    "date": "2026-06-05",
+    "commits": [
+      {
+        "hash": "9897fdf",
+        "date": "2026-06-05",
+        "subject": "Improved layout of elenco soci"
+      }
+    ]
+  },
+  {
+    "version": "1.14.2",
+    "date": "2026-06-05",
+    "commits": [
+      {
+        "hash": "462d8c4",
+        "date": "2026-06-05",
+        "subject": "Added flight time in logbook società"
+      }
+    ]
+  },
+  {
+    "version": "1.14.1",
+    "date": "2026-06-05",
+    "commits": [
+      {
+        "hash": "77def4a",
+        "date": "2026-06-05",
+        "subject": "Fixed società settings layout"
+      }
+    ]
+  },
+  {
+    "version": "1.14.0",
+    "date": "2026-06-05",
+    "commits": [
+      {
+        "hash": "644a95e",
+        "date": "2026-06-05",
+        "subject": "Added disableSharedFund setting di società"
+      },
+      {
+        "hash": "bd97591",
+        "date": "2026-06-05",
+        "subject": "Added ripartizione costi manutenzione"
+      },
+      {
+        "hash": "6abccd5",
+        "date": "2026-06-05",
+        "subject": "Fixed ripartizione costi"
+      }
+    ]
+  },
+  {
+    "version": "1.13.10",
+    "date": "2026-06-04",
+    "commits": [
+      {
+        "hash": "b4fb79b",
+        "date": "2026-06-04",
+        "subject": "Fixed local datetime in maintainance"
+      }
+    ]
+  },
+  {
+    "version": "1.13.9",
+    "date": "2026-06-03",
+    "commits": [
+      {
+        "hash": "2b5fb00",
+        "date": "2026-06-03",
+        "subject": "Hidden booking from logbook if already inserted a plan for that booking"
+      }
+    ]
+  },
+  {
+    "version": "1.13.8",
+    "date": "2026-06-03",
+    "commits": [
+      {
+        "hash": "d50b439",
+        "date": "2026-06-03",
+        "subject": "Fixed booking local times"
+      }
+    ]
+  },
+  {
+    "version": "1.13.7",
+    "date": "2026-06-03",
+    "commits": [
+      {
+        "hash": "5870366",
+        "date": "2026-06-03",
+        "subject": "FIxed local times"
+      }
+    ]
+  },
+  {
+    "version": "1.13.6",
+    "date": "2026-05-29",
+    "commits": [
+      {
+        "hash": "ecd38a2",
+        "date": "2026-05-29",
+        "subject": "Fixed timezone for reminders' emails"
+      }
+    ]
+  },
+  {
+    "version": "1.13.5",
+    "date": "2026-05-28",
+    "commits": [
+      {
+        "hash": "3818679",
+        "date": "2026-05-28",
+        "subject": "Added minute per minute reminders emails"
+      }
+    ]
+  },
+  {
+    "version": "1.13.4",
+    "date": "2026-05-27",
+    "commits": [
+      {
+        "hash": "59a71c6",
+        "date": "2026-05-27",
+        "subject": "Showing planned flights w/o booking"
+      },
+      {
+        "hash": "737d75f",
+        "date": "2026-05-27",
+        "subject": "Added briefing action to planned flights"
+      },
+      {
+        "hash": "c3da05f",
+        "date": "2026-05-27",
+        "subject": "Disabled cache for meteo data"
+      }
+    ]
+  },
+  {
+    "version": "1.13.3",
+    "date": "2026-05-27",
+    "commits": [
+      {
+        "hash": "1c03598",
+        "date": "2026-05-27",
+        "subject": "Raised densityAltitude threshold to +2000"
+      }
+    ]
+  },
+  {
+    "version": "1.13.2",
+    "date": "2026-05-27",
+    "commits": [
+      {
+        "hash": "2a8fa56",
+        "date": "2026-05-27",
+        "subject": "Added address to briefing city/airfield found"
+      },
+      {
+        "hash": "ffbe075",
+        "date": "2026-05-27",
+        "subject": "Added search nearest metar for non metar airports"
+      },
+      {
+        "hash": "d85690b",
+        "date": "2026-05-27",
+        "subject": "Added settings section"
+      },
+      {
+        "hash": "50444ee",
+        "date": "2026-05-27",
+        "subject": "Updated sitemap"
+      }
+    ]
+  },
+  {
+    "version": "1.13.0",
+    "date": "2026-05-27",
+    "commits": [
+      {
+        "hash": "8ee26ef",
+        "date": "2026-05-27",
+        "subject": "Added demo screens"
+      }
+    ]
+  },
+  {
+    "version": "1.12.5",
+    "date": "2026-05-27",
+    "commits": [
+      {
+        "hash": "e7fcb0a",
+        "date": "2026-05-27",
+        "subject": "Added density altitude in briefing"
+      }
+    ]
+  },
+  {
+    "version": "1.12.4",
+    "date": "2026-05-27",
+    "commits": [
+      {
+        "hash": "30c6e48",
+        "date": "2026-05-27",
+        "subject": "Set base airfield as default briefing metar source"
+      }
+    ]
+  },
+  {
+    "version": "1.12.3",
+    "date": "2026-05-27",
+    "commits": [
+      {
+        "hash": "3380c91",
+        "date": "2026-05-27",
+        "subject": "Removed exceptions on metar not found"
+      }
+    ]
+  },
+  {
+    "version": "1.12.2",
+    "date": "2026-05-27",
+    "commits": [
+      {
+        "hash": "219964b",
+        "date": "2026-05-27",
+        "subject": "Added async calculation for metar enroute"
+      }
+    ]
+  },
+  {
+    "version": "1.12.1",
+    "date": "2026-05-27",
+    "commits": [
+      {
+        "hash": "814f290",
+        "date": "2026-05-27",
+        "subject": "Added route briefing; Added briefing action to logbook bookings"
+      },
+      {
+        "hash": "dae7b49",
+        "date": "2026-05-27",
+        "subject": "Expressed standard qnh in hpa"
+      }
+    ]
+  },
+  {
+    "version": "1.12.0",
+    "date": "2026-05-27",
+    "commits": [
+      {
+        "hash": "21551e4",
+        "date": "2026-05-27",
+        "subject": "Added briefing meteo tab"
+      }
+    ]
+  },
+  {
+    "version": "1.11.1",
+    "date": "2026-05-27",
+    "commits": [
+      {
+        "hash": "6c57239",
+        "date": "2026-05-27",
+        "subject": "Added link to logbook società to recent flights' widget"
+      }
+    ]
+  },
+  {
+    "version": "1.11.0",
+    "date": "2026-05-26",
+    "commits": [
+      {
+        "hash": "ac41d57",
+        "date": "2026-05-26",
+        "subject": "Added logbook società"
+      },
+      {
+        "hash": "d9fa638",
+        "date": "2026-05-26",
+        "subject": "Merged planes and costs tab with settings"
+      },
+      {
+        "hash": "44d0de9",
+        "date": "2026-05-26",
+        "subject": "Removed old PlaneIcon"
+      },
+      {
+        "hash": "167c8cd",
+        "date": "2026-05-26",
+        "subject": "Improved layout of new settings tab"
+      }
+    ]
+  },
+  {
+    "version": "1.10.3",
+    "date": "2026-05-25",
+    "commits": [
+      {
+        "hash": "3d38a86",
+        "date": "2026-05-25",
+        "subject": "Improved UI of flight costs"
+      },
+      {
+        "hash": "f5073e4",
+        "date": "2026-05-25",
+        "subject": "Removed \"Nuovo saldo con divisione\""
+      }
+    ]
+  },
+  {
+    "version": "1.10.2",
+    "date": "2026-05-25",
+    "commits": [
+      {
+        "hash": "dbe6158",
+        "date": "2026-05-25",
+        "subject": "Fixed rendering crash"
+      }
+    ]
+  },
+  {
+    "version": "1.10.1",
+    "date": "2026-05-22",
+    "commits": [
+      {
+        "hash": "fb7de8d",
+        "date": "2026-05-22",
+        "subject": "Added bookings to logbook previews"
+      }
+    ]
+  },
+  {
+    "version": "1.10.0",
+    "date": "2026-05-22",
+    "commits": [
+      {
+        "hash": "7b04196",
+        "date": "2026-05-22",
+        "subject": "Added bookings"
+      },
+      {
+        "hash": "2f9aa01",
+        "date": "2026-05-22",
+        "subject": "Added next bookings widget"
+      },
+      {
+        "hash": "52985c1",
+        "date": "2026-05-22",
+        "subject": "Reorganized bookings calendar"
+      },
+      {
+        "hash": "3142d45",
+        "date": "2026-05-22",
+        "subject": "Added edit booking"
+      }
+    ]
+  },
+  {
+    "version": "1.9.5",
+    "date": "2026-05-22",
+    "commits": [
+      {
+        "hash": "debc091",
+        "date": "2026-05-22",
+        "subject": "Improved maintainance"
+      },
+      {
+        "hash": "2e06b65",
+        "date": "2026-05-22",
+        "subject": "Added suggested mainainances"
+      },
+      {
+        "hash": "73e0e7c",
+        "date": "2026-05-22",
+        "subject": "Added missing TBO to suggested maintainances"
+      },
+      {
+        "hash": "e819034",
+        "date": "2026-05-22",
+        "subject": "Added dashboards alerts for maintainace"
+      }
+    ]
+  },
+  {
+    "version": "1.9.4",
+    "date": "2026-05-21",
+    "commits": [
+      {
+        "hash": "b5402ed",
+        "date": "2026-05-21",
+        "subject": "Aligned tab bar of societa to main nav bar"
+      },
+      {
+        "hash": "a3a82a4",
+        "date": "2026-05-21",
+        "subject": "Rename routes and references from /dashboard to /logbook"
+      }
+    ]
+  },
+  {
+    "version": "1.9.3",
+    "date": "2026-05-21",
+    "commits": [
+      {
+        "hash": "3fe0c5b",
+        "date": "2026-05-21",
+        "subject": "SEO optimization"
+      },
+      {
+        "hash": "931dd2b",
+        "date": "2026-05-21",
+        "subject": "PIC to PiC"
+      },
+      {
+        "hash": "26db253",
+        "date": "2026-05-21",
+        "subject": "Prenotazioni filter to Pianificazioni"
+      },
+      {
+        "hash": "0c757a8",
+        "date": "2026-05-21",
+        "subject": "Gestisci tutte le società to Tutte le società"
+      }
+    ]
+  },
+  {
+    "version": "1.9.2",
+    "date": "2026-05-21",
+    "commits": [
+      {
+        "hash": "46e97b5",
+        "date": "2026-05-21",
+        "subject": "Other general mobile UI optimizations"
+      }
+    ]
+  },
+  {
+    "version": "1.9.1",
+    "date": "2026-05-21",
+    "commits": [
+      {
+        "hash": "b7fdd03",
+        "date": "2026-05-21",
+        "subject": "Improved navigation on Rendiconto Mensile"
+      },
+      {
+        "hash": "f079c05",
+        "date": "2026-05-21",
+        "subject": "Added missing month in onboarding's fixed cost of societa"
+      },
+      {
+        "hash": "69fd8b3",
+        "date": "2026-05-21",
+        "subject": "Renamed project"
+      },
+      {
+        "hash": "732c6ad",
+        "date": "2026-05-21",
+        "subject": "Improved UI of Cassa Societa"
+      },
+      {
+        "hash": "5339e17",
+        "date": "2026-05-21",
+        "subject": "Fixed UI of Rendiconto mensile on mobile"
+      }
+    ]
+  },
+  {
+    "version": "1.9.0",
+    "date": "2026-05-21",
+    "commits": [
+      {
+        "hash": "839c924",
+        "date": "2026-05-21",
+        "subject": "Added maintainace reminders and logging"
+      }
+    ]
+  },
+  {
+    "version": "1.8.2",
+    "date": "2026-05-21",
+    "commits": [
+      {
+        "hash": "644b6e0",
+        "date": "2026-05-21",
+        "subject": "Simplified navigation to società"
+      }
+    ]
+  },
+  {
+    "version": "1.8.1",
+    "date": "2026-05-21",
+    "commits": [
+      {
+        "hash": "0805d4c",
+        "date": "2026-05-21",
+        "subject": "Added Volo Società to flight type rendering"
+      }
+    ]
+  },
+  {
+    "version": "1.8.0",
+    "date": "2026-05-21",
+    "commits": [
+      {
+        "hash": "5ffd9b4",
+        "date": "2026-05-21",
+        "subject": "Improved UI of print"
+      },
+      {
+        "hash": "9d40d48",
+        "date": "2026-05-21",
+        "subject": "Refactoring print"
+      }
+    ]
+  },
+  {
+    "version": "1.7.0",
+    "date": "2026-05-21",
+    "commits": [
+      {
+        "hash": "f338f12",
+        "date": "2026-05-21",
+        "subject": "Added reset password"
+      },
+      {
+        "hash": "a6282a5",
+        "date": "2026-05-21",
+        "subject": "Refactoring Ultimi voli societa"
+      }
+    ]
+  },
+  {
+    "version": "1.6.1",
+    "date": "2026-05-21",
+    "commits": [
+      {
+        "hash": "921d639",
+        "date": "2026-05-21",
+        "subject": "Improved UI organization of Aerei della società / Costi Fissi"
+      },
+      {
+        "hash": "4f1bf7c",
+        "date": "2026-05-21",
+        "subject": "Added last-flights to dashboard of società; Refactoring"
+      }
+    ]
+  },
+  {
+    "version": "1.6.0",
+    "date": "2026-05-20",
+    "commits": [
+      {
+        "hash": "73962f0",
+        "date": "2026-05-20",
+        "subject": "Added bacheca to societa"
+      },
+      {
+        "hash": "08562e2",
+        "date": "2026-05-20",
+        "subject": "Added emails on dashboard message"
+      },
+      {
+        "hash": "19d2af6",
+        "date": "2026-05-20",
+        "subject": "Added fixed costs yearly and una tantum"
+      },
+      {
+        "hash": "ebe3234",
+        "date": "2026-05-20",
+        "subject": "Redirect to logout on not-valid token to prevent login redirect loop"
+      },
+      {
+        "hash": "1c371d9",
+        "date": "2026-05-20",
+        "subject": "Improved layout of form Aerei della società"
+      },
+      {
+        "hash": "a45a402",
+        "date": "2026-05-20",
+        "subject": "Set widget interval to 5s"
+      },
+      {
+        "hash": "0f674ee",
+        "date": "2026-05-20",
+        "subject": "Aligned onboarding fixed costs to new settings costs"
+      }
+    ]
+  },
+  {
+    "version": "1.5.1",
+    "date": "2026-05-20",
+    "commits": [
+      {
+        "hash": "dccbb06",
+        "date": "2026-05-20",
+        "subject": "Changed widget text \"Da sempre\""
+      },
+      {
+        "hash": "22090eb",
+        "date": "2026-05-20",
+        "subject": "Added loaders"
+      }
+    ]
+  },
+  {
+    "version": "1.5.0",
+    "date": "2026-05-20",
+    "commits": [
+      {
+        "hash": "9843764",
+        "date": "2026-05-20",
+        "subject": "Fixed APP_URL"
+      }
+    ]
+  },
+  {
+    "version": "1.4.1",
+    "date": "2026-05-20",
+    "commits": [
+      {
+        "hash": "3004bff",
+        "date": "2026-05-20",
+        "subject": "Precompiled email on invitation registration"
+      },
+      {
+        "hash": "0b597a4",
+        "date": "2026-05-20",
+        "subject": "Added repeat-password on registration"
+      }
+    ]
+  },
+  {
+    "version": "1.4.0",
+    "date": "2026-05-19",
+    "commits": [
+      {
+        "hash": "6ee5f02",
+        "date": "2026-05-19",
+        "subject": "Improved UI/UX of societa navigation"
+      }
+    ]
+  },
+  {
+    "version": "1.3.0",
+    "date": "2026-05-19",
+    "commits": [
+      {
+        "hash": "2c47308",
+        "date": "2026-05-19",
+        "subject": "Added invitations to societa"
+      }
+    ]
+  },
+  {
+    "version": "1.2.1",
+    "date": "2026-05-19",
+    "commits": [
+      {
+        "hash": "0970ec5",
+        "date": "2026-05-19",
+        "subject": "Added edit rented aircrafts"
+      },
+      {
+        "hash": "f2a1fd4",
+        "date": "2026-05-19",
+        "subject": "Added rename and delete società"
+      }
+    ]
+  },
+  {
+    "version": "1.2.0",
+    "date": "2026-05-19",
+    "commits": [
+      {
+        "hash": "8438a70",
+        "date": "2026-05-19",
+        "subject": "Replaced all hourgrass w/ timer"
+      }
+    ]
+  },
+  {
+    "version": "1.1.0",
+    "date": "2026-05-19",
+    "commits": [
+      {
+        "hash": "3481b02",
+        "date": "2026-05-19",
+        "subject": "Impreved UI/UX of add movements"
+      },
+      {
+        "hash": "50e4f67",
+        "date": "2026-05-19",
+        "subject": "Added promemoria"
+      },
+      {
+        "hash": "08dc5fb",
+        "date": "2026-05-19",
+        "subject": "Added filters"
+      }
+    ]
+  },
+  {
+    "version": "1.0.1",
+    "date": "2026-05-19",
+    "commits": [
+      {
+        "hash": "2639a61",
+        "date": "2026-05-19",
+        "subject": "Replaced clock w/ hourglass in duration times"
+      },
+      {
+        "hash": "e8e43a7",
+        "date": "2026-05-19",
+        "subject": "Removed widget \"Da quando hai l'attestato\""
+      },
+      {
+        "hash": "122c143",
+        "date": "2026-05-19",
+        "subject": "Added widget rotation"
+      }
+    ]
+  },
+  {
+    "version": "1.0.0",
+    "date": "2026-05-19",
+    "commits": [
+      {
+        "hash": "65f64f9",
+        "date": "2026-05-19",
+        "subject": "Replaced clock w/ hourglass in duration times"
+      }
+    ]
+  },
+  {
+    "version": "0.6.0",
+    "date": "2026-05-17",
+    "commits": [
+      {
+        "hash": "5f399c4",
+        "date": "2026-05-17",
+        "subject": "Added intro animation"
+      },
+      {
+        "hash": "28b9f0b",
+        "date": "2026-05-17",
+        "subject": "Mobile friendly dashboard"
+      }
+    ]
+  },
+  {
+    "version": "0.5.0",
+    "date": "2026-05-15",
+    "commits": [
+      {
+        "hash": "a50fd82",
+        "date": "2026-05-15",
+        "subject": "Added Arrotondamento to fixed costs of società"
+      },
+      {
+        "hash": "7662689",
+        "date": "2026-05-15",
+        "subject": "Setup prod landing page"
+      }
+    ]
+  },
+  {
+    "version": "0.4.0",
+    "date": "2026-05-15",
+    "commits": [
+      {
+        "hash": "9519424",
+        "date": "2026-05-14",
+        "subject": "Increased versio"
+      },
+      {
+        "hash": "2cc342d",
+        "date": "2026-05-14",
+        "subject": "Edited localizations"
+      },
+      {
+        "hash": "f071eac",
+        "date": "2026-05-15",
+        "subject": "Added onboarding to an easy setup"
+      }
+    ]
+  },
+  {
+    "version": "0.3.0",
+    "date": "2026-05-14",
+    "commits": [
+      {
+        "hash": "bcf62b9",
+        "date": "2026-05-14",
+        "subject": "New topbar navigation"
+      },
+      {
+        "hash": "ece43b2",
+        "date": "2026-05-14",
+        "subject": "Added aircrafts for aeroclub"
+      }
+    ]
+  },
+  {
+    "version": "0.2.0",
+    "date": "2026-05-14",
+    "commits": [
+      {
+        "hash": "74264e8",
+        "date": "2026-05-13",
+        "subject": "Set default aircraft w/ last flight in new flight form"
+      },
+      {
+        "hash": "d2444a6",
+        "date": "2026-05-14",
+        "subject": "Added transactions to società"
+      },
+      {
+        "hash": "6d59f2d",
+        "date": "2026-05-14",
+        "subject": "Added advanced expenses to calculations"
+      },
+      {
+        "hash": "6877007",
+        "date": "2026-05-14",
+        "subject": "Fixed localizations"
+      }
+    ]
+  },
+  {
+    "version": "0.1.0",
+    "date": "2026-05-13",
+    "commits": [
+      {
+        "hash": "9ddc7e5",
+        "date": "2026-04-09",
+        "subject": "Fixed prisma db v7 setup"
+      },
+      {
+        "hash": "ae9442a",
+        "date": "2026-04-09",
+        "subject": "Added missing prisma sqlite adapter"
+      },
+      {
+        "hash": "defb6f4",
+        "date": "2026-04-09",
+        "subject": "Added deploy yaml"
+      },
+      {
+        "hash": "63a00c0",
+        "date": "2026-04-09",
+        "subject": "Added Use Node 22 yml job"
+      },
+      {
+        "hash": "cd3f918",
+        "date": "2026-04-09",
+        "subject": "Fixed types reduces in saldo"
+      },
+      {
+        "hash": "5e59ad7",
+        "date": "2026-04-09",
+        "subject": "Fixed types of page.tsx"
+      },
+      {
+        "hash": "9ffd9d1",
+        "date": "2026-04-09",
+        "subject": "Updated dependencies"
+      },
+      {
+        "hash": "81bfc12",
+        "date": "2026-04-09",
+        "subject": "Switched to new redirect"
+      },
+      {
+        "hash": "1185e63",
+        "date": "2026-04-09",
+        "subject": "Added edit, delete"
+      },
+      {
+        "hash": "8cc5c73",
+        "date": "2026-04-09",
+        "subject": "Added timings prefill on edit"
+      },
+      {
+        "hash": "2fe6ee4",
+        "date": "2026-04-09",
+        "subject": "Fixed edit layout"
+      },
+      {
+        "hash": "98b2a64",
+        "date": "2026-04-09",
+        "subject": "Fixed cost couldn't be 0 on creation"
+      },
+      {
+        "hash": "49536ed",
+        "date": "2026-04-09",
+        "subject": "Added aircraftRegistration"
+      },
+      {
+        "hash": "ee288c8",
+        "date": "2026-04-09",
+        "subject": "Added PIC/Istruttore counts"
+      },
+      {
+        "hash": "14c2c36",
+        "date": "2026-04-09",
+        "subject": "Added Ricariche"
+      },
+      {
+        "hash": "695deb6",
+        "date": "2026-04-09",
+        "subject": "Added Saldo stimato in new-flight page"
+      },
+      {
+        "hash": "d586e21",
+        "date": "2026-04-09",
+        "subject": "Added Ore di volo disponibili on Saldo attuale"
+      },
+      {
+        "hash": "60cda0d",
+        "date": "2026-04-09",
+        "subject": "Switched to time HH:mm"
+      },
+      {
+        "hash": "674961d",
+        "date": "2026-04-09",
+        "subject": "Added confirm on delete"
+      },
+      {
+        "hash": "377bcd8",
+        "date": "2026-04-09",
+        "subject": "Added redir to dashboard if already logged in"
+      },
+      {
+        "hash": "d6653bd",
+        "date": "2026-04-09",
+        "subject": "Added verifySessionToken to new proxy"
+      },
+      {
+        "hash": "7b65f31",
+        "date": "2026-04-09",
+        "subject": "Merged new proxy and old middleware into new proxy"
+      },
+      {
+        "hash": "8122d20",
+        "date": "2026-04-09",
+        "subject": "Added estimates for new topups"
+      },
+      {
+        "hash": "d68fd7b",
+        "date": "2026-04-09",
+        "subject": "Reviewed new-flight"
+      },
+      {
+        "hash": "163cef1",
+        "date": "2026-04-10",
+        "subject": "Added flight-planning feature"
+      },
+      {
+        "hash": "2d8b436",
+        "date": "2026-04-10",
+        "subject": "Added dateMonoExam"
+      },
+      {
+        "hash": "6ba60cb",
+        "date": "2026-04-10",
+        "subject": "Dashboard: Added Ore post esame, Hidden Tariffe correnti"
+      },
+      {
+        "hash": "7d93a6f",
+        "date": "2026-04-10",
+        "subject": "Fixed visibility of Tipologia tratta"
+      },
+      {
+        "hash": "1317afd",
+        "date": "2026-04-10",
+        "subject": "Added Nuove ore in new-flight planning"
+      },
+      {
+        "hash": "c5dc591",
+        "date": "2026-04-10",
+        "subject": "Hidden Ore post esame if no dateMonoExam registered"
+      },
+      {
+        "hash": "8cff7c9",
+        "date": "2026-04-10",
+        "subject": "Fixed texts of new-topup"
+      },
+      {
+        "hash": "2484df9",
+        "date": "2026-04-10",
+        "subject": "Added exams dates"
+      },
+      {
+        "hash": "f41409c",
+        "date": "2026-04-10",
+        "subject": "Added medical expiration"
+      },
+      {
+        "hash": "8c3e2c6",
+        "date": "2026-04-10",
+        "subject": "Cleaned up dashboard's movements details"
+      },
+      {
+        "hash": "fddbe5d",
+        "date": "2026-04-14",
+        "subject": "Changed \"Ore con attestato\" card text"
+      },
+      {
+        "hash": "7ad06d5",
+        "date": "2026-04-14",
+        "subject": "Added split costs"
+      },
+      {
+        "hash": "81ecd95",
+        "date": "2026-04-14",
+        "subject": "Added \"Ricarica necessaria\""
+      },
+      {
+        "hash": "cbeb5c0",
+        "date": "2026-04-14",
+        "subject": "Removed bold texts"
+      },
+      {
+        "hash": "d666917",
+        "date": "2026-04-14",
+        "subject": "Simplified Anteprima costi UI"
+      },
+      {
+        "hash": "6d52591",
+        "date": "2026-04-14",
+        "subject": "Hidden split costs w/ instructor"
+      },
+      {
+        "hash": "78d6b23",
+        "date": "2026-04-14",
+        "subject": "Removed default  \"0\" minutes"
+      },
+      {
+        "hash": "f41e9b1",
+        "date": "2026-04-14",
+        "subject": "Added service movement type"
+      },
+      {
+        "hash": "7444b60",
+        "date": "2026-04-14",
+        "subject": "Removed 1 day on medicalExamExpirationDate / medicalExamRemaining"
+      },
+      {
+        "hash": "1891b9a",
+        "date": "2026-04-14",
+        "subject": "Changed \"Nuovo pagamento\" text"
+      },
+      {
+        "hash": "618aa83",
+        "date": "2026-04-14",
+        "subject": "Simplified new flight \"Anteprima costi\" UI"
+      },
+      {
+        "hash": "09e6131",
+        "date": "2026-04-14",
+        "subject": "Improved \"Spese registrate\""
+      },
+      {
+        "hash": "d9eaff5",
+        "date": "2026-04-15",
+        "subject": "Added instructorMinutes to new-flight and db"
+      },
+      {
+        "hash": "7b79152",
+        "date": "2026-04-15",
+        "subject": "Added instructorMinutes to edit-form"
+      },
+      {
+        "hash": "f11603a",
+        "date": "2026-04-15",
+        "subject": "Fixed readme"
+      },
+      {
+        "hash": "1abca1a",
+        "date": "2026-04-15",
+        "subject": "Unified logics and forms for create/edit flights/payments"
+      },
+      {
+        "hash": "f004ef4",
+        "date": "2026-04-15",
+        "subject": "Simplified adding instructorMinutes; Added placeholders"
+      },
+      {
+        "hash": "c49a5d6",
+        "date": "2026-04-15",
+        "subject": "Added placeholders to payment"
+      },
+      {
+        "hash": "c4f2ea9",
+        "date": "2026-04-15",
+        "subject": "Disabled wrapping of dashboard buttons"
+      },
+      {
+        "hash": "42b49e0",
+        "date": "2026-04-15",
+        "subject": "Fixed definition of \"Noleggio + Lezione\""
+      },
+      {
+        "hash": "6ec6c2a",
+        "date": "2026-04-15",
+        "subject": "Switched back to instructor-cost based on durationMinutes and not on instructorMinutes"
+      },
+      {
+        "hash": "53a8d63",
+        "date": "2026-04-15",
+        "subject": "Removed instructorMinutes disabled condition"
+      },
+      {
+        "hash": "7c0dfe1",
+        "date": "2026-04-15",
+        "subject": "Aligned dashboard to new pic/instructor minutes logic"
+      },
+      {
+        "hash": "f3b2b10",
+        "date": "2026-04-15",
+        "subject": "Changed settings texts"
+      },
+      {
+        "hash": "b3aa97a",
+        "date": "2026-04-15",
+        "subject": "Added Progressivo ore to dashboard item"
+      },
+      {
+        "hash": "f3924fa",
+        "date": "2026-04-15",
+        "subject": "Added Progressivo saldo"
+      },
+      {
+        "hash": "b64d886",
+        "date": "2026-04-15",
+        "subject": "Colored Correzione saldo / Credito aggiunto"
+      },
+      {
+        "hash": "d630255",
+        "date": "2026-04-15",
+        "subject": "Added Pianificazione"
+      },
+      {
+        "hash": "e1ba360",
+        "date": "2026-04-15",
+        "subject": "Added Passeggero"
+      },
+      {
+        "hash": "d3b60af",
+        "date": "2026-04-15",
+        "subject": "Shown instructorName/passengerName in dashboard"
+      },
+      {
+        "hash": "3c6c04b",
+        "date": "2026-04-15",
+        "subject": "Hidden Passeggero if not dateBipoExam"
+      },
+      {
+        "hash": "cd1dc9c",
+        "date": "2026-04-15",
+        "subject": "Marking pasts Pianificazioni in dashboards"
+      },
+      {
+        "hash": "0aed708",
+        "date": "2026-04-15",
+        "subject": "Fixed build"
+      },
+      {
+        "hash": "6f8bb4a",
+        "date": "2026-04-15",
+        "subject": "Removed drafts from all calculations"
+      },
+      {
+        "hash": "9abc47b",
+        "date": "2026-04-15",
+        "subject": "Fixed crash on Pianificazione creation"
+      },
+      {
+        "hash": "f021cb5",
+        "date": "2026-04-15",
+        "subject": "Fixed edit Pianificazione w/ warmup"
+      },
+      {
+        "hash": "efe95a3",
+        "date": "2026-04-15",
+        "subject": "Added \"Non voli da\" in dashboard"
+      },
+      {
+        "hash": "65d4de2",
+        "date": "2026-04-16",
+        "subject": "Added last6mFlights in dashboard"
+      },
+      {
+        "hash": "9e87d43",
+        "date": "2026-04-16",
+        "subject": "Improved UI in dashboard"
+      },
+      {
+        "hash": "91f9a6c",
+        "date": "2026-04-16",
+        "subject": "Switched to icons action buttons"
+      },
+      {
+        "hash": "4200d73",
+        "date": "2026-04-16",
+        "subject": "Added calendar btn for future flights"
+      },
+      {
+        "hash": "98d7c09",
+        "date": "2026-04-16",
+        "subject": "Added places and engine timings"
+      },
+      {
+        "hash": "464ce70",
+        "date": "2026-04-16",
+        "subject": "Added engine and places"
+      },
+      {
+        "hash": "19183f0",
+        "date": "2026-04-16",
+        "subject": "Added time to flights"
+      },
+      {
+        "hash": "562e1d6",
+        "date": "2026-04-16",
+        "subject": "Added medium-number style"
+      },
+      {
+        "hash": "6b4e2ef",
+        "date": "2026-04-16",
+        "subject": "Added future payment as \"Scadenza\""
+      },
+      {
+        "hash": "903a27b",
+        "date": "2026-04-16",
+        "subject": "Added flight time in dashboard"
+      },
+      {
+        "hash": "10deae6",
+        "date": "2026-04-16",
+        "subject": "Added icons in dashboard"
+      },
+      {
+        "hash": "99a04d0",
+        "date": "2026-04-16",
+        "subject": "Added more icons in dashboard; Centralized icons in icons.tsx"
+      },
+      {
+        "hash": "31be063",
+        "date": "2026-04-16",
+        "subject": "Switched to emojis for inline icons"
+      },
+      {
+        "hash": "a289a2b",
+        "date": "2026-04-16",
+        "subject": "Added calendar action to future payments too"
+      },
+      {
+        "hash": "a60c4ec",
+        "date": "2026-04-16",
+        "subject": "Added time to flights calendar action"
+      },
+      {
+        "hash": "7a01b46",
+        "date": "2026-04-16",
+        "subject": "Fixed margins in dashboards' widgets"
+      },
+      {
+        "hash": "a3c3a8a",
+        "date": "2026-04-16",
+        "subject": "Aligned \"Pianificazione\"/\"Pianificazione da confermare\" timing logic"
+      },
+      {
+        "hash": "56b7b85",
+        "date": "2026-04-16",
+        "subject": "Set lighter fontWeight for future movements"
+      },
+      {
+        "hash": "acb5739",
+        "date": "2026-04-16",
+        "subject": "Added future costs widget"
+      },
+      {
+        "hash": "a761ed7",
+        "date": "2026-04-16",
+        "subject": "Improved save flight time validation"
+      },
+      {
+        "hash": "1ba3345",
+        "date": "2026-04-16",
+        "subject": "Added takeoffPlace/arrivalPlace in dashboard flights"
+      },
+      {
+        "hash": "3c5f33d",
+        "date": "2026-04-16",
+        "subject": "Moved engine times into times section"
+      },
+      {
+        "hash": "a86cb62",
+        "date": "2026-04-16",
+        "subject": "Added print-logbook"
+      },
+      {
+        "hash": "ffd4e33",
+        "date": "2026-04-16",
+        "subject": "Added icon"
+      },
+      {
+        "hash": "139642d",
+        "date": "2026-04-16",
+        "subject": "Merged data/ora column of print"
+      },
+      {
+        "hash": "2614f2c",
+        "date": "2026-04-17",
+        "subject": "Added nextFlight widget"
+      },
+      {
+        "hash": "912fd50",
+        "date": "2026-04-17",
+        "subject": "Fixed ieri/oggi/domani calculation in widget next/last flight"
+      },
+      {
+        "hash": "19af3f2",
+        "date": "2026-04-17",
+        "subject": "Added br between widget's small timings"
+      },
+      {
+        "hash": "45ce653",
+        "date": "2026-04-17",
+        "subject": "Showing 4 widgets by default"
+      },
+      {
+        "hash": "8ecfdd1",
+        "date": "2026-04-17",
+        "subject": "Showing 2 widgets on mobile"
+      },
+      {
+        "hash": "081a7d5",
+        "date": "2026-04-17",
+        "subject": "Improved layout of dashboard items"
+      },
+      {
+        "hash": "be9b5ca",
+        "date": "2026-04-17",
+        "subject": "Improved logbook print infos layout"
+      },
+      {
+        "hash": "1e48f56",
+        "date": "2026-04-17",
+        "subject": "Fixed build"
+      },
+      {
+        "hash": "8175455",
+        "date": "2026-04-17",
+        "subject": "Improved calenda add icon"
+      },
+      {
+        "hash": "b3514a8",
+        "date": "2026-04-17",
+        "subject": "Changed \"Ricarica credito\" text"
+      },
+      {
+        "hash": "6741095",
+        "date": "2026-04-17",
+        "subject": "Improved print infos"
+      },
+      {
+        "hash": "7160d0a",
+        "date": "2026-04-17",
+        "subject": "Improved and lighen nav buttons"
+      },
+      {
+        "hash": "24b9dae",
+        "date": "2026-04-20",
+        "subject": "Added base daily jobs"
+      },
+      {
+        "hash": "80209cd",
+        "date": "2026-04-20",
+        "subject": "Setup base mail sender"
+      },
+      {
+        "hash": "59e873b",
+        "date": "2026-04-20",
+        "subject": "Created emails at 9 for today's payments and tomorrow's flights"
+      },
+      {
+        "hash": "08b8573",
+        "date": "2026-04-20",
+        "subject": "Restored old wrong migrations"
+      },
+      {
+        "hash": "2ba48d9",
+        "date": "2026-04-20",
+        "subject": "Added persistency of already run email jobs"
+      },
+      {
+        "hash": "82ec5a5",
+        "date": "2026-04-20",
+        "subject": "Styled recap daily email"
+      },
+      {
+        "hash": "09e1350",
+        "date": "2026-04-20",
+        "subject": "Removed statsHtml"
+      },
+      {
+        "hash": "31c441b",
+        "date": "2026-04-29",
+        "subject": "Added confirm past-flight logic like already done for payments"
+      },
+      {
+        "hash": "689e429",
+        "date": "2026-04-30",
+        "subject": "Reduced warmup for warm months"
+      },
+      {
+        "hash": "6a7fb68",
+        "date": "2026-05-06",
+        "subject": "Added double route calculation on flight saving"
+      },
+      {
+        "hash": "4fa0540",
+        "date": "2026-05-06",
+        "subject": "Added version pill"
+      },
+      {
+        "hash": "0c9b3ce",
+        "date": "2026-05-13",
+        "subject": "Added società"
+      },
+      {
+        "hash": "2476784",
+        "date": "2026-05-13",
+        "subject": "Added monthly report società"
+      },
+      {
+        "hash": "e4fc051",
+        "date": "2026-05-13",
+        "subject": "Added edit and delete dati società"
+      },
+      {
+        "hash": "0e05d43",
+        "date": "2026-05-13",
+        "subject": "Added instructor calculation for società flight"
+      },
+      {
+        "hash": "acc8540",
+        "date": "2026-05-13",
+        "subject": "Added annual costs for società"
+      },
+      {
+        "hash": "bdf045a",
+        "date": "2026-05-13",
+        "subject": "Added visible total of monthly costs of società"
+      }
+    ]
+  }
+]

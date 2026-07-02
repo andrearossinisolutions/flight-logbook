@@ -35,15 +35,21 @@ export function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
   return (
     <header className="navbar-container">
       <nav className="navbar">
-        <Link href={isLoggedIn ? "/logbook" : "/"} className="navbar-brand">
-          <div className="navbar-logo">
-            <AirplaneIcon size={20} />
-          </div>
+        <div className="navbar-brand">
+          <Link href={isLoggedIn ? "/logbook" as Route : "/" as Route} className="navbar-brand-link">
+            <div className="navbar-logo">
+              <AirplaneIcon size={20} />
+            </div>
+          </Link>
           <div className="navbar-title-group">
-            <span className="navbar-title">Flight Logbook</span>
-            <span className="navbar-version">v{version}</span>
+            <Link href={isLoggedIn ? "/logbook" as Route : "/" as Route} className="navbar-title-link">
+              <span className="navbar-title">Flight Logbook</span>
+            </Link>
+            <Link href={"/changelog" as Route} className="navbar-version-link">
+              <span className="navbar-version" title="Visualizza changelog">v{version}</span>
+            </Link>
           </div>
-        </Link>
+        </div>
 
         <div className="navbar-tabs">
           {isLoggedIn && navItems.map((item) => {
