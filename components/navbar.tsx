@@ -24,10 +24,10 @@ export function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
 
   const navItems = [
     { name: "Logbook", href: "/logbook", icon: AirplaneIcon },
-    { name: "Briefing", href: "/briefing", icon: BriefingIcon },
-    { name: "Mappa", href: "/map", icon: MapIcon },
     { name: "Società", href: "/societa", icon: UsersIcon },
+    { name: "Briefing", href: "/briefing", icon: BriefingIcon },
     { name: "Eventi", href: "/eventi", icon: CalendarIcon },
+    { name: "Mappa", href: "/map", icon: MapIcon },
     { name: "Impostazioni", href: "/settings", icon: SettingsIcon },
   ];
 
