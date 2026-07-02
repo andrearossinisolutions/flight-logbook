@@ -21,6 +21,7 @@ import {
 import { requireUser } from "@/lib/require-user";
 import { eur, formatDateDisplay, formatTimeDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate, daysToDate, hasTime, getRomeDateTimeParts, romeLocalDateTimeToUtcDate, formatHoursToHHMM, formatDateTimeInput } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
+import { getNextEvent, getEventIcao, cleanEventTitle, parseEventDateLabel, type EventItem } from "@/lib/events";
 
 function isToday(date: Date) {
   const today = new Date();
@@ -36,6 +37,7 @@ export default async function DashboardPage({
 }) {
   const user = await requireUser();
   const settings = user.settings;
+  const nextEvent = await getNextEvent();
 
   if (!settings?.onboardingCompleted) {
     redirect("/onboarding");
@@ -367,30 +369,48 @@ export default async function DashboardPage({
   type CombinedItem =
     | {
         isBooking: true;
+        isEventProposal?: false;
         id: string;
         date: Date;
         booking: (typeof bookings)[number];
       }
     | {
         isBooking: false;
+        isEventProposal?: false;
         id: string;
         date: Date;
         movement: MovementItem;
+      }
+    | {
+        isBooking: false;
+        isEventProposal: true;
+        id: string;
+        date: Date;
+        event: EventItem;
       };
 
   const combinedItems: CombinedItem[] = [
     ...movements.map((m) => ({
       isBooking: false as const,
+      isEventProposal: false as const,
       id: m.id,
       date: m.date,
       movement: m,
     })),
     ...bookingsWithoutPlannedFlights.map((b) => ({
       isBooking: true as const,
+      isEventProposal: false as const,
       id: b.id,
       date: b.startTime,
       booking: b,
     })),
+    ...(nextEvent ? [{
+      isBooking: false as const,
+      isEventProposal: true as const,
+      id: `event-${nextEvent.link}`,
+      date: parseEventDateLabel(nextEvent.eventDateLabel, nextEvent.pubDate) || nextEvent.pubDate || new Date(),
+      event: nextEvent
+    }] : [])
   ].sort((a, b) => b.date.getTime() - a.date.getTime());
 
   async function deleteMovement(formData: FormData) {
@@ -782,6 +802,147 @@ export default async function DashboardPage({
               const now = new Date();
               const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
               const isFutureMovement = item.date > now;
+
+              if (item.isEventProposal) {
+                const event = item.event;
+                const eventDate = item.date;
+                const cleanTitle = cleanEventTitle(event.title);
+                
+                const details = event.description.length > 80 
+                  ? event.description.substring(0, 200) + "..." 
+                  : event.description;
+                  
+                const defaultPartnership = partnerships.length > 0 ? partnerships[0] : null;
+                const partnershipId = defaultPartnership?.id || "";
+                
+                const bookingStart = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate(), 6, 0);
+                const bookingEnd = new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate(), 22, 0);
+                const startLocal = formatDateTimeInput(bookingStart);
+                const endLocal = formatDateTimeInput(bookingEnd);
+                const bookingNotes = `Raduno: ${cleanTitle}`;
+                const bookingParams = new URLSearchParams({
+                  prefillStartTime: startLocal,
+                  prefillEndTime: endLocal,
+                  prefillNotes: bookingNotes
+                }).toString();
+                
+                const planningParams = new URLSearchParams({
+                  prefillDate: formatDateTimeInput(new Date(eventDate.getFullYear(), eventDate.getMonth(), eventDate.getDate(), 10, 0)),
+                  prefillNotes: `Volo per raduno: ${cleanTitle}`,
+                  prefillIsDraft: "true"
+                }).toString();
+                
+                const eventIcao = getEventIcao(event.title, event.description) || settings?.defaultBase || "LIML";
+
+                return (
+                  <tr key={item.id} style={{ backgroundColor: "rgba(31, 111, 91, 0.03)" }}>
+                    <td>
+                      <div className="inline-meta future-movement">
+                        <CalendarIcon />
+                        <span>{event.eventDateLabel}</span>
+                      </div>
+                    </td>
+
+                    <td>
+                      <div className="inline-meta">
+                        <span style={{ fontSize: "16px", display: "inline-block", lineHeight: 1 }}>🎉</span>
+                        <span className="future-movement" style={{ color: "var(--primary)" }}>
+                          Evento
+                        </span>
+                      </div>
+                    </td>
+
+                    <td>
+                      <div className="grid grid-2">
+                        <div>
+                          <div className="future-movement">
+                            {cleanTitle}
+                          </div>
+                          <div className="muted future-movement" style={{ fontSize: "0.82rem", marginTop: 4 }}>
+                            {details}
+                          </div>
+                          <div className="future-movement" style={{ fontSize: "0.8rem", marginTop: 6 }}>
+                            Fonte: <span className="pill" style={{ fontSize: "0.72rem", backgroundColor: "rgba(31, 111, 91, 0.1)", color: "var(--primary)", padding: "2px 6px", borderRadius: 6, fontWeight: 500 }}>{event.sourceName}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td style={{ fontWeight: 700 }} className="muted">
+                      —
+                    </td>
+
+                    <td>
+                      <div className="row" style={{ gap: 8, flexWrap: "nowrap", whiteSpace: "nowrap" }}>
+                        <Link
+                          href={`/briefing?icao=${encodeURIComponent(eventIcao)}&date=${encodeURIComponent(bookingStart.toISOString())}`}
+                          className="btn secondary icon-btn"
+                          style={{
+                            padding: 0,
+                            width: 40,
+                            height: 40,
+                            fontSize: "1.2rem",
+                            borderRadius: 14,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            textDecoration: "none"
+                          }}
+                          title={`Briefing Meteo per ${eventIcao}`}
+                        >
+                          🌤️
+                        </Link>
+
+                        <Link
+                          href={`/new-flight?${planningParams}`}
+                          className="btn icon-btn"
+                          style={{
+                            padding: 0,
+                            width: 40,
+                            height: 40,
+                            borderRadius: 14,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            textDecoration: "none",
+                            backgroundColor: "var(--border)",
+                            borderColor: "var(--border)",
+                            color: "var(--text)"
+                          }}
+                          title="Aggiungi pianificazione volo per questo evento"
+                        >
+                          <PlusIcon size={18} />
+                        </Link>
+
+                        {partnershipId && (
+                          <Link
+                            href={`/societa/${partnershipId}?${bookingParams}`}
+                            className="btn"
+                            style={{
+                              padding: "6px 12px",
+                              fontSize: "0.8rem",
+                              lineHeight: 1,
+                              borderRadius: 8,
+                              backgroundColor: "#2563eb",
+                              borderColor: "#2563eb",
+                              color: "white",
+                              fontWeight: 600,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              height: 38,
+                              textDecoration: "none"
+                            }}
+                            title="Prenota l'aereo della società per questo evento"
+                          >
+                            📅 Prenota
+                          </Link>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              }
 
               if (item.isBooking) {
                 const booking = item.booking;

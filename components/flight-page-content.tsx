@@ -17,6 +17,9 @@ type FlightPageContentProps =
   | {
       mode: "create";
       bookingId?: string;
+      prefillDate?: string;
+      prefillNotes?: string;
+      prefillIsDraft?: boolean;
     }
   | {
       mode: "edit";
@@ -256,10 +259,12 @@ export default async function FlightPageContent(
     rentalRateApplied: String(initialRentalRate),
     instructorRateApplied: String(Number(settings?.instructorRatePerHour ?? 80)),
     takeoffPlace: settings?.defaultBase ?? "",
-    isDraft: movementToEdit?.isDraft ?? false,
+    isDraft: (props.mode === "create" && props.prefillIsDraft) || (movementToEdit?.isDraft ?? false),
     inputMode: "HOBBS",
     aircraftRegistration: initialRegistration,
     aircraftType: matchedRental ? matchedRental.type : (lastFlightMovement?.flight?.aircraftType ?? "P92"),
+    date: (props.mode === "create" && props.prefillDate) ? props.prefillDate : undefined,
+    notes: (props.mode === "create" && props.prefillNotes) ? props.prefillNotes : "",
   };
   let movementId: string | undefined = undefined;
 

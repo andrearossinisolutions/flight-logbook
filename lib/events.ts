@@ -159,3 +159,71 @@ export const fetchAllEvents = cache(async (): Promise<EventItem[]> => {
     return dateB - dateA;
   });
 });
+
+export function cleanEventTitle(title: string): string {
+  const dashIndex = title.indexOf("–") !== -1 ? title.indexOf("–") : title.indexOf("-");
+  if (dashIndex !== -1) {
+    const prefix = title.substring(0, dashIndex).trim();
+    if (
+      /luglio|agosto|settembre|ottobre|novembre|dicembre|gennaio|febbraio|marzo|aprile|maggio|giugno/i.test(prefix) || 
+      /\d+/.test(prefix)
+    ) {
+      return title.substring(dashIndex + 1).trim();
+    }
+  }
+  return title;
+}
+
+const monthsIt = ["gennaio", "febbraio", "marzo", "aprile", "maggio", "giugno", "luglio", "agosto", "settembre", "ottobre", "novembre", "dicembre"];
+
+export function parseEventDateLabel(label: string, pubDate: Date | null): Date | null {
+  const text = label.toLowerCase();
+  
+  const yearMatch = text.match(/\b(20\d{2})\b/);
+  const year = yearMatch ? parseInt(yearMatch[1], 10) : (pubDate ? pubDate.getFullYear() : new Date().getFullYear());
+  
+  let monthIdx = -1;
+  for (let i = 0; i < monthsIt.length; i++) {
+    if (text.includes(monthsIt[i])) {
+      monthIdx = i;
+      break;
+    }
+  }
+  if (monthIdx === -1) {
+    return pubDate;
+  }
+  
+  const dayMatch = text.match(/\b(\d{1,2})\b/);
+  const day = dayMatch ? parseInt(dayMatch[1], 10) : 1;
+  
+  return new Date(year, monthIdx, day);
+}
+
+export function getEventIcao(title: string, description: string): string | null {
+  const icaoMatch = (title + " " + description).match(/\b(li[a-z]{2})\b/i);
+  if (icaoMatch) {
+    return icaoMatch[1].toUpperCase();
+  }
+  
+  const customMatch = (title + " " + description).match(/\b([a-z]{2}[-\s]?\d{2})\b/i);
+  if (customMatch) {
+    return customMatch[1].toUpperCase().replace(/\s+/, "-");
+  }
+  return null;
+}
+
+export const getNextEvent = cache(async (): Promise<EventItem | null> => {
+  const events = await fetchAllEvents();
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  
+  const futureEvents = events
+    .map(event => {
+      const parsedDate = parseEventDateLabel(event.eventDateLabel, event.pubDate);
+      return { ...event, parsedDate };
+    })
+    .filter((event): event is EventItem & { parsedDate: Date } => event.parsedDate !== null && event.parsedDate >= todayStart)
+    .sort((a, b) => a.parsedDate.getTime() - b.parsedDate.getTime());
+    
+  return futureEvents.length > 0 ? futureEvents[0] : null;
+});

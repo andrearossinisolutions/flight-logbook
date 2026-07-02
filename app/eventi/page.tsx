@@ -1,23 +1,9 @@
 import { requireUser } from "@/lib/require-user";
 import { AppShell } from "@/components/app-shell";
-import { fetchAllEvents, EventItem } from "@/lib/events";
+import { fetchAllEvents, EventItem, cleanEventTitle } from "@/lib/events";
 import { CalendarIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
-
-function cleanEventTitle(title: string): string {
-  const dashIndex = title.indexOf("–") !== -1 ? title.indexOf("–") : title.indexOf("-");
-  if (dashIndex !== -1) {
-    const prefix = title.substring(0, dashIndex).trim();
-    if (
-      /luglio|agosto|settembre|ottobre|novembre|dicembre|gennaio|febbraio|marzo|aprile|maggio|giugno/i.test(prefix) || 
-      /\d+/.test(prefix)
-    ) {
-      return title.substring(dashIndex + 1).trim();
-    }
-  }
-  return title;
-}
 
 export default async function EventiPage() {
   const user = await requireUser();
