@@ -183,9 +183,9 @@ function getMaintenanceSplit(log: any, aircraft: any, partnershipFlights: any[],
   };
 }
 
-export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFlights = [], partnershipFlights = [], editBookingId, tab }: any) {
+export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFlights = [], partnershipFlights = [], editBookingId, tab, prefillAircraftId, prefillStartTime, prefillEndTime, prefillNotes }: any) {
   const [activeTab, setActiveTab] = useState(() => {
-    if (tab === "bookings" || editBookingId) {
+    if (tab === "bookings" || editBookingId || prefillAircraftId || prefillStartTime || prefillEndTime) {
       return "BOOKINGS";
     }
     return "BACHECA";
@@ -387,8 +387,16 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
           }
         }, 100);
       }
+    } else if (prefillAircraftId || prefillStartTime || prefillEndTime) {
+      // Scroll to the booking form after a small timeout to let the page render
+      setTimeout(() => {
+        const formCol = document.querySelector(".bookings-form-col");
+        if (formCol) {
+          formCol.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 100);
     }
-  }, [editBookingId, partnership.bookings]);
+  }, [editBookingId, partnership.bookings, prefillAircraftId, prefillStartTime, prefillEndTime]);
 
   const now = new Date();
   const upcomingBookings = (partnership.bookings || [])
@@ -1356,7 +1364,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                     </div>
                   ) : (
                     <form
-                      key={editingBooking ? editingBooking.id : selectedFormDate}
+                      key={editingBooking ? editingBooking.id : `${selectedFormDate}_${prefillAircraftId || ''}_${prefillStartTime || ''}`}
                       onSubmit={editingBooking ? handleUpdateBooking : handleAddBooking}
                       className="grid"
                       style={{ gap: 16 }}
@@ -1367,7 +1375,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                           name="aircraftId"
                           className="select"
                           required
-                          defaultValue={editingBooking ? editingBooking.aircraftId : undefined}
+                          defaultValue={editingBooking ? editingBooking.aircraftId : (prefillAircraftId || undefined)}
                           style={{ borderRadius: 12 }}
                         >
                           {partnership.aircrafts.map((a: any) => (
@@ -1405,7 +1413,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                             name="startTime"
                             className="input"
                             required
-                            defaultValue={editingBooking ? editingBooking.startTime : `${selectedFormDate}T09:00`}
+                            defaultValue={editingBooking ? editingBooking.startTime : (prefillStartTime || `${selectedFormDate}T09:00`)}
                             style={{ borderRadius: 12 }}
                           />
                         </div>
@@ -1416,7 +1424,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                             name="endTime"
                             className="input"
                             required
-                            defaultValue={editingBooking ? editingBooking.endTime : `${selectedFormDate}T11:00`}
+                            defaultValue={editingBooking ? editingBooking.endTime : (prefillEndTime || `${selectedFormDate}T11:00`)}
                             style={{ borderRadius: 12 }}
                           />
                         </div>
@@ -1428,7 +1436,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                           name="notes"
                           className="textarea"
                           placeholder="Es: volo locale con passeggero, addestramento, ecc."
-                          defaultValue={editingBooking ? editingBooking.notes : ""}
+                          defaultValue={editingBooking ? editingBooking.notes : (prefillNotes || "")}
                           style={{ minHeight: 60, borderRadius: 12 }}
                         />
                       </div>

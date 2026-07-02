@@ -16,7 +16,7 @@ export default async function SocietaDetailsPage({
 }) {
   const user = await requireUser();
   const { id } = await params;
-  const { editBookingId, tab } = await searchParams;
+  const { editBookingId, tab, prefillAircraftId, prefillStartTime, prefillEndTime, prefillNotes } = await searchParams;
 
   const partnership = await prisma.partnership.findFirst({
     where: {
@@ -312,6 +312,10 @@ export default async function SocietaDetailsPage({
         partnershipFlights={serializedPartnershipFlights}
         editBookingId={typeof editBookingId === "string" ? editBookingId : undefined}
         tab={typeof tab === "string" ? tab : undefined}
+        prefillAircraftId={typeof prefillAircraftId === "string" ? prefillAircraftId : undefined}
+        prefillStartTime={typeof prefillStartTime === "string" ? prefillStartTime : undefined}
+        prefillEndTime={typeof prefillEndTime === "string" ? prefillEndTime : undefined}
+        prefillNotes={typeof prefillNotes === "string" ? prefillNotes : undefined}
       />
     </AppShell>
   );

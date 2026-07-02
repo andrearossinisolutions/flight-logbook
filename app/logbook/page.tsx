@@ -19,7 +19,7 @@ import {
   PlusIcon,
 } from "@/components/icons";
 import { requireUser } from "@/lib/require-user";
-import { eur, formatDateDisplay, formatTimeDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate, daysToDate, hasTime, getRomeDateTimeParts, romeLocalDateTimeToUtcDate, formatHoursToHHMM } from "@/lib/utils";
+import { eur, formatDateDisplay, formatTimeDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate, daysToDate, hasTime, getRomeDateTimeParts, romeLocalDateTimeToUtcDate, formatHoursToHHMM, formatDateTimeInput } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 
 function isToday(date: Date) {
@@ -949,7 +949,7 @@ export default async function DashboardPage({
                   </td>
 
                   <td>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "stretch" }}>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-start" }}>
                       <div className="row" style={{ gap: 8, flexWrap: "nowrap", whiteSpace: "nowrap" }}>
                         {m.type === "FLIGHT" && m.isDraft && m.date >= today && (
                           <Link
@@ -1011,11 +1011,45 @@ export default async function DashboardPage({
                           new Date(b.endTime) > flightStart
                         );
                         if (!hasBooking) {
+                          const bookingStart = new Date(flightStart.getTime() - 60 * 60 * 1000);
+                          const bookingEnd = new Date(flightEnd.getTime() + 60 * 60 * 1000);
+                          const startLocal = formatDateTimeInput(bookingStart);
+                          const endLocal = formatDateTimeInput(bookingEnd);
+                          const notesPrefill = m.notes ? `Volo pianificato: ${m.notes}` : "Prenotazione da volo pianificato";
+                          const aircraftPartnership = partnerships.find(p => 
+                            p.aircrafts.some(a => a.id === m.flight?.partnershipAircraftId)
+                          );
+                          const partnershipId = aircraftPartnership?.id || "";
+                          const queryParams = new URLSearchParams({
+                            prefillAircraftId: m.flight?.partnershipAircraftId || "",
+                            prefillStartTime: startLocal,
+                            prefillEndTime: endLocal,
+                            prefillNotes: notesPrefill
+                          }).toString();
+
                           return (
-                            <form action={bookPlannedFlight} style={{ display: "flex", width: "100%" }}>
-                              <input type="hidden" name="movementId" value={m.id} />
-                              <BookPlannedFlightButton />
-                            </form>
+                            <Link
+                              href={`/societa/${partnershipId}?${queryParams}`}
+                              className="btn"
+                              style={{
+                                padding: "6px 12px",
+                                fontSize: "0.8rem",
+                                lineHeight: 1,
+                                borderRadius: 8,
+                                backgroundColor: "#2563eb",
+                                borderColor: "#2563eb",
+                                color: "white",
+                                fontWeight: 600,
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                height: 38,
+                                textDecoration: "none"
+                              }}
+                              title="Prenota l'aereo della società per questo volo"
+                            >
+                              📅 Prenota
+                            </Link>
                           );
                         }
                         return null;
