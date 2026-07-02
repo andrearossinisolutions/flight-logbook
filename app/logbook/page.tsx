@@ -809,7 +809,7 @@ export default async function DashboardPage({
                 const cleanTitle = cleanEventTitle(event.title);
                 
                 const details = event.description.length > 80 
-                  ? event.description.substring(0, 200) + "..." 
+                  ? event.description.substring(0, 180) + "..." 
                   : event.description;
                   
                 const defaultPartnership = partnerships.length > 0 ? partnerships[0] : null;
@@ -859,7 +859,15 @@ export default async function DashboardPage({
                             {cleanTitle}
                           </div>
                           <div className="muted future-movement" style={{ fontSize: "0.82rem", marginTop: 4 }}>
-                            {details}
+                            {details}{" "}
+                            <a 
+                              href={event.link} 
+                              target="_blank" 
+                              rel="noopener noreferrer" 
+                              style={{ color: "var(--primary)", textDecoration: "underline", fontWeight: 500 }}
+                            >
+                              Leggi di più
+                            </a>
                           </div>
                           <div className="future-movement" style={{ fontSize: "0.8rem", marginTop: 6 }}>
                             Fonte: <span className="pill" style={{ fontSize: "0.72rem", backgroundColor: "rgba(31, 111, 91, 0.1)", color: "var(--primary)", padding: "2px 6px", borderRadius: 6, fontWeight: 500 }}>{event.sourceName}</span>
