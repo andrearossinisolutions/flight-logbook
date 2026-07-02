@@ -7,9 +7,16 @@ import type { Route } from "next";
 import { PartnershipTabs } from "./tabs";
 import { PartnershipSelector } from "@/components/partnership-selector";
 
-export default async function SocietaDetailsPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function SocietaDetailsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const user = await requireUser();
   const { id } = await params;
+  const { editBookingId, tab } = await searchParams;
 
   const partnership = await prisma.partnership.findFirst({
     where: {
@@ -303,6 +310,8 @@ export default async function SocietaDetailsPage({ params }: { params: Promise<{
         currentUserId={user.id} 
         lastFlights={serializedLastFlights} 
         partnershipFlights={serializedPartnershipFlights}
+        editBookingId={typeof editBookingId === "string" ? editBookingId : undefined}
+        tab={typeof tab === "string" ? tab : undefined}
       />
     </AppShell>
   );

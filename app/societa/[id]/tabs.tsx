@@ -183,8 +183,13 @@ function getMaintenanceSplit(log: any, aircraft: any, partnershipFlights: any[],
   };
 }
 
-export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFlights = [], partnershipFlights = [] }: any) {
-  const [activeTab, setActiveTab] = useState("BACHECA");
+export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFlights = [], partnershipFlights = [], editBookingId, tab }: any) {
+  const [activeTab, setActiveTab] = useState(() => {
+    if (tab === "bookings" || editBookingId) {
+      return "BOOKINGS";
+    }
+    return "BACHECA";
+  });
   const router = useRouter();
 
   // State for transaction type when adding a new transaction with cassa disabled
@@ -360,6 +365,30 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
   const [isDeletingBookingId, setIsDeletingBookingId] = useState<string | null>(null);
   const [editingBooking, setEditingBooking] = useState<any | null>(null);
+
+  useEffect(() => {
+    if (editBookingId && partnership.bookings) {
+      const b = partnership.bookings.find((x: any) => x.id === editBookingId);
+      if (b) {
+        setEditingBooking({
+          id: b.id,
+          aircraftId: b.aircraftId,
+          startTime: formatDateTimeInput(b.startTime),
+          endTime: formatDateTimeInput(b.endTime),
+          notes: b.notes || "",
+          userId: b.userId
+        });
+        
+        // Scroll to the booking form after a small timeout to let the page render
+        setTimeout(() => {
+          const formCol = document.querySelector(".bookings-form-col");
+          if (formCol) {
+            formCol.scrollIntoView({ behavior: "smooth" });
+          }
+        }, 100);
+      }
+    }
+  }, [editBookingId, partnership.bookings]);
 
   const now = new Date();
   const upcomingBookings = (partnership.bookings || [])

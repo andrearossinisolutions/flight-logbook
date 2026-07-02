@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { AppShell } from "@/components/app-shell";
 import { DashboardWidgets } from "@/components/dashboard-widgets";
 import { DeleteMovementButton } from "@/components/delete-movement-button";
+import { DeleteBookingButton } from "@/components/delete-booking-button";
 import { DashboardRegistryActions } from "@/components/dashboard-registry-actions";
 import { BookPlannedFlightButton } from "@/components/book-planned-flight-button";
 
@@ -349,8 +350,8 @@ export default async function DashboardPage({
   });
 
   const bookingsWithoutPlannedFlights = filteredBookings.filter((b) => {
-    const hasMatchingDraft = allMovements.some((m) => {
-      if (m.type !== "FLIGHT" || !m.isDraft || !m.flight?.partnershipAircraftId) {
+    const hasMatchingFlight = allMovements.some((m) => {
+      if (m.type !== "FLIGHT" || !m.flight?.partnershipAircraftId) {
         return false;
       }
       if (m.flight.partnershipAircraftId !== b.aircraftId) {
@@ -360,7 +361,7 @@ export default async function DashboardPage({
       const flightEnd = new Date(flightStart.getTime() + (m.flight.durationMinutes * 60 * 1000));
       return b.startTime < flightEnd && b.endTime > flightStart;
     });
-    return !hasMatchingDraft;
+    return !hasMatchingFlight;
   });
 
   type CombinedItem =
@@ -426,6 +427,35 @@ export default async function DashboardPage({
       await tx.movement.delete({
         where: { id: movement.id },
       });
+    });
+
+    revalidatePath("/logbook");
+    redirect("/logbook");
+  }
+
+  async function deleteBookingAction(formData: FormData) {
+    "use server";
+
+    const user = await requireUser();
+    const bookingId = String(formData.get("bookingId") ?? "");
+
+    if (!bookingId) {
+      throw new Error("ID prenotazione mancante.");
+    }
+
+    const booking = await prisma.partnershipBooking.findFirst({
+      where: {
+        id: bookingId,
+        userId: user.id,
+      },
+    });
+
+    if (!booking) {
+      throw new Error("Prenotazione non trovata.");
+    }
+
+    await prisma.partnershipBooking.delete({
+      where: { id: booking.id },
     });
 
     revalidatePath("/logbook");
@@ -801,12 +831,13 @@ export default async function DashboardPage({
                         {booking.startTime >= today && (
                           <Link
                             href={`/briefing?icao=${encodeURIComponent(booking.notes || settings?.defaultBase || "LIML")}&date=${encodeURIComponent(booking.startTime.toISOString())}`}
-                            className="btn secondary"
+                            className="btn secondary icon-btn"
                             style={{
-                              padding: "6px 8px",
-                              fontSize: "1.1rem",
-                              borderRadius: 8,
-                              lineHeight: 1,
+                              padding: 0,
+                              width: 40,
+                              height: 40,
+                              fontSize: "1.2rem",
+                              borderRadius: 14,
                               display: "inline-flex",
                               alignItems: "center",
                               justifyContent: "center",
@@ -819,25 +850,46 @@ export default async function DashboardPage({
                         )}
                         <Link
                           href={`/new-flight?bookingId=${booking.id}`}
-                          className="btn"
+                          className="btn icon-btn"
                           style={{
-                            padding: !isFutureMovement ? "6px 12px" : "8px",
-                            fontSize: "0.8rem",
-                            lineHeight: 1,
-                            borderRadius: 8,
-                            backgroundColor: !isFutureMovement ? "#16a34a" : "var(--border)",
-                            borderColor: !isFutureMovement ? "#16a34a" : "var(--border)",
-                            color: !isFutureMovement ? "white" : "var(--text)",
-                            fontWeight: 600,
-                            textDecoration: "none",
+                            padding: 0,
+                            width: 40,
+                            height: 40,
+                            borderRadius: 14,
                             display: "inline-flex",
                             alignItems: "center",
-                            justifyContent: "center"
+                            justifyContent: "center",
+                            textDecoration: "none",
+                            backgroundColor: "var(--border)",
+                            borderColor: "var(--border)",
+                            color: "var(--text)"
                           }}
                           title={isFutureMovement ? "Precompila volo" : "Registra volo"}
                         >
-                          {!isFutureMovement ? "Registra volo" : <PlusIcon size={16} />}
+                          <PlusIcon size={18} />
                         </Link>
+                        <Link
+                          className="btn secondary icon-btn"
+                          style={{
+                            padding: 0,
+                            width: 40,
+                            height: 40,
+                            borderRadius: 14,
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            textDecoration: "none"
+                          }}
+                          href={`/societa/${booking.partnershipId}?editBookingId=${booking.id}`}
+                          aria-label="Modifica prenotazione"
+                          title="Modifica prenotazione"
+                        >
+                          <PencilIcon size={18} />
+                        </Link>
+                        <form action={deleteBookingAction}>
+                          <input type="hidden" name="bookingId" value={booking.id} />
+                          <DeleteBookingButton iconOnly />
+                        </form>
                       </div>
                     </td>
                   </tr>
