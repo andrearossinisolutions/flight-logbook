@@ -17,6 +17,8 @@ import {
   MoneyBillIcon,
   PencilIcon,
   PlusIcon,
+  UsersIcon,
+  FuelIcon,
 } from "@/components/icons";
 import { requireUser } from "@/lib/require-user";
 import { eur, formatDateDisplay, formatTimeDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate, daysToDate, hasTime, getRomeDateTimeParts, romeLocalDateTimeToUtcDate, formatHoursToHHMM, formatDateTimeInput } from "@/lib/utils";
@@ -45,7 +47,13 @@ export default async function DashboardPage({
 
   const allMovements = await prisma.movement.findMany({
     where: { userId: user.id },
-    include: { flight: true },
+    include: {
+      flight: {
+        include: {
+          partnershipAircraft: true
+        }
+      }
+    },
     orderBy: [{ date: "desc" }, { createdAt: "desc" }],
   });
 
@@ -785,7 +793,7 @@ export default async function DashboardPage({
               <th>Data</th>
               <th>Tipo</th>
               <th>Dettagli</th>
-              <th>Importo</th>
+              <th>Costo</th>
               <th>Azioni</th>
             </tr>
           </thead>
@@ -1114,7 +1122,50 @@ export default async function DashboardPage({
                   </td>
 
                   <td style={{ fontWeight: 700 }}>
-                    {m.type === "REMINDER" ? "—" : eur(Number(m.amount))}
+                    {(() => {
+                      if (m.type === "REMINDER") return "—";
+                      if (m.type === "FLIGHT" && m.flight) {
+                        const f = m.flight;
+                        const durationMinutes = f.durationMinutes;
+                        if (f.partnershipAircraftId) {
+                          const pa = f.partnershipAircraft;
+                          const hourlyFuelCost = pa ? Number(pa.hourlyFuelCost) : 0;
+                          const hourlyMaintCost = pa ? Number(pa.hourlyMaintCost) : 0;
+                          const hourlyEngineFund = pa ? Number(pa.hourlyEngineFund) : 0;
+                          const hourlyCost = hourlyFuelCost + hourlyMaintCost + hourlyEngineFund;
+
+                          if (hourlyCost > 0) {
+                            const flightCost = (durationMinutes / 60) * hourlyCost;
+                            return (
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }} title="Costo orario societario">
+                                <UsersIcon size={16} style={{ color: "var(--primary)" }} />
+                                <span>{eur(flightCost)}</span>
+                              </span>
+                            );
+                          } else {
+                            const baseAirfield = settings?.defaultBase || "LIML";
+                            const region = getRegionFromIcao(baseAirfield);
+                            const fuelPrice = REGIONAL_GASOLINE_PRICES[region] || 1.81;
+                            const estimatedHourlyFuelCost = fuelPrice * 18;
+                            const flightCost = (durationMinutes / 60) * estimatedHourlyFuelCost;
+                            return (
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }} title={`Stima carburante (${region}: ${fuelPrice.toFixed(2)} €/L)`}>
+                                <FuelIcon size={16} />
+                                <span>{eur(flightCost)}</span>
+                              </span>
+                            );
+                          }
+                        } else {
+                          return (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }} title="Prezzo noleggio">
+                              <MoneyBillIcon size={16} />
+                              <span>{eur(Number(f.totalCost))}</span>
+                            </span>
+                          );
+                        }
+                      }
+                      return eur(Number(m.amount));
+                    })()}
                   </td>
 
                   <td>
@@ -1485,3 +1536,88 @@ function formatCalendarDateTime(date: Date) {
   const ss = String(parts.second).padStart(2, "0");
   return `${yyyy}${mm}${dd}T${hh}${min}${ss}`;
 }
+
+const REGIONAL_GASOLINE_PRICES: Record<string, number> = {
+  "Lombardia": 1.81,
+  "Piemonte": 1.80,
+  "Liguria": 1.84,
+  "Valle d'Aosta": 1.83,
+  "Veneto": 1.79,
+  "Trentino-Alto Adige": 1.86,
+  "Friuli-Venezia Giulia": 1.79,
+  "Emilia-Romagna": 1.82,
+  "Toscana": 1.81,
+  "Umbria": 1.81,
+  "Marche": 1.80,
+  "Lazio": 1.80,
+  "Abruzzo": 1.81,
+  "Molise": 1.82,
+  "Campania": 1.82,
+  "Puglia": 1.83,
+  "Basilicata": 1.84,
+  "Calabria": 1.85,
+  "Sicilia": 1.84,
+  "Sardegna": 1.87
+};
+
+function getRegionFromIcao(icao: string): string {
+  const code = icao.trim().toUpperCase();
+  
+  const airportToRegion: Record<string, string> = {
+    LIML: "Lombardia",
+    LIME: "Lombardia",
+    LIMC: "Lombardia",
+    LIPO: "Lombardia",
+    LIMF: "Piemonte",
+    LIMW: "Valle d'Aosta",
+    LIMG: "Liguria",
+    LIPX: "Veneto",
+    LIPZ: "Veneto",
+    LIPV: "Veneto",
+    LIPH: "Veneto",
+    LIPU: "Veneto",
+    LIPT: "Trentino-Alto Adige",
+    LIPB: "Trentino-Alto Adige",
+    LIPE: "Emilia-Romagna",
+    LIPK: "Emilia-Romagna",
+    LIPR: "Emilia-Romagna",
+    LIPL: "Marche",
+    LIRP: "Toscana",
+    LIRS: "Toscana",
+    LIRQ: "Toscana",
+    LIRN: "Campania",
+    LIRF: "Lazio",
+    LIRA: "Lazio",
+    LIRZ: "Umbria",
+    LICC: "Sicilia",
+    LICJ: "Sicilia",
+    LIBD: "Puglia",
+    LIBP: "Abruzzo",
+    LICA: "Calabria",
+    LIEE: "Sardegna",
+    LIEO: "Sardegna",
+    LIEA: "Sardegna",
+    LIPA: "Friuli-Venezia Giulia"
+  };
+
+  if (airportToRegion[code]) {
+    return airportToRegion[code];
+  }
+
+  const prefix3 = code.substring(0, 3);
+  if (prefix3.startsWith("LIC")) return "Sicilia";
+  if (prefix3.startsWith("LIE")) return "Sardegna";
+  
+  if (prefix3 === "LIL") return "Lombardia";
+  if (prefix3 === "LID") return "Emilia-Romagna";
+  if (prefix3 === "LIV") return "Veneto";
+  if (prefix3 === "LIQ") return "Toscana";
+  
+  if (code.startsWith("LIM")) return "Lombardia";
+  if (code.startsWith("LIP")) return "Veneto";
+  if (code.startsWith("LIR")) return "Lazio";
+  if (code.startsWith("LIB")) return "Puglia";
+
+  return "Lombardia";
+}
+

@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.23.0",
+    "date": "2026-07-03",
+    "commits": [
+      {
+        "hash": "609a095",
+        "date": "2026-07-03",
+        "subject": "Added estimated fuel price for societary flights"
+      }
+    ]
+  },
+  {
     "version": "1.22.0",
     "date": "2026-07-02",
     "commits": [
       {
-        "hash": "3965bea",
+        "hash": "e45be3d",
         "date": "2026-07-02",
         "subject": "Added changelog"
       }
