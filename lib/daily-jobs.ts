@@ -543,6 +543,12 @@ export async function runDailyChecksAndActions(now = new Date()) {
     console.error("[daily-jobs] Errore durante l'invio del meteo del weekend", error);
   }
 
+  try {
+    await checkAndSendNoBaseReminders(now);
+  } catch (error) {
+    console.error("[daily-jobs] Errore durante l'invio dei promemoria base mancante", error);
+  }
+
   const todayRange = getRomeDayRange(now, 0);
   const tomorrowRange = getRomeDayRange(now, 1);
 
@@ -1532,6 +1538,131 @@ export async function sendWeekendWeatherDigest(now = new Date()) {
       });
     } catch (err) {
       console.error(`[daily-jobs] Errore nell'invio dell'email meteo weekend a ${user.email}:`, err);
+    }
+  }
+}
+
+// --- SERVIZIO PROMEMORIA BASE MANCANTE (OGNI 6 MESI) ---
+
+function buildNoBaseReminderEmail(user: any) {
+  const subject = `Flight Logbook · Imposta la tua Base di Volo per sbloccare più funzioni ✈️`;
+
+  const appUrl = process.env.APP_URL || "http://localhost:3000";
+  const settingsUrl = `${appUrl}/settings`;
+
+  const text =
+    `Ciao${user.fullName ? ` ${user.fullName}` : ""},\n\n` +
+    `Abbiamo notato che non hai ancora impostato il tuo aeroporto base nel tuo profilo.\n\n` +
+    `Configurare un aeroporto base (es. LIME, LIML) ti permette di:\n` +
+    `- Avere le origini/destinazioni dei voli precompilate automaticamente sul logbook.\n` +
+    `- Ricevere il Briefing Meteo del Weekend ogni giovedì mattina entro 100km dalla tua base.\n` +
+    `- Usufruire di tutte le future funzionalità mirate e personalizzate.\n\n` +
+    `Impostala subito qui: ${settingsUrl}\n\n` +
+    `Buon volo,\nIl Team di Flight Logbook`;
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937; background-color: #f9fafb;">
+      <div style="margin: 0 0 24px; padding: 22px; border-radius: 24px; background: linear-gradient(135deg, #17324d 0%, #244a70 100%); color: #ffffff;">
+        <div style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; margin-bottom: 8px;">
+          Suggerimento del Profilo
+        </div>
+        <div style="font-size: 26px; line-height: 1.1; font-weight: 800; margin-bottom: 8px;">
+          Configura la tua Base 📍
+        </div>
+        <div style="font-size: 14px; opacity: 0.95;">
+          Sblocca il pieno potenziale del tuo logbook e dei briefing meteo automatizzati.
+        </div>
+      </div>
+      
+      <p style="font-size: 15px; line-height: 1.6; color: #374151;">
+        Ciao${user.fullName ? ` <strong>${user.fullName}</strong>` : ""},
+      </p>
+      <p style="font-size: 15px; line-height: 1.6; color: #374151;">
+        Abbiamo notato che non hai ancora inserito un **aeroporto o campo di volo base** nelle tue impostazioni. Impostarlo richiede solo pochi secondi ma sblocca funzionalità utilissime:
+      </p>
+      
+      <ul style="font-size: 14px; line-height: 1.6; color: #374151; padding-left: 20px; margin-bottom: 24px;">
+        <li style="margin-bottom: 8px;">
+          <strong>Precompilazione logbook:</strong> Le origini e destinazioni dei tuoi nuovi inserimenti saranno precompilate automaticamente con la tua base per farti risparmiare tempo.
+        </li>
+        <li style="margin-bottom: 8px;">
+          <strong>Briefing Meteo del Weekend:</strong> Riceverai ogni giovedì mattina una notifica email con le condizioni VFR stimate per venerdì, sabato e domenica in un raggio di 100 km dalla tua base.
+        </li>
+        <li style="margin-bottom: 8px;">
+          <strong>Calcoli intelligenti:</strong> Le pianificazioni di rotta e le mappe interattive useranno la tua base come punto di partenza predefinito.
+        </li>
+      </ul>
+      
+      <div style="text-align: center; margin: 32px 0 24px;">
+        <a href="${settingsUrl}" style="display: inline-block; background-color: #0284c7; color: #ffffff; padding: 12px 28px; border-radius: 12px; font-weight: bold; text-decoration: none; font-size: 15px; box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);">
+          Imposta Aeroporto Base Adesso ↗
+        </a>
+      </div>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+      <div style="font-size: 11px; color: #6b7280; text-align: center; line-height: 1.5;">
+        Ricevi questo promemoria periodico perché non hai ancora configurato un aeroporto preferito nel tuo profilo di Flight Logbook. Puoi disattivarlo in qualsiasi momento inserendo una base.
+      </div>
+    </div>
+  `;
+
+  return { subject, text, html };
+}
+
+export async function checkAndSendNoBaseReminders(now = new Date()) {
+  const users = await prisma.user.findMany({
+    include: { settings: true },
+  });
+
+  const SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000;
+
+  for (const user of users) {
+    const hasBase = !!user.settings?.defaultBase?.trim();
+    if (hasBase) {
+      continue;
+    }
+
+    const jobKey = `no-base-reminder-${user.id}`;
+    const jobState = await prisma.dailyJobState.findUnique({
+      where: { key: jobKey },
+    });
+
+    const shouldSend =
+      !jobState ||
+      (jobState.lastRunAt
+        ? now.getTime() - new Date(jobState.lastRunAt).getTime() >= SIX_MONTHS_MS
+        : true);
+
+    if (!shouldSend) {
+      continue;
+    }
+
+    const email = buildNoBaseReminderEmail(user);
+
+    try {
+      await sendUserEmail({
+        userId: user.id,
+        subject: email.subject,
+        text: email.text,
+        html: email.html,
+      });
+
+      console.log(`[daily-jobs] Promemoria base mancante inviato con successo a ${user.email} (${user.id})`);
+
+      await prisma.dailyJobState.upsert({
+        where: { key: jobKey },
+        update: {
+          lastRunDateKey: getRomeDateKey(now),
+          lastRunAt: now,
+        },
+        create: {
+          key: jobKey,
+          lastRunDateKey: getRomeDateKey(now),
+          lastRunAt: now,
+        },
+      });
+    } catch (err) {
+      console.error(`[daily-jobs] Errore nell'invio del promemoria base a ${user.email}:`, err);
     }
   }
 }

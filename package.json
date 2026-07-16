@@ -1,6 +1,6 @@
 {
   "name": "digital-flight-logbook",
-  "version": "1.25.3",
+  "version": "1.25.4",
   "private": false,
   "scripts": {
     "dev": "next dev",

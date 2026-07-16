@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.25.4",
+    "date": "2026-07-16",
+    "commits": [
+      {
+        "hash": "0e5e236",
+        "date": "2026-07-16",
+        "subject": "Added nobase-reminder 6m emails"
+      }
+    ]
+  },
+  {
     "version": "1.25.3",
     "date": "2026-07-16",
     "commits": [
       {
-        "hash": "7257326",
+        "hash": "5995c97",
         "date": "2026-07-16",
         "subject": "Shortened \" (Locali)\" into \" LC\""
       }
