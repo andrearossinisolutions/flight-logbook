@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/require-user";
 import { AppShell } from "@/components/app-shell";
-import { fetchAllEvents, EventItem, cleanEventTitle } from "@/lib/events";
+import { fetchAllEvents, EventItem, cleanEventTitle, parseEventDateLabel } from "@/lib/events";
 import { CalendarIcon } from "@/components/icons";
 
 export const dynamic = "force-dynamic";
@@ -12,7 +12,14 @@ export default async function EventiPage() {
   let errorMsg: string | null = null;
   
   try {
-    events = await fetchAllEvents();
+    const allEvents = await fetchAllEvents();
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    events = allEvents.filter(event => {
+      const parsedDate = parseEventDateLabel(event.eventDateLabel, event.pubDate);
+      return parsedDate === null || parsedDate >= todayStart;
+    });
   } catch (err) {
     console.error("Errore nel caricamento degli eventi:", err);
     errorMsg = "Non è stato possibile caricare gli eventi in questo momento. Verifica la tua connessione di rete e riprova.";

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { Route } from "next";
 import { useState } from "react";
-import { AirplaneIcon, BriefingIcon, CalendarIcon, LogOutIcon, MapIcon, SettingsIcon, UsersIcon } from "./icons";
+import { AirplaneIcon, BriefingIcon, LogOutIcon, MapIcon, MirrorBallIcon, SettingsIcon, UsersIcon } from "./icons";
 import { version } from "../package.json";
 
 export function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
@@ -26,7 +26,7 @@ export function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
     { name: "Logbook", href: "/logbook", icon: AirplaneIcon },
     { name: "Società", href: "/societa", icon: UsersIcon },
     { name: "Briefing", href: "/briefing", icon: BriefingIcon },
-    { name: "Eventi", href: "/eventi", icon: CalendarIcon },
+    { name: "Eventi", href: "/eventi", icon: MirrorBallIcon },
     { name: "Mappa", href: "/map", icon: MapIcon },
     { name: "Impostazioni", href: "/settings", icon: SettingsIcon },
   ];

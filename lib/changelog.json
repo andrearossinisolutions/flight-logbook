@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.26.2",
+    "date": "2026-07-16",
+    "commits": [
+      {
+        "hash": "6308c14",
+        "date": "2026-07-16",
+        "subject": "Hidden past events; Changed events icon to not collide w/ booking icon"
+      }
+    ]
+  },
+  {
     "version": "1.26.1",
     "date": "2026-07-16",
     "commits": [
       {
-        "hash": "e383735",
+        "hash": "13f637d",
         "date": "2026-07-16",
         "subject": "Fixed briefing meteo default section"
       }

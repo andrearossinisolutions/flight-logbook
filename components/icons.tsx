@@ -46,6 +46,25 @@ export function CalendarIcon(props: IconProps) {
   );
 }
 
+export function MirrorBallIcon(props: IconProps) {
+  const { size = 16, style, ...rest } = props as EmojiIconProps;
+
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        fontSize: size,
+        lineHeight: 1,
+        display: "inline-block",
+        ...(style as CSSProperties | undefined),
+      } as CSSProperties}
+      {...rest}
+    >
+      🪩
+    </span>
+  );
+}
+
 export function CalendarPlusIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>
