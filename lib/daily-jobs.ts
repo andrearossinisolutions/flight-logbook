@@ -1526,7 +1526,7 @@ export async function sendWeekendWeatherDigest(now = new Date()) {
       await prisma.dailyJobState.create({
         data: {
           key: jobKey,
-          lastRunDateKey: getPersistedLastRunDateKey ? getRomeDateKey(now) : "N/D",
+          lastRunDateKey: getRomeDateKey(now),
           lastRunAt: now,
         },
       });

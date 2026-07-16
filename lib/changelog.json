@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.25.2",
+    "date": "2026-07-16",
+    "commits": [
+      {
+        "hash": "549dd46",
+        "date": "2026-07-16",
+        "subject": "Fixed type error"
+      }
+    ]
+  },
+  {
     "version": "1.25.1",
     "date": "2026-07-16",
     "commits": [
       {
-        "hash": "7a6dc2e",
+        "hash": "3dd02ca",
         "date": "2026-07-16",
         "subject": "Added 100km from base meteo prefill selection"
       }
