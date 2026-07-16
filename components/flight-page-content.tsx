@@ -20,10 +20,12 @@ type FlightPageContentProps =
       prefillDate?: string;
       prefillNotes?: string;
       prefillIsDraft?: boolean;
+      backTo?: string;
     }
   | {
       mode: "edit";
       movementId: string;
+      backTo?: string;
     };
 
 export default async function FlightPageContent(
@@ -42,8 +44,44 @@ export default async function FlightPageContent(
       })
     : null;
 
+  let movementToEdit = null;
+  let targetUserId = user.id;
+
+  if (props.mode === "edit") {
+    const m = await prisma.movement.findUnique({
+      where: { id: props.movementId },
+      include: { flight: true }
+    });
+    if (m && m.type === "FLIGHT") {
+      let isAuthorized = m.userId === user.id;
+      if (!isAuthorized && m.flight?.partnershipAircraftId) {
+        const aircraft = await prisma.partnershipAircraft.findUnique({
+          where: { id: m.flight.partnershipAircraftId },
+          include: {
+            partnership: {
+              include: {
+                members: true
+              }
+            }
+          }
+        });
+        if (aircraft) {
+          const member = aircraft.partnership.members.find(mem => mem.userId === user.id);
+          if (member && member.role === "ADMIN") {
+            isAuthorized = true;
+          }
+        }
+      }
+
+      if (isAuthorized) {
+        movementToEdit = m;
+        targetUserId = m.userId;
+      }
+    }
+  }
+
   const movements = await prisma.movement.findMany({
-    where: { userId: user.id },
+    where: { userId: targetUserId },
     select: {
       id: true,
       amount: true,
@@ -66,14 +104,17 @@ export default async function FlightPageContent(
     },
   });
 
-  const partnershipAircrafts = partnershipMemberships.flatMap(pm => pm.partnership.aircrafts).map(a => ({
-    id: a.id,
-    registration: a.registration,
-    type: a.type,
-    hourlyFuelCost: Number(a.hourlyFuelCost),
-    hourlyMaintCost: Number(a.hourlyMaintCost),
-    hourlyEngineFund: Number(a.hourlyEngineFund),
-  }));
+  const partnershipAircrafts = partnershipMemberships.flatMap(pm => 
+    (pm.partnership.aircrafts || []).map(a => ({
+      id: a.id,
+      registration: a.registration,
+      type: a.type,
+      hourlyFuelCost: Number(a.hourlyFuelCost),
+      hourlyMaintCost: Number(a.hourlyMaintCost),
+      hourlyEngineFund: Number(a.hourlyEngineFund),
+      partnershipId: pm.partnership.id,
+    }))
+  );
 
   const rentalAircrafts = (user.rentalAircrafts || []).map(a => ({
     id: a.id,
@@ -106,11 +147,6 @@ export default async function FlightPageContent(
   }
   const visitedPlaces = Array.from(visitedPlacesSet).sort();
 
-  const movementToEdit =
-    props.mode === "edit"
-      ? movements.find((m) => m.id === props.movementId && m.type === "FLIGHT")
-      : null;
-
   if (props.mode === "edit" && (!movementToEdit || !movementToEdit.flight)) {
     redirect("/logbook");
   }
@@ -121,11 +157,16 @@ export default async function FlightPageContent(
     const user = await requireUser();
     const parsed = parseFlightFormData(formData);
     const bookingId = formData.get("bookingId") ? String(formData.get("bookingId")).trim() : null;
+    const backTo = formData.get("backTo") ? String(formData.get("backTo")).trim() : null;
+    let partnershipId: string | null = null;
 
     if (props.mode === "create") {
+      const partnershipAircraft = partnershipAircrafts.find(a => a.registration === parsed.aircraftRegistration);
+      if (partnershipAircraft) {
+        partnershipId = partnershipAircraft.partnershipId;
+      }
+
       await prisma.$transaction(async (tx) => {
-        const partnershipAircraft = partnershipAircrafts.find(a => a.registration === parsed.aircraftRegistration);
-        
         // If it's a partnership flight, the movement amount only subtracts the instructor cost (if any)
         const movementAmount = partnershipAircraft ? -(parsed.instructorCost || 0) : parsed.movementAmount;
 
@@ -182,19 +223,52 @@ export default async function FlightPageContent(
     } else {
       const movementId = String(formData.get("movementId") ?? "");
 
-      const dbMovement = await prisma.movement.findFirst({
+      const dbMovement = await prisma.movement.findUnique({
         where: {
           id: movementId,
-          userId: user.id,
-          type: MovementType.FLIGHT,
         },
         include: {
           flight: true,
         },
       });
 
-      if (!dbMovement || !dbMovement.flight) {
+      if (!dbMovement || dbMovement.type !== MovementType.FLIGHT || !dbMovement.flight) {
         throw new Error("Movimento non trovato.");
+      }
+
+      let isAuthorized = dbMovement.userId === user.id;
+      if (!isAuthorized && dbMovement.flight.partnershipAircraftId) {
+        const aircraft = await prisma.partnershipAircraft.findUnique({
+          where: { id: dbMovement.flight.partnershipAircraftId },
+          include: {
+            partnership: {
+              include: {
+                members: true
+              }
+            }
+          }
+        });
+        if (aircraft) {
+          const member = aircraft.partnership.members.find(mem => mem.userId === user.id);
+          if (member && member.role === "ADMIN") {
+            isAuthorized = true;
+            partnershipId = aircraft.partnershipId;
+          }
+        }
+      }
+
+      if (!isAuthorized) {
+        throw new Error("Non autorizzato a modificare questo volo.");
+      }
+
+      if (dbMovement.flight.partnershipAircraftId && !partnershipId) {
+        const aircraft = await prisma.partnershipAircraft.findUnique({
+          where: { id: dbMovement.flight.partnershipAircraftId },
+          select: { partnershipId: true }
+        });
+        if (aircraft) {
+          partnershipId = aircraft.partnershipId;
+        }
       }
 
       await prisma.$transaction(async (tx) => {
@@ -240,8 +314,18 @@ export default async function FlightPageContent(
       });
     }
 
+    if (partnershipId) {
+      revalidatePath(`/societa/${partnershipId}`);
+    }
     revalidatePath("/logbook");
-    redirect("/logbook");
+
+    if (backTo) {
+      redirect(backTo as any);
+    } else if (partnershipId) {
+      redirect(`/societa/${partnershipId}?tab=LOGBOOK` as any);
+    } else {
+      redirect("/logbook");
+    }
   }
 
   const lastFlightMovement = movements
@@ -344,6 +428,7 @@ export default async function FlightPageContent(
         partnershipAircrafts={partnershipAircrafts}
         rentalAircrafts={rentalAircrafts}
         visitedPlaces={visitedPlaces}
+        backTo={props.backTo}
       />
     </AppShell>
   );

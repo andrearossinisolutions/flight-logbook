@@ -12,7 +12,8 @@ import {
   WalletIcon,
   SettingsIcon,
   CalendarIcon,
-  AirplaneIcon
+  AirplaneIcon,
+  PencilIcon
 } from "@/components/icons";
 
 function formatMinutes(minutes: number) {
@@ -239,6 +240,44 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
     }
     return null;
   }, [flightHoursMap]);
+
+  // Find mismatches per aircraft
+  const mismatches = React.useMemo(() => {
+    const startMismatches = new Set<string>(); // flight IDs where the start is mismatched with previous flight's end
+    const endMismatches = new Set<string>();   // flight IDs where the end is mismatched with next flight's start
+
+    if (!partnership.aircrafts) return { startMismatches, endMismatches };
+
+    for (const a of partnership.aircrafts) {
+      const aircraftFlights = partnershipFlights
+        .filter((f: any) => f.partnershipAircraftId === a.id)
+        .map((f: any) => ({
+          ...f,
+          dateVal: new Date(f.movement.date).getTime()
+        }))
+        .sort((x: any, y: any) => x.dateVal - y.dateVal);
+
+      for (let i = 0; i < aircraftFlights.length - 1; i++) {
+        const currentFlight = aircraftFlights[i];
+        const nextFlight = aircraftFlights[i + 1];
+
+        const currentOram = getFlightOrametro(currentFlight);
+        const nextOram = getFlightOrametro(nextFlight);
+
+        if (currentOram && nextOram) {
+          const currentEndStr = formatHoursToHHMM(currentOram.end);
+          const nextStartStr = formatHoursToHHMM(nextOram.start);
+
+          if (currentEndStr !== nextStartStr) {
+            endMismatches.add(currentFlight.id);
+            startMismatches.add(nextFlight.id);
+          }
+        }
+      }
+    }
+
+    return { startMismatches, endMismatches };
+  }, [partnership.aircrafts, partnershipFlights, getFlightOrametro]);
 
   // Stato filtri per la scheda Logbook
   const [logbookAircraft, setLogbookAircraft] = useState("");
@@ -1556,6 +1595,28 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               </div>
             </div>
 
+            {/* Messaggio Disallineamenti */}
+            {(mismatches.startMismatches.size > 0 || mismatches.endMismatches.size > 0) && (
+              <div style={{
+                backgroundColor: "rgba(239, 68, 68, 0.1)",
+                border: "1px solid rgb(239, 68, 68)",
+                borderRadius: "8px",
+                padding: "12px 16px",
+                marginBottom: "20px",
+                color: "rgb(220, 38, 38)",
+                fontSize: "0.9rem",
+                fontWeight: 500,
+                display: "flex",
+                alignItems: "center",
+                gap: 10
+              }}>
+                <span style={{ fontSize: "1.2rem" }}>⚠️</span>
+                <div>
+                  <strong>Attenzione disallineamento orametri:</strong> Sono stati rilevati dei disallineamenti tra gli orametri finali ed iniziali di alcuni voli consecutivi (evidenziati in <strong>rosso</strong>). Si prega di verificare e correggere i dati dei voli interessati.
+                </div>
+              </div>
+            )}
+
             {/* Tabella Voli */}
             <div style={{ overflowX: "auto" }}>
               <table className="table logbook-table">
@@ -1599,54 +1660,90 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
 
                           {/* 3. DETTAGLI CARD */}
                           <td>
-                            <div className="grid grid-2">
-                              {/* Left column: aircraft and route */}
-                              <div>
-                                <div style={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
-                                  <span>✈️ {flight.aircraftRegistration}</span>
-                                  <span style={{ color: "var(--border)" }}>•</span>
-                                  <span>⏱️ {formatMinutes(flight.durationMinutes)}</span>
-                                </div>
-                                <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
-                                  <span>🛫 {flight.takeoffPlace || "?"}</span>
-                                  <span className="muted">·</span>
-                                  <span>🛬 {flight.arrivalPlace || "?"}</span>
-                                </div>
-                              </div>
-
-                              {/* Right column: hobbs and crew */}
-                              <div>
-                                {(() => {
-                                  const orametro = getFlightOrametro(flight);
-                                  if (!orametro) return null;
-                                  return (
-                                    <div className="muted" style={{ fontSize: "0.85rem", fontWeight: 500 }}>
-                                      Oram.: {formatHoursToHHMM(orametro.start)} ➔ {formatHoursToHHMM(orametro.end)}
+                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                              <div style={{ flex: 1 }}>
+                                <div className="grid grid-2">
+                                  {/* Left column: aircraft and route */}
+                                  <div>
+                                    <div style={{ fontWeight: 700, display: "flex", alignItems: "center", gap: 6 }}>
+                                      <span>✈️ {flight.aircraftRegistration}</span>
+                                      <span style={{ color: "var(--border)" }}>•</span>
+                                      <span>⏱️ {formatMinutes(flight.durationMinutes)}</span>
                                     </div>
-                                  );
-                                })()}
-                                {(flight.instructorName || flight.passengerName) && (
-                                  <div className="muted" style={{ fontSize: "0.85rem", marginTop: 4 }}>
-                                    {flight.instructorName ? `👨‍✈️ Istr. ${flight.instructorName}` : `👤 Pass. ${flight.passengerName}`}
+                                    <div style={{ marginTop: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                                      <span>🛫 {flight.takeoffPlace || "?"}</span>
+                                      <span className="muted">·</span>
+                                      <span>🛬 {flight.arrivalPlace || "?"}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Right column: hobbs and crew */}
+                                  <div>
+                                    {(() => {
+                                      const orametro = getFlightOrametro(flight);
+                                      if (!orametro) return null;
+                                      const isStartMismatched = mismatches.startMismatches.has(flight.id);
+                                      const isEndMismatched = mismatches.endMismatches.has(flight.id);
+                                      return (
+                                        <div className="muted" style={{ fontSize: "0.85rem", fontWeight: 500 }}>
+                                          Oram.:{" "}
+                                          <span 
+                                            style={isStartMismatched ? { color: "red", fontWeight: "bold" } : undefined}
+                                            title={isStartMismatched ? "L'orametro iniziale non corrisponde all'orametro finale del volo precedente. Uno dei due potrebbe essere errato." : undefined}
+                                          >
+                                            {formatHoursToHHMM(orametro.start)}
+                                          </span>
+                                          {" ➔ "}
+                                          <span 
+                                            style={isEndMismatched ? { color: "red", fontWeight: "bold" } : undefined}
+                                            title={isEndMismatched ? "L'orametro finale non corrisponde all'orametro iniziale del volo successivo. Uno dei due potrebbe essere errato." : undefined}
+                                          >
+                                            {formatHoursToHHMM(orametro.end)}
+                                          </span>
+                                        </div>
+                                      );
+                                    })()}
+                                    {(flight.instructorName || flight.passengerName) && (
+                                      <div className="muted" style={{ fontSize: "0.85rem", marginTop: 4 }}>
+                                        {flight.instructorName ? `👨‍✈️ Istr. ${flight.instructorName}` : `👤 Pass. ${flight.passengerName}`}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                                
+                                {/* Notes at the bottom */}
+                                {flight.movement.notes && (
+                                  <div style={{ 
+                                    fontSize: "0.85rem", 
+                                    fontStyle: "italic", 
+                                    color: "var(--muted)",
+                                    borderLeft: "2px solid var(--primary)",
+                                    paddingLeft: 8,
+                                    marginTop: 10,
+                                    wordBreak: "break-word"
+                                  }}>
+                                    Note: {flight.movement.notes}
                                   </div>
                                 )}
                               </div>
+
+                              {(() => {
+                                const canEdit = flight.movement.userId === currentUserId || isAdmin;
+                                if (!canEdit) return null;
+                                const backUrl = encodeURIComponent(`/societa/${partnership.id}?tab=LOGBOOK`);
+                                return (
+                                  <a
+                                    className="btn secondary icon-btn"
+                                    href={`/edit-flight/${flight.movement.id}?backTo=${backUrl}`}
+                                    aria-label="Modifica"
+                                    title="Modifica volo"
+                                    style={{ padding: "6px 8px", minWidth: "auto", height: "auto" }}
+                                  >
+                                    <PencilIcon size={16} />
+                                  </a>
+                                );
+                              })()}
                             </div>
-                            
-                            {/* Notes at the bottom */}
-                            {flight.movement.notes && (
-                              <div style={{ 
-                                fontSize: "0.85rem", 
-                                fontStyle: "italic", 
-                                color: "var(--muted)",
-                                borderLeft: "2px solid var(--primary)",
-                                paddingLeft: 8,
-                                marginTop: 10,
-                                wordBreak: "break-word"
-                              }}>
-                                Note: {flight.movement.notes}
-                              </div>
-                            )}
                           </td>
                         </tr>
                       );

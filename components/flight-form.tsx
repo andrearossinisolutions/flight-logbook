@@ -36,6 +36,7 @@ type FlightFormProps = {
     hourlyCost: number;
   }>;
   visitedPlaces?: string[];
+  backTo?: string;
 };
 
 function buildInitialValues(
@@ -84,6 +85,7 @@ export default function FlightForm({
   partnershipAircrafts = [],
   rentalAircrafts = [],
   visitedPlaces = [],
+  backTo,
 }: FlightFormProps) {
   const initial = buildInitialValues(initialValues);
 
@@ -288,6 +290,9 @@ export default function FlightForm({
         ) : null}
         {bookingId ? (
           <input type="hidden" name="bookingId" value={bookingId} />
+        ) : null}
+        {backTo ? (
+          <input type="hidden" name="backTo" value={backTo} />
         ) : null}
 
         <div className="card">
