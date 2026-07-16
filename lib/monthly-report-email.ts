@@ -26,8 +26,10 @@ export function buildMonthlyReportEmail(args: {
   localBalance?: number;
   previousDebt?: number;
   totalBalance?: number;
+  isAdmin?: boolean;
+  hasOrametriMismatch?: boolean;
 }) {
-  const { monthName, partnershipName, fixedCostPerMember, fixedCostTotal, flightCost, totalCost, durationMinutes, aircraftDetails, memberCount, advancedExpense = 0, disableSharedFund = false, maintenanceShare = 0, hoursExpenseShare = 0, localBalance = 0, previousDebt = 0, totalBalance = 0 } = args;
+  const { monthName, partnershipName, fixedCostPerMember, fixedCostTotal, flightCost, totalCost, durationMinutes, aircraftDetails, memberCount, advancedExpense = 0, disableSharedFund = false, maintenanceShare = 0, hoursExpenseShare = 0, localBalance = 0, previousDebt = 0, totalBalance = 0, isAdmin = false, hasOrametriMismatch = false } = args;
 
   const subject = `Rendiconto Mensile ${partnershipName} - ${monthName}`;
 
@@ -35,7 +37,7 @@ export function buildMonthlyReportEmail(args: {
     `- ${a.registration}: ${minutesToHoursMinutes(a.durationMinutes)} voli, costo ${eur(a.cost)}`
   ).join("\n");
 
-  const text = `
+  let text = `
 Rendiconto Mensile: ${partnershipName}
 Mese: ${monthName}
 
@@ -55,6 +57,10 @@ ${advancedExpense > 0 ? `- Spese anticipate pagate da te: -${eur(advancedExpense
 Voli per aereo:
 ${aircraftText}
   `.trim();
+
+  if (isAdmin && hasOrametriMismatch) {
+    text += `\n\n⚠️ ATTENZIONE DISALLINEAMENTO ORAMETRI: Sono stati rilevati dei disallineamenti tra gli orametri dei voli della società. Si prega di accedere alla sezione Logbook Voli della società per controllare ed eventualmente correggere i voli evidenziati in rosso.`;
+  }
 
   const aircraftHtml = aircraftDetails.map(a => `
     <div style="margin-top: 10px; font-size: 14px; color: #17324d;">
@@ -101,6 +107,18 @@ ${aircraftText}
               <div style="display: flex; justify-content: space-between;">
                 <span style="color: #4c5f76;">Saldo mesi precedenti (non regolato)</span>
                 <strong style="color: ${previousDebt > 0 ? "#dc2626" : "#16a34a"};">${previousDebt > 0 ? "" : "-"}${eur(Math.abs(previousDebt))}</strong>
+              </div>
+            </div>
+          ` : ""}
+
+          ${isAdmin && hasOrametriMismatch ? `
+            <div style="margin: 0 0 28px; padding: 16px; border: 1px solid #dc2626; border-radius: 16px; background: #fef2f2; color: #991b1b;">
+              <div style="font-weight: 800; font-size: 16px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+                ⚠️ Attenzione Disallineamento Orametri
+              </div>
+              <div style="font-size: 14px; line-height: 1.5; color: #7f1d1d;">
+                Sono stati rilevati dei disallineamenti tra gli orametri di voli consecutivi della società. 
+                Si prega di accedere alla sezione <strong>Logbook Voli</strong> della società per controllare e correggere i voli evidenziati in rosso.
               </div>
             </div>
           ` : ""}

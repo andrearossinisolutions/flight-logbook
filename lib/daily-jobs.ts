@@ -674,6 +674,7 @@ async function runMonthlyReports(now: Date) {
   const partnerships = await prisma.partnership.findMany({
     include: {
       members: { include: { user: true } },
+      aircrafts: true,
     }
   });
 
@@ -685,9 +686,90 @@ async function runMonthlyReports(now: Date) {
     try {
       const reportData = await calculateHistoricalReports(partnership.id, targetYear, targetMonth - 1);
 
+      // Check for Hobbs mismatches for this partnership's flights
+      let hasHobbsMismatches = false;
+      const partnershipFlights = await prisma.flight.findMany({
+        where: {
+          partnershipAircraft: {
+            partnershipId: partnership.id,
+          },
+          movement: {
+            isDraft: false,
+          },
+        },
+        include: {
+          movement: true,
+        },
+      });
+
+      const flightHoursMap = new Map<string, { startHours: number; endHours: number }>();
+      for (const a of (partnership.aircrafts || [])) {
+        const aircraftFlights = partnershipFlights
+          .filter((f: any) => f.partnershipAircraftId === a.id)
+          .map((f: any) => ({
+            ...f,
+            dateVal: new Date(f.movement.date).getTime()
+          }))
+          .sort((x: any, y: any) => x.dateVal - y.dateVal);
+
+        let currentHours = Number(a.initialHours);
+        for (const f of aircraftFlights) {
+          const durationHours = f.durationMinutes / 60;
+          const startHours = currentHours;
+          const endHours = currentHours + durationHours;
+          currentHours = endHours;
+          flightHoursMap.set(f.id, { startHours, endHours });
+        }
+
+        const formatHoursToHHMM = (hours: number) => {
+          const totalMinutes = Math.round(hours * 60);
+          const h = Math.floor(totalMinutes / 60);
+          const m = totalMinutes % 60;
+          return `${h}:${m < 10 ? '0' : ''}${m}`;
+        };
+
+        const getFlightOrametro = (flight: any) => {
+          if (flight.hobbsStartMinutes != null && flight.hobbsEndMinutes != null) {
+            return {
+              start: flight.hobbsStartMinutes / 60,
+              end: flight.hobbsEndMinutes / 60
+            };
+          }
+          const computed = flightHoursMap.get(flight.id);
+          if (computed) {
+            return {
+              start: computed.startHours,
+              end: computed.endHours
+            };
+          }
+          return null;
+        };
+
+        for (let i = 0; i < aircraftFlights.length - 1; i++) {
+          const currentFlight = aircraftFlights[i];
+          const nextFlight = aircraftFlights[i + 1];
+
+          const currentOram = getFlightOrametro(currentFlight);
+          const nextOram = getFlightOrametro(nextFlight);
+
+          if (currentOram && nextOram) {
+            const currentEndStr = formatHoursToHHMM(currentOram.end);
+            const nextStartStr = formatHoursToHHMM(nextOram.start);
+
+            if (currentEndStr !== nextStartStr) {
+              hasHobbsMismatches = true;
+              break;
+            }
+          }
+        }
+        if (hasHobbsMismatches) break;
+      }
+
       for (const member of partnership.members) {
         const userReport = reportData.reports.find(r => r.userId === member.userId);
         if (!userReport) continue;
+
+        const isMemberAdmin = member.role === "ADMIN";
 
         const email = buildMonthlyReportEmail({
           monthName: startOfMonth.toLocaleString('it-IT', { month: 'long', year: 'numeric' }),
@@ -705,7 +787,9 @@ async function runMonthlyReports(now: Date) {
           advancedExpense: userReport.advancedExpense,
           disableSharedFund: partnership.disableSharedFund,
           maintenanceShare: userReport.maintenanceShare,
-          hoursExpenseShare: userReport.hoursExpenseShare
+          hoursExpenseShare: userReport.hoursExpenseShare,
+          isAdmin: isMemberAdmin,
+          hasOrametriMismatch: hasHobbsMismatches,
         });
 
         try {
