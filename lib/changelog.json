@@ -1,10 +1,41 @@
 [
   {
+    "version": "1.26.0",
+    "date": "2026-07-16",
+    "commits": [
+      {
+        "hash": "8fcdf02",
+        "date": "2026-07-16",
+        "subject": "Added delete account feature in settings page"
+      },
+      {
+        "hash": "40480fa",
+        "date": "2026-07-16",
+        "subject": "Ensuring deleting only solo partnership partecipations & aircrafts"
+      },
+      {
+        "hash": "4d843e7",
+        "date": "2026-07-16",
+        "subject": "Added privacy policy and terms & conditions pages"
+      },
+      {
+        "hash": "0372efe",
+        "date": "2026-07-16",
+        "subject": "Added policies and delete account links to emails' footer"
+      },
+      {
+        "hash": "82c50b1",
+        "date": "2026-07-16",
+        "subject": "Added missing migration"
+      }
+    ]
+  },
+  {
     "version": "1.25.4",
     "date": "2026-07-16",
     "commits": [
       {
-        "hash": "0e5e236",
+        "hash": "365e921",
         "date": "2026-07-16",
         "subject": "Added nobase-reminder 6m emails"
       }
