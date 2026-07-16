@@ -751,7 +751,7 @@ export function buildPreFlightWeatherEmail(args: {
     hour: "2-digit",
     minute: "2-digit",
     timeZone: "Europe/Rome"
-  }) + " (Locali)";
+  }) + " LT";
 
   const appUrl = process.env.APP_URL || "http://localhost:3000";
   const routeParam = [flight.flight?.takeoffPlace, flight.flight?.arrivalPlace].filter(Boolean).join(" - ") || flight.notes || "";

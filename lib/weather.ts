@@ -920,7 +920,7 @@ export async function fetchSwllCharts(): Promise<SwllChart[]> {
         timeZone: "Europe/Rome"
       });
 
-      const label = `Carta del ${localTimeStr} (Locali) - ${hour.toString().padStart(2, "0")}:00 UTC`;
+      const label = `Carta del ${localTimeStr} LT - ${hour.toString().padStart(2, "0")}:00 UTC`;
 
       return { url, date, label };
     });

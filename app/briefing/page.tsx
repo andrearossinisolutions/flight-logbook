@@ -36,7 +36,7 @@ function formatReportTime(isoString: string | undefined | null) {
     hour: "2-digit",
     minute: "2-digit",
     timeZone: "Europe/Rome"
-  }) + " (Locali)";
+  }) + " LT";
 }
 
 // Formattatore per le date dei periodi TAF
@@ -894,7 +894,7 @@ export default async function BriefingPage({
     hour: "2-digit",
     minute: "2-digit",
     timeZone: "Europe/Rome"
-  }) + " (Locali)";
+  }) + " LT";
 
   const vYear = targetDate.getUTCFullYear();
   const vMonth = (targetDate.getUTCMonth() + 1).toString().padStart(2, "0");

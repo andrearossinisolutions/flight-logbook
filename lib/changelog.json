@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.25.3",
+    "date": "2026-07-16",
+    "commits": [
+      {
+        "hash": "7257326",
+        "date": "2026-07-16",
+        "subject": "Shortened \" (Locali)\" into \" LC\""
+      }
+    ]
+  },
+  {
     "version": "1.25.2",
     "date": "2026-07-16",
     "commits": [
       {
-        "hash": "549dd46",
+        "hash": "6cec6a7",
         "date": "2026-07-16",
         "subject": "Fixed type error"
       }
