@@ -3,9 +3,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { createSession, setSessionCookie } from "@/lib/auth";
 import { registerSchema } from "@/lib/validators";
-
 export async function POST(request: Request) {
   const json = await request.json();
+
+  if (json.acceptTerms !== "on" && json.acceptTerms !== "true" && json.acceptTerms !== true) {
+    return NextResponse.json({ error: "È necessario accettare i Termini di Servizio e la Privacy Policy per registrarsi." }, { status: 400 });
+  }
+
   const parsed = registerSchema.safeParse(json);
 
   if (!parsed.success) {

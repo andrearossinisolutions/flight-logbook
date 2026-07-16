@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/app-shell";
+import Link from "next/link";
 import { requireUser } from "@/lib/require-user";
 import { formatDateInput } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
@@ -250,6 +251,9 @@ export default async function SettingsPage() {
         <p className="muted" style={{ fontSize: "0.9rem", color: "#7f1d1d", marginBottom: 20, maxWidth: 650, lineHeight: 1.5 }}>
           In conformità alle linee guida sulla privacy e al regolamento GDPR, da questa sezione puoi richiedere la cancellazione definitiva del tuo profilo e di tutti i dati registrati su Flight Logbook (voli, aerei a noleggio, impostazioni e preferenze). Questa operazione è irreversibile e richiede una conferma finale tramite il link che riceverai via email.
         </p>
+        <div style={{ marginBottom: 24, fontSize: "0.9rem", color: "#7f1d1d" }}>
+          Rileggi i nostri <Link href="/terms" target="_blank" style={{ color: "#b91c1c", fontWeight: 700, textDecoration: "underline" }}>Termini di Servizio</Link> e la nostra <Link href="/privacy" target="_blank" style={{ color: "#b91c1c", fontWeight: 700, textDecoration: "underline" }}>Privacy Policy</Link>.
+        </div>
         <DeleteAccountButton />
       </div>
     </AppShell>

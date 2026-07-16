@@ -96,6 +96,19 @@ export default function RegisterPage() {
             <input className="input" id="repeatPassword" name="repeatPassword" type="password" minLength={8} required />
           </div>
 
+          <div className="field" style={{ display: "flex", alignItems: "flex-start", gap: 10, marginTop: 8 }}>
+            <input 
+              id="acceptTerms" 
+              name="acceptTerms" 
+              type="checkbox" 
+              required 
+              style={{ width: "auto", marginTop: 4, cursor: "pointer" }} 
+            />
+            <label htmlFor="acceptTerms" style={{ fontSize: "0.85rem", fontWeight: "normal", cursor: "pointer", color: "#6b7280" }}>
+              Accetto i <Link href="/terms" target="_blank" style={{ color: "var(--primary)", fontWeight: 600, textDecoration: "underline" }}>Termini di Servizio</Link> e la <Link href="/privacy" target="_blank" style={{ color: "var(--primary)", fontWeight: 600, textDecoration: "underline" }}>Privacy Policy</Link> di Flight Logbook.
+            </label>
+          </div>
+
           {error ? <div className="error">{error}</div> : null}
 
           <button className="btn" type="submit" disabled={loading}>
