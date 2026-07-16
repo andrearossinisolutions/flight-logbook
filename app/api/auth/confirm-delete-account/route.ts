@@ -24,7 +24,58 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Cancella l'utente (cancella a cascata tutti i suoi dati)
+    // Gestione pulizia società (Partnership) partecipate dall'utente prima dell'eliminazione
+    const memberships = await prisma.partnershipMember.findMany({
+      where: { userId: user.id },
+    });
+
+    for (const membership of memberships) {
+      // Conta quanti membri totali ci sono nella società
+      const memberCount = await prisma.partnershipMember.count({
+        where: { partnershipId: membership.partnershipId },
+      });
+
+      if (memberCount <= 1) {
+        // Se c'è solo questo utente (società monoutente), eliminiamo l'intera società e le sue dipendenze
+        await prisma.partnership.delete({
+          where: { id: membership.partnershipId },
+        });
+        console.log(`[auth] Società ${membership.partnershipId} eliminata perché l'utente era l'unico membro.`);
+      } else {
+        // Se ci sono altri soci, l'utente viene rimosso (tramite cascade sulla sua cancellazione).
+        // Se l'utente era ADMIN, dobbiamo assicurarci che la società non rimanga senza amministratori.
+        if (membership.role === "ADMIN") {
+          const otherAdminCount = await prisma.partnershipMember.count({
+            where: {
+              partnershipId: membership.partnershipId,
+              role: "ADMIN",
+              NOT: { userId: user.id },
+            },
+          });
+
+          if (otherAdminCount === 0) {
+            // Promuoviamo ad ADMIN il membro più anziano tra i rimanenti
+            const nextMember = await prisma.partnershipMember.findFirst({
+              where: {
+                partnershipId: membership.partnershipId,
+                NOT: { userId: user.id },
+              },
+              orderBy: { createdAt: "asc" },
+            });
+
+            if (nextMember) {
+              await prisma.partnershipMember.update({
+                where: { id: nextMember.id },
+                data: { role: "ADMIN" },
+              });
+              console.log(`[auth] Utente ${nextMember.userId} promosso ad ADMIN nella società ${membership.partnershipId} in sostituzione dell'utente uscente.`);
+            }
+          }
+        }
+      }
+    }
+
+    // Cancella l'utente (cancella a cascata tutti i suoi dati personali)
     await prisma.user.delete({
       where: { id: user.id },
     });
