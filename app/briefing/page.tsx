@@ -19,6 +19,7 @@ import {
   fetchSwllCharts
 } from "@/lib/weather";
 import Link from "next/link";
+import Script from "next/script";
 import { WeatherMap } from "@/components/weather-map";
 import { Suspense } from "react";
 
@@ -897,12 +898,21 @@ export default async function BriefingPage({
     const dLon = maxLon - minLon;
     const maxDelta = Math.max(dLat, dLon * Math.cos(mapLat * Math.PI / 180));
 
-    if (maxDelta < 0.1) mapZoom = 11;
-    else if (maxDelta < 0.5) mapZoom = 9;
-    else if (maxDelta < 1.5) mapZoom = 8;
-    else if (maxDelta < 3) mapZoom = 7;
-    else if (maxDelta < 6) mapZoom = 6;
-    else mapZoom = 5;
+    if (mapPoints.length === 1) {
+      mapZoom = 8; // Zoom ideale per singola stazione per visualizzare l'area circostante
+    } else if (maxDelta < 0.1) {
+      mapZoom = 10;
+    } else if (maxDelta < 0.5) {
+      mapZoom = 9;
+    } else if (maxDelta < 1.5) {
+      mapZoom = 8;
+    } else if (maxDelta < 3) {
+      mapZoom = 7;
+    } else if (maxDelta < 6) {
+      mapZoom = 6;
+    } else {
+      mapZoom = 5;
+    }
   }
 
   return (
@@ -910,78 +920,26 @@ export default async function BriefingPage({
       title="Briefing Meteo" 
       subtitle="Dati aeronautici METAR e TAF lungo la rotta di volo."
     >
-      {/* Cerca e Filtri Rapidi */}
-      <div className="card no-print" style={{ marginBottom: 24, padding: "16px 20px" }}>
-        <div className="between" style={{ gap: 16 }}>
-          <form method="GET" action="/briefing" className="row" style={{ flex: 1, gap: 12 }}>
-            <div className="field" style={{ flex: 1, minWidth: 200, gap: 0 }}>
-              <input
-                type="text"
-                name="icao"
-                defaultValue={targetIcao}
-                placeholder="Codici ICAO separati da virgole (es. LIML, LIME, LIPZ)"
-                className="input"
-                style={{ textTransform: "uppercase", fontSize: "1rem", height: 44 }}
-              />
-            </div>
-            <button type="submit" className="btn" style={{ height: 44, padding: "0 24px" }}>
-              Carica Meteo
-            </button>
-          </form>
-          
-          <div className="row" style={{ gap: 8 }}>
-            <span className="muted" style={{ fontSize: "0.9rem" }}>Preimpostati:</span>
-            <Link href={`/briefing?icao=${defaultBase}`} className={`pill ${targetIcao === defaultBase ? "active" : ""}`} style={{ cursor: "pointer", textDecoration: "none", backgroundColor: targetIcao === defaultBase ? "var(--primary)" : "var(--border)", color: targetIcao === defaultBase ? "white" : "var(--text)" }}>
-              Base ({defaultBase})
-            </Link>
-            {defaultBase !== "LIML" && (
-              <Link href="/briefing?icao=LIML" className={`pill ${targetIcao === "LIML" ? "active" : ""}`} style={{ cursor: "pointer", textDecoration: "none", backgroundColor: targetIcao === "LIML" ? "var(--primary)" : "var(--border)", color: targetIcao === "LIML" ? "white" : "var(--text)" }}>
-                Linate (LIML)
-              </Link>
-            )}
-            <Link href="/briefing?icao=LIME" className={`pill ${targetIcao === "LIME" ? "active" : ""}`} style={{ cursor: "pointer", textDecoration: "none", backgroundColor: targetIcao === "LIME" ? "var(--primary)" : "var(--border)", color: targetIcao === "LIME" ? "white" : "var(--text)" }}>
-              Bergamo (LIME)
-            </Link>
-          </div>
-        </div>
-      </div>
-
+      {targetIcao && (
+        <Script id="scroll-to-weather" strategy="afterInteractive">
+          {`
+            if (window.location.hash === '') {
+              window.location.hash = 'specific-weather';
+            }
+          `}
+        </Script>
+      )}
       {/* Barra di Navigazione Rapida Sezioni */}
       <div className="row no-print" style={{ gap: 12, marginBottom: 24, justifyContent: "flex-start", flexWrap: "wrap" }}>
-        <a href="#weather-map" className="btn secondary" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "0.9rem", padding: "8px 16px", textDecoration: "none", fontWeight: 700 }}>
-          📍 Mappa Meteo
-        </a>
         <a href="#swll-charts" className="btn secondary" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "0.9rem", padding: "8px 16px", textDecoration: "none", fontWeight: 700 }}>
           🗺️ Carte SWLL
         </a>
-        <a href="#station-details" className="btn secondary" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "0.9rem", padding: "8px 16px", textDecoration: "none", fontWeight: 700 }}>
-          ✈️ Dettagli Stazioni (METAR)
+        <a href="#specific-weather" className="btn secondary" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "0.9rem", padding: "8px 16px", textDecoration: "none", fontWeight: 700 }}>
+          📍 Meteo Specifico
         </a>
       </div>
 
-      {/* Sezione di Benvenuto o Segnalazione Errore */}
-      {showIntro && (
-        <div className="card" style={{ textAlign: "center", padding: "48px 24px", marginBottom: 24 }}>
-          <span style={{ fontSize: "3rem" }}>🌤️</span>
-          <h2 style={{ marginTop: 16 }}>Inserisci una località o rotta per iniziare</h2>
-          <p className="muted" style={{ maxWidth: 500, margin: "8px auto 24px" }}>
-            Digita un codice ICAO (es. <strong>LIML</strong>), il nome di un aeroporto/città (es. <strong>Bergamo</strong>, <strong>Valle Gaffaro</strong>) o una rotta composta (es. <strong>Dovera - Valle Gaffaro</strong>) nel campo di ricerca in alto.
-          </p>
-        </div>
-      )}
-
-      {/* 1. Mappa Meteo Interattiva (Ventusky) */}
-      <div id="weather-map" style={{ scrollMarginTop: 24, marginBottom: 32 }}>
-        <WeatherMap 
-          lat={mapLat} 
-          lon={mapLon} 
-          zoom={mapZoom} 
-          timeParam={ventuskyTimeParam} 
-          formattedDateStr={formattedDateStr}
-        />
-      </div>
-
-      {/* 2. Carte SWLL (Aeronautica Militare) */}
+      {/* 1. Carte SWLL (Aeronautica Militare) */}
       <div id="swll-charts" className="card briefing-card">
         <h3 style={{ margin: "0 0 8px 0", fontSize: "1.3rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }}>
           <span>🗺️</span> Carte Aeronautiche Significative Low Level (SWLL)
@@ -1005,7 +963,7 @@ export default async function BriefingPage({
               }
               .swll-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                grid-template-columns: repeat(4, 1fr);
                 gap: 24px;
               }
               .swll-card {
@@ -1062,6 +1020,11 @@ export default async function BriefingPage({
                 background-color: var(--primary);
                 color: white;
               }
+              @media (max-width: 1200px) {
+                .swll-grid {
+                  grid-template-columns: repeat(2, 1fr);
+                }
+              }
               @media (max-width: 768px) {
                 .briefing-card {
                   padding: 16px;
@@ -1100,6 +1063,106 @@ export default async function BriefingPage({
             </div>
           </>
         )}
+      </div>
+
+      <h2 style={{ paddingTop: 32, fontSize: "1.3rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 8 }} id="specific-weather">
+        <span>📍</span> Meteo Specifico
+      </h2>
+
+      {/* Cerca e Filtri Rapidi */}
+      <div className="card no-print" style={{ marginBottom: 24, padding: "16px 20px" }}>
+        <style dangerouslySetInnerHTML={{ __html: `
+          .search-presets-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+          }
+          .presets-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+          }
+          .search-form {
+            display: flex;
+            flex: 1;
+            gap: 12px;
+          }
+          @media (max-width: 768px) {
+            .search-presets-container {
+              flex-direction: column;
+              align-items: stretch;
+              gap: 14px;
+            }
+            .search-form {
+              flex-direction: column;
+              gap: 10px;
+              width: 100%;
+            }
+            .search-form button {
+              width: 100%;
+            }
+            .presets-container {
+              justify-content: center;
+              width: 100%;
+              border-top: 1px solid var(--border);
+              padding-top: 12px;
+              gap: 10px;
+            }
+          }
+        `}} />
+        <div className="search-presets-container">
+          <form method="GET" action="/briefing#specific-weather" className="search-form">
+            <div className="field" style={{ flex: 1, minWidth: 200, gap: 0 }}>
+              <input
+                type="text"
+                name="icao"
+                defaultValue={targetIcao}
+                placeholder="Codici ICAO separati da virgole (es. LIML, LIME, LIPZ)"
+                className="input"
+                style={{ textTransform: "uppercase", fontSize: "1rem", height: 44 }}
+              />
+            </div>
+            <button type="submit" className="btn" style={{ height: 44, padding: "0 24px" }}>
+              Carica Meteo
+            </button>
+          </form>
+          
+          <div className="presets-container">
+            <span className="muted" style={{ fontSize: "0.9rem" }}>Preimpostati:</span>
+            <Link href={`/briefing?icao=${defaultBase}#specific-weather`} className={`pill ${targetIcao === defaultBase ? "active" : ""}`} style={{ cursor: "pointer", textDecoration: "none", backgroundColor: targetIcao === defaultBase ? "var(--primary)" : "var(--border)", color: targetIcao === defaultBase ? "white" : "var(--text)" }}>
+              Base ({defaultBase})
+            </Link>
+            {defaultBase !== "LIML" && (
+              <Link href="/briefing?icao=torino+-+venezia#specific-weather" className={`pill ${targetIcao === "torino - venezia" ? "active" : ""}`} style={{ cursor: "pointer", textDecoration: "none", backgroundColor: targetIcao === "torino - venezia" ? "var(--primary)" : "var(--border)", color: targetIcao === "torino - venezia" ? "white" : "var(--text)" }}>
+                Nord Italia
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Sezione di Benvenuto o Segnalazione Errore */}
+      {showIntro && (
+        <div className="card" style={{ textAlign: "center", padding: "48px 24px", marginBottom: 24 }}>
+          <span style={{ fontSize: "3rem" }}>🌤️</span>
+          <h2 style={{ marginTop: 16 }}>Inserisci una località o rotta per iniziare</h2>
+          <p className="muted" style={{ maxWidth: 500, margin: "8px auto 24px" }}>
+            Digita un codice ICAO (es. <strong>LIML</strong>), il nome di un aeroporto/città (es. <strong>Bergamo</strong>, <strong>Valle Gaffaro</strong>) o una rotta composta (es. <strong>Dovera - Valle Gaffaro</strong>) nel campo di ricerca in alto.
+          </p>
+        </div>
+      )}
+
+      {/* 2. Mappa Meteo Interattiva (Ventusky) */}
+      <div id="weather-map" style={{ scrollMarginTop: 24, marginBottom: 32 }}>
+        <WeatherMap 
+          lat={mapLat} 
+          lon={mapLon} 
+          zoom={mapZoom} 
+          timeParam={ventuskyTimeParam} 
+          formattedDateStr={formattedDateStr}
+        />
       </div>
 
       {/* 3. Dettagli Stazioni (METAR) */}

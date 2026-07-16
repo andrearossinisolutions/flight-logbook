@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.24.0",
+    "date": "2026-07-16",
+    "commits": [
+      {
+        "hash": "f1b9921",
+        "date": "2026-07-16",
+        "subject": "Reorganized meteo page"
+      }
+    ]
+  },
+  {
     "version": "1.23.0",
     "date": "2026-07-03",
     "commits": [
       {
-        "hash": "609a095",
+        "hash": "849c922",
         "date": "2026-07-03",
         "subject": "Added estimated fuel price for societary flights"
       }
