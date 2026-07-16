@@ -735,15 +735,19 @@ async function runMonthlyReports(now: Date) {
               end: flight.hobbsEndMinutes / 60
             };
           }
-          const computed = flightHoursMap.get(flight.id);
-          if (computed) {
-            return {
-              start: computed.startHours,
-              end: computed.endHours
-            };
-          }
-          return null;
+          return {
+            start: null,
+            end: null
+          };
         };
+
+        for (const flight of aircraftFlights) {
+          if (flight.hobbsStartMinutes == null || flight.hobbsEndMinutes == null) {
+            hasHobbsMismatches = true;
+            break;
+          }
+        }
+        if (hasHobbsMismatches) break;
 
         for (let i = 0; i < aircraftFlights.length - 1; i++) {
           const currentFlight = aircraftFlights[i];
@@ -753,12 +757,14 @@ async function runMonthlyReports(now: Date) {
           const nextOram = getFlightOrametro(nextFlight);
 
           if (currentOram && nextOram) {
-            const currentEndStr = formatHoursToHHMM(currentOram.end);
-            const nextStartStr = formatHoursToHHMM(nextOram.start);
+            if (currentOram.end !== null && nextOram.start !== null) {
+              const currentEndStr = formatHoursToHHMM(currentOram.end);
+              const nextStartStr = formatHoursToHHMM(nextOram.start);
 
-            if (currentEndStr !== nextStartStr) {
-              hasHobbsMismatches = true;
-              break;
+              if (currentEndStr !== nextStartStr) {
+                hasHobbsMismatches = true;
+                break;
+              }
             }
           }
         }

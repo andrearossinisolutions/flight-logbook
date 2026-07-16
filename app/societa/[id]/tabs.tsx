@@ -231,15 +231,11 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
         end: flight.hobbsEndMinutes / 60
       };
     }
-    const computed = flightHoursMap.get(flight.id);
-    if (computed) {
-      return {
-        start: computed.startHours,
-        end: computed.endHours
-      };
-    }
-    return null;
-  }, [flightHoursMap]);
+    return {
+      start: null,
+      end: null
+    };
+  }, []);
 
   // Find mismatches per aircraft
   const mismatches = React.useMemo(() => {
@@ -265,12 +261,14 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
         const nextOram = getFlightOrametro(nextFlight);
 
         if (currentOram && nextOram) {
-          const currentEndStr = formatHoursToHHMM(currentOram.end);
-          const nextStartStr = formatHoursToHHMM(nextOram.start);
+          if (currentOram.end !== null && nextOram.start !== null) {
+            const currentEndStr = formatHoursToHHMM(currentOram.end);
+            const nextStartStr = formatHoursToHHMM(nextOram.start);
 
-          if (currentEndStr !== nextStartStr) {
-            endMismatches.add(currentFlight.id);
-            startMismatches.add(nextFlight.id);
+            if (currentEndStr !== nextStartStr) {
+              endMismatches.add(currentFlight.id);
+              startMismatches.add(nextFlight.id);
+            }
           }
         }
       }
@@ -1596,7 +1594,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             </div>
 
             {/* Messaggio Disallineamenti */}
-            {(mismatches.startMismatches.size > 0 || mismatches.endMismatches.size > 0) && (
+            {(mismatches.startMismatches.size > 0 || mismatches.endMismatches.size > 0 || partnershipFlights.some((f: any) => f.hobbsStartMinutes == null || f.hobbsEndMinutes == null)) && (
               <div style={{
                 backgroundColor: "rgba(239, 68, 68, 0.1)",
                 border: "1px solid rgb(239, 68, 68)",
@@ -1682,23 +1680,23 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                     {(() => {
                                       const orametro = getFlightOrametro(flight);
                                       if (!orametro) return null;
-                                      const isStartMismatched = mismatches.startMismatches.has(flight.id);
-                                      const isEndMismatched = mismatches.endMismatches.has(flight.id);
+                                      const isStartMismatched = mismatches.startMismatches.has(flight.id) || orametro.start === null;
+                                      const isEndMismatched = mismatches.endMismatches.has(flight.id) || orametro.end === null;
                                       return (
                                         <div className="muted" style={{ fontSize: "0.85rem", fontWeight: 500 }}>
                                           Oram.:{" "}
                                           <span 
                                             style={isStartMismatched ? { color: "red", fontWeight: "bold" } : undefined}
-                                            title={isStartMismatched ? "L'orametro iniziale non corrisponde all'orametro finale del volo precedente. Uno dei due potrebbe essere errato." : undefined}
+                                            title={isStartMismatched ? "L'orametro iniziale non corrisponde all'orametro finale del volo precedente o è mancante." : undefined}
                                           >
-                                            {formatHoursToHHMM(orametro.start)}
+                                            {orametro.start !== null ? formatHoursToHHMM(orametro.start) : "?"}
                                           </span>
                                           {" ➔ "}
                                           <span 
                                             style={isEndMismatched ? { color: "red", fontWeight: "bold" } : undefined}
-                                            title={isEndMismatched ? "L'orametro finale non corrisponde all'orametro iniziale del volo successivo. Uno dei due potrebbe essere errato." : undefined}
+                                            title={isEndMismatched ? "L'orametro finale non corrisponde all'orametro iniziale del volo successivo o è mancante." : undefined}
                                           >
-                                            {formatHoursToHHMM(orametro.end)}
+                                            {orametro.end !== null ? formatHoursToHHMM(orametro.end) : "?"}
                                           </span>
                                         </div>
                                       );
