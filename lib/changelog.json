@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.26.1",
+    "date": "2026-07-16",
+    "commits": [
+      {
+        "hash": "e383735",
+        "date": "2026-07-16",
+        "subject": "Fixed briefing meteo default section"
+      }
+    ]
+  },
+  {
     "version": "1.26.0",
     "date": "2026-07-16",
     "commits": [
@@ -24,7 +35,7 @@
         "subject": "Added policies and delete account links to emails' footer"
       },
       {
-        "hash": "82c50b1",
+        "hash": "a45df1a",
         "date": "2026-07-16",
         "subject": "Added missing migration"
       }

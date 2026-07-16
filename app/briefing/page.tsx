@@ -966,7 +966,7 @@ export default async function BriefingPage({
       title="Briefing Meteo" 
       subtitle="Dati aeronautici METAR e TAF lungo la rotta di volo."
     >
-      {targetIcao && (
+      {typeof icao === "string" && (
         <Script id="scroll-to-weather" strategy="afterInteractive">
           {`
             if (window.location.hash === '') {
