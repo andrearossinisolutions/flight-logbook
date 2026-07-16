@@ -665,7 +665,7 @@ export default async function DashboardPage({
             Ore di volo disponibili
           </div>
           <div className="inline-meta" style={{ marginTop: 8 }}>
-            ⏱️ PiC:{" "}
+            🛩️ Noleggio:{" "}
             {saldo > 0
               ? minutesToHoursMinutes(
                 (saldo /
@@ -677,16 +677,13 @@ export default async function DashboardPage({
               : "0:00"}
           </div><br />
           <div className="inline-meta" style={{ marginTop: 4 }}>
-            ⏱️ Istruttore:{" "}
+            👨‍✈️ Istruttore:{" "}
             {saldo > 0
               ? minutesToHoursMinutes(
                 (saldo /
-                  ((settings?.rentalRatePerHour
-                    ? Number(settings.rentalRatePerHour)
-                    : 150) +
-                    (settings?.instructorRatePerHour
-                      ? Number(settings.instructorRatePerHour)
-                      : 80))) *
+                  ((settings?.instructorRatePerHour
+                    ? Number(settings.instructorRatePerHour)
+                    : 80))) *
                 60
               )
               : "0:00"}

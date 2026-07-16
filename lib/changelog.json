@@ -1,10 +1,42 @@
 [
   {
+    "version": "1.26.4",
+    "date": "2026-07-16",
+    "commits": [
+      {
+        "hash": "fe4b7c5",
+        "date": "2026-07-16",
+        "subject": "Improved widget \"Ore di volo disponibili\""
+      }
+    ]
+  },
+  {
+    "version": "1.26.3",
+    "date": "2026-07-16",
+    "commits": [
+      {
+        "hash": "a2e857c",
+        "date": "2026-07-16",
+        "subject": "Added partnership logbook missing start-end alignment errors"
+      },
+      {
+        "hash": "0ab4ece",
+        "date": "2026-07-16",
+        "subject": "Added start-end mismatch to monthly partnership's admin email"
+      },
+      {
+        "hash": "1bb1999",
+        "date": "2026-07-16",
+        "subject": "Added missing hobbs as mismatch to fix in partnership logs"
+      }
+    ]
+  },
+  {
     "version": "1.26.2",
     "date": "2026-07-16",
     "commits": [
       {
-        "hash": "6308c14",
+        "hash": "6bda7bc",
         "date": "2026-07-16",
         "subject": "Hidden past events; Changed events icon to not collide w/ booking icon"
       }
