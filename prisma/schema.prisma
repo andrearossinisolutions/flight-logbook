@@ -31,6 +31,8 @@ model User {
   rentalAircrafts       RentalAircraft[]
   resetToken          String?    @unique
   resetTokenExpiresAt DateTime?
+  deleteAccountToken          String?    @unique
+  deleteAccountTokenExpiresAt DateTime?
   bookings              PartnershipBooking[]
   paidMaintenances      PartnershipAircraftMaintenanceLog[] @relation("MaintenancePayer")
   partnershipReceivedTransactns PartnershipTransaction[] @relation("TransactionRecipient")

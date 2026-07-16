@@ -4,6 +4,7 @@ import { formatDateInput } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import RentalAircraftsManager from "@/components/rental-aircrafts-manager";
+import DeleteAccountButton from "@/components/delete-account-button";
 
 export default async function SettingsPage() {
   const user = await requireUser();
@@ -241,6 +242,15 @@ export default async function SettingsPage() {
             </button>
           </form>
         </div>
+      </div>
+
+      {/* Sezione Sicurezza & Privacy */}
+      <div className="card" style={{ marginTop: 24, border: "1px solid #fca5a5", backgroundColor: "rgba(254, 242, 242, 0.4)", padding: "24px 30px" }}>
+        <h3 style={{ marginTop: 0, color: "#b91c1c", fontSize: "1.2rem", fontWeight: 800 }}>⚠️ Eliminazione Permanente Account</h3>
+        <p className="muted" style={{ fontSize: "0.9rem", color: "#7f1d1d", marginBottom: 20, maxWidth: 650, lineHeight: 1.5 }}>
+          In conformità alle linee guida sulla privacy e al regolamento GDPR, da questa sezione puoi richiedere la cancellazione definitiva del tuo profilo e di tutti i dati registrati su Flight Logbook (voli, aerei a noleggio, impostazioni e preferenze). Questa operazione è irreversibile e richiede una conferma finale tramite il link che riceverai via email.
+        </p>
+        <DeleteAccountButton />
       </div>
     </AppShell>
   );

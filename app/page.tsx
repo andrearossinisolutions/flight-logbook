@@ -51,7 +51,11 @@ const CheckIcon = () => (
   </svg>
 );
 
-export default async function HomePage() {
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const session = await getSessionFromCookie();
 
   if (session) {
@@ -65,9 +69,28 @@ export default async function HomePage() {
     }
   }
 
+  const { account_deleted } = await searchParams;
+  const isDeleted = account_deleted === "true";
 
   return (
     <main className="landing-page">
+      {/* Alert di eliminazione account */}
+      {isDeleted && (
+        <div style={{
+          backgroundColor: "#f0fdf4",
+          border: "1px solid #bbf7d0",
+          borderRadius: "12px",
+          color: "#15803d",
+          padding: "16px 24px",
+          maxWidth: "600px",
+          margin: "24px auto 0",
+          textAlign: "center",
+          fontWeight: 700,
+          boxShadow: "0 4px 12px rgba(22, 163, 74, 0.15)"
+        }}>
+          ✅ Il tuo account e tutti i dati ad esso associati sono stati eliminati definitivamente in conformità alle norme sulla privacy.
+        </div>
+      )}
       {/* JSON-LD Structured Data for SEO Rich Snippets */}
       <script
         type="application/ld+json"
