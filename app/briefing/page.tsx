@@ -808,6 +808,20 @@ async function BriefingStationDetails({
   );
 }
 
+function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
 export default async function BriefingPage({
   searchParams,
 }: {
@@ -825,6 +839,44 @@ export default async function BriefingPage({
   const { icao, date } = await searchParams;
   const defaultBase = user?.settings?.defaultBase || "LIML";
   const targetIcao = typeof icao === "string" ? icao.trim() : (session ? defaultBase : "");
+
+  // Calcola aeroporti entro 100km per il pulsante preimpostato
+  let baseLat = 45.461; // default Milano Linate
+  let baseLon = 9.263;
+  let baseApt = ITALIAN_AIRPORTS[defaultBase.toUpperCase()];
+  let baseAptFound = false;
+
+  if (baseApt) {
+    baseLat = baseApt.lat;
+    baseLon = baseApt.lon;
+    baseAptFound = true;
+  } else {
+    // Tenta di risolvere le coordinate della località personalizzata (es. Dovera)
+    const coords = await getCoordinatesFromName(defaultBase);
+    if (coords) {
+      baseLat = coords.lat;
+      baseLon = coords.lon;
+      baseAptFound = true;
+    }
+  }
+
+  let base100kmIcaos = defaultBase;
+  if (baseAptFound) {
+    const nearby = [];
+    for (const [icao, apt] of Object.entries(ITALIAN_AIRPORTS)) {
+      if (icao.toUpperCase() === defaultBase.toUpperCase()) continue;
+      const dist = getDistanceKm(baseLat, baseLon, apt.lat, apt.lon);
+      if (dist <= 100) {
+        nearby.push({ icao, dist });
+      }
+    }
+    nearby.sort((a, b) => a.dist - b.dist);
+    const combinedIcaos = [defaultBase.toUpperCase(), ...nearby.map(n => n.icao)].slice(0, 6);
+    base100kmIcaos = combinedIcaos.join(", ");
+  }
+
+  const normalizeIcaoString = (s: string) => s.split(/[,/\-➔➔\s]+/).map(t => t.trim().toUpperCase()).filter(Boolean).join(",");
+  const is100kmActive = normalizeIcaoString(targetIcao) === normalizeIcaoString(base100kmIcaos);
 
   const swllCharts = await fetchSwllCharts();
 
@@ -849,12 +901,6 @@ export default async function BriefingPage({
   const vDay = targetDate.getUTCDate().toString().padStart(2, "0");
   const vHour = targetDate.getUTCHours().toString().padStart(2, "0");
   const ventuskyTimeParam = `${vYear}${vMonth}${vDay}/${vHour}`;
-
-  // Informazioni aeroporto base di default
-  const baseApt = ITALIAN_AIRPORTS[defaultBase];
-  const baseLat = baseApt?.lat ?? 45.461;
-  const baseLon = baseApt?.lon ?? 9.263;
-
   const showIntro = !targetIcao;
 
   // Risolviamo gli ICAO e le coordinate velocemente sul server senza bloccare per i METAR/TAF lenti
@@ -1134,11 +1180,13 @@ export default async function BriefingPage({
             <Link href={`/briefing?icao=${defaultBase}#specific-weather`} className={`pill ${targetIcao === defaultBase ? "active" : ""}`} style={{ cursor: "pointer", textDecoration: "none", backgroundColor: targetIcao === defaultBase ? "var(--primary)" : "var(--border)", color: targetIcao === defaultBase ? "white" : "var(--text)" }}>
               Base ({defaultBase})
             </Link>
-            {defaultBase !== "LIML" && (
-              <Link href="/briefing?icao=torino+-+venezia#specific-weather" className={`pill ${targetIcao === "torino - venezia" ? "active" : ""}`} style={{ cursor: "pointer", textDecoration: "none", backgroundColor: targetIcao === "torino - venezia" ? "var(--primary)" : "var(--border)", color: targetIcao === "torino - venezia" ? "white" : "var(--text)" }}>
-                Nord Italia
-              </Link>
-            )}
+            <Link 
+              href={`/briefing?icao=${encodeURIComponent(base100kmIcaos.toLowerCase())}#specific-weather`} 
+              className={`pill ${is100kmActive ? "active" : ""}`} 
+              style={{ cursor: "pointer", textDecoration: "none", backgroundColor: is100kmActive ? "var(--primary)" : "var(--border)", color: is100kmActive ? "white" : "var(--text)" }}
+            >
+              100KM ({defaultBase})
+            </Link>
           </div>
         </div>
       </div>

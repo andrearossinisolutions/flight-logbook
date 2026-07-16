@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.25.1",
+    "date": "2026-07-16",
+    "commits": [
+      {
+        "hash": "7a6dc2e",
+        "date": "2026-07-16",
+        "subject": "Added 100km from base meteo prefill selection"
+      }
+    ]
+  },
+  {
     "version": "1.25.0",
     "date": "2026-07-16",
     "commits": [
       {
-        "hash": "bc69613",
+        "hash": "83f7c38",
         "date": "2026-07-16",
         "subject": "Added weekend meteo email on thursday"
       }
