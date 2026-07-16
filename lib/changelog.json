@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.25.0",
+    "date": "2026-07-16",
+    "commits": [
+      {
+        "hash": "bc69613",
+        "date": "2026-07-16",
+        "subject": "Added weekend meteo email on thursday"
+      }
+    ]
+  },
+  {
     "version": "1.24.0",
     "date": "2026-07-16",
     "commits": [
       {
-        "hash": "f1b9921",
+        "hash": "19975e7",
         "date": "2026-07-16",
         "subject": "Reorganized meteo page"
       }

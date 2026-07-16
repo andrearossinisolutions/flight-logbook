@@ -537,6 +537,12 @@ async function savePersistedLastRun(now: Date, dateKey: string) {
 export async function runDailyChecksAndActions(now = new Date()) {
   await runMonthlyReports(now);
 
+  try {
+    await sendWeekendWeatherDigest(now);
+  } catch (error) {
+    console.error("[daily-jobs] Errore durante l'invio del meteo del weekend", error);
+  }
+
   const todayRange = getRomeDayRange(now, 0);
   const tomorrowRange = getRomeDayRange(now, 1);
 
@@ -1109,6 +1115,423 @@ export async function checkAndSendPreFlightWeatherEmails(now = new Date()) {
         `[daily-jobs] Errore nell'invio dell'email meteo pre-volo per il volo ${flight.id}`,
         error
       );
+    }
+  }
+}
+
+// --- SERVIZIO NEWSLETTER METEO WEEKEND (VEN-DOM) ---
+
+function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Raggio della Terra in km
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+function getAirportsWithinRadius(baseIcao: string, radiusKm = 100) {
+  const baseApt = ITALIAN_AIRPORTS[baseIcao.toUpperCase()];
+  if (!baseApt) return [];
+
+  const list = [];
+  for (const [icao, apt] of Object.entries(ITALIAN_AIRPORTS)) {
+    if (icao.toUpperCase() === baseIcao.toUpperCase()) {
+      continue;
+    }
+    const dist = getDistanceKm(baseApt.lat, baseApt.lon, apt.lat, apt.lon);
+    if (dist <= radiusKm) {
+      list.push({
+        icao,
+        name: apt.name,
+        lat: apt.lat,
+        lon: apt.lon,
+        distanceKm: Math.round(dist),
+      });
+    }
+  }
+  list.sort((a, b) => a.distanceKm - b.distanceKm);
+  return list;
+}
+
+function getWeekendDates(referenceDate: Date) {
+  const day = referenceDate.getDay(); // 0 = Dom, 1 = Lun, ..., 6 = Sab
+  const dayOfWeek = day === 0 ? 7 : day;
+
+  const friday = new Date(referenceDate);
+  friday.setDate(referenceDate.getDate() + (5 - dayOfWeek));
+
+  const saturday = new Date(friday);
+  saturday.setDate(friday.getDate() + 1);
+
+  const sunday = new Date(friday);
+  sunday.setDate(friday.getDate() + 2);
+
+  return { friday, saturday, sunday };
+}
+
+function weatherCodeToText(code: number): { text: string; emoji: string } {
+  if (code === 0) return { text: "Sereno", emoji: "☀️" };
+  if (code === 1 || code === 2) return { text: "Poco nuvoloso", emoji: "🌤️" };
+  if (code === 3) return { text: "Coperto", emoji: "☁️" };
+  if (code === 45 || code === 48) return { text: "Nebbia", emoji: "🌫️" };
+  if (code >= 51 && code <= 57) return { text: "Pioggerella", emoji: "🌧️" };
+  if (code >= 61 && code <= 67) return { text: "Pioggia", emoji: "🌧️" };
+  if (code >= 71 && code <= 77) return { text: "Neve", emoji: "❄️" };
+  if (code >= 80 && code <= 82) return { text: "Rovesci di pioggia", emoji: "🌧️" };
+  if (code >= 85 && code <= 86) return { text: "Rovesci di neve", emoji: "❄️" };
+  if (code >= 95 && code <= 99) return { text: "Temporale", emoji: "⛈️" };
+  return { text: "Variabile", emoji: "⛅" };
+}
+
+function calculateVfrIndex(params: {
+  windSpeedMaxKm: number;
+  windGustsMaxKm: number;
+  precipSumMm: number;
+  precipProbMax: number;
+  weatherCode: number;
+}) {
+  const { windSpeedMaxKm, windGustsMaxKm, precipSumMm, precipProbMax, weatherCode } = params;
+  const windSpeedKt = windSpeedMaxKm / 1.852;
+  const windGustsKt = windGustsMaxKm / 1.852;
+
+  let score = 100;
+  let reasons: string[] = [];
+
+  if (precipSumMm > 5 || weatherCode >= 95) {
+    score -= 60;
+    reasons.push("Pioggia abbondante / temporali");
+  } else if (precipSumMm > 1 || precipProbMax > 40) {
+    score -= 30;
+    reasons.push("Rischio pioggia");
+  } else if (precipSumMm > 0.1 || precipProbMax > 20) {
+    score -= 10;
+    reasons.push("Umidità / deboli piogge");
+  }
+
+  if (windGustsKt > 22 || windSpeedKt > 18) {
+    score -= 50;
+    reasons.push("Vento forte / raffiche");
+  } else if (windGustsKt > 15 || windSpeedKt > 12) {
+    score -= 20;
+    reasons.push("Vento moderato");
+  }
+
+  if (weatherCode === 45 || weatherCode === 48) {
+    score -= 40;
+    reasons.push("Nebbia");
+  } else if (weatherCode === 3) {
+    score -= 5;
+  }
+
+  let label = "Ottimo 🟢";
+  let color = "#16a34a";
+  if (score < 40) {
+    label = "Sconsigliato 🔴";
+    color = "#dc2626";
+  } else if (score < 70) {
+    label = "Marginale 🟡";
+    color = "#d97706";
+  } else if (score < 90) {
+    label = "Buono 🟢";
+    color = "#15803d";
+  }
+
+  return {
+    label,
+    color,
+    score,
+    reasons: reasons.length > 0 ? reasons.join(", ") : "Nessuna criticità",
+  };
+}
+
+async function fetchWeekendWeather(
+  lat: number,
+  lon: number,
+  dates: { friday: Date; saturday: Date; sunday: Date }
+) {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max,wind_gusts_10m_max,weather_code&timezone=Europe/Rome`;
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data.daily) return null;
+
+    const result: { [key: string]: any } = {};
+    const dateKeys = {
+      friday: dates.friday.toISOString().split("T")[0],
+      saturday: dates.saturday.toISOString().split("T")[0],
+      sunday: dates.sunday.toISOString().split("T")[0],
+    };
+
+    for (const [dayName, dateStr] of Object.entries(dateKeys)) {
+      const idx = data.daily.time.indexOf(dateStr);
+      if (idx !== -1) {
+        const tempMax = data.daily.temperature_2m_max[idx];
+        const tempMin = data.daily.temperature_2m_min[idx];
+        const precipSum = data.daily.precipitation_sum[idx] ?? 0;
+        const precipProb = data.daily.precipitation_probability_max[idx] ?? 0;
+        const windSpeed = data.daily.wind_speed_10m_max[idx] ?? 0;
+        const windGusts = data.daily.wind_gusts_10m_max[idx] ?? 0;
+        const code = data.daily.weather_code[idx] ?? 0;
+
+        const wInfo = weatherCodeToText(code);
+        const vfr = calculateVfrIndex({
+          windSpeedMaxKm: windSpeed,
+          windGustsMaxKm: windGusts,
+          precipSumMm: precipSum,
+          precipProbMax: precipProb,
+          weatherCode: code,
+        });
+
+        result[dayName] = {
+          dateStr,
+          tempMax,
+          tempMin,
+          precipSum,
+          precipProb,
+          windSpeed: Math.round(windSpeed),
+          windGusts: Math.round(windGusts),
+          weatherText: wInfo.text,
+          weatherEmoji: wInfo.emoji,
+          vfrLabel: vfr.label,
+          vfrColor: vfr.color,
+          vfrScore: vfr.score,
+          vfrReasons: vfr.reasons,
+        };
+      }
+    }
+    return result;
+  } catch (err) {
+    console.error(`Errore nel recupero meteo da Open-Meteo per lat=${lat}, lon=${lon}:`, err);
+    return null;
+  }
+}
+
+function buildWeekendWeatherDigestEmail(args: {
+  user: any;
+  baseIcao: string;
+  baseName: string;
+  baseWeather: any;
+  nearbyWeather: any[];
+  dates: { friday: Date; saturday: Date; sunday: Date };
+}) {
+  const { baseIcao, baseName, baseWeather, nearbyWeather, dates } = args;
+
+  const formatDate = (d: Date) => {
+    return d.toLocaleDateString("it-IT", { weekday: "long", day: "numeric", month: "long" });
+  };
+
+  const subject = `Flight Logbook · Previsioni Meteo Weekend (Ven-Dom) da ${baseIcao.toUpperCase()}`;
+
+  // Fallback testo semplice
+  let text = `Bollettino Meteo del Weekend (100km da ${baseIcao.toUpperCase()})\n\n`;
+  if (baseWeather.friday) {
+    text += `Venerdì: ${baseWeather.friday.weatherEmoji} ${baseWeather.friday.weatherText}, VFR: ${baseWeather.friday.vfrLabel}\n`;
+  }
+  if (baseWeather.saturday) {
+    text += `Sabato: ${baseWeather.saturday.weatherEmoji} ${baseWeather.saturday.weatherText}, VFR: ${baseWeather.saturday.vfrLabel}\n`;
+  }
+  if (baseWeather.sunday) {
+    text += `Domenica: ${baseWeather.sunday.weatherEmoji} ${baseWeather.sunday.weatherText}, VFR: ${baseWeather.sunday.vfrLabel}\n`;
+  }
+
+  const formatDayHtml = (dayKey: string, dayLabel: string, data: any) => {
+    if (!data) return "";
+    return `
+      <div style="margin-bottom: 20px; padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb; background-color: #ffffff;">
+        <div style="font-weight: 800; font-size: 16px; color: #17324d; margin-bottom: 8px;">
+          ${dayLabel}
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <span style="font-size: 24px;">${data.weatherEmoji}</span>
+          <div>
+            <strong>${data.weatherText}</strong> · Temp: ${data.tempMin}°C / ${data.tempMax}°C
+          </div>
+        </div>
+        <div style="font-size: 14px; color: #4b5563; line-height: 1.5;">
+          <strong>Vento:</strong> ${data.windSpeed} km/h (Raffiche a ${data.windGusts} km/h)<br />
+          <strong>Precipitazioni:</strong> ${data.precipSum} mm (Probabilità: ${data.precipProb}%)<br />
+          <strong>Indice Volo VFR:</strong> <span style="color: ${data.vfrColor}; font-weight: bold;">${data.vfrLabel}</span>
+          ${
+            data.vfrReasons !== "Nessuna criticità"
+              ? `<br /><span style="font-size: 12px; color: #b45309; font-weight: bold;">⚠️ Nota: ${data.vfrReasons}</span>`
+              : ""
+          }
+        </div>
+      </div>
+    `;
+  };
+
+  let tableRowsHtml = "";
+  for (const apt of nearbyWeather) {
+    tableRowsHtml += `
+      <tr style="border-bottom: 1px solid #e5e7eb;">
+        <td style="padding: 10px 8px; font-weight: bold; font-size: 14px;">
+          ${apt.icao} <span style="font-weight: normal; font-size: 12px; color: #6b7280;">(${apt.distanceKm}km)</span>
+        </td>
+        <td style="padding: 10px 8px; color: ${apt.weather.friday?.vfrColor ?? ""}; font-weight: bold; font-size: 13px;">
+          ${apt.weather.friday?.weatherEmoji ?? ""} ${apt.weather.friday?.vfrLabel.replace(" 🟢", "").replace(" 🟡", "").replace(" 🔴", "") ?? "N/D"}
+        </td>
+        <td style="padding: 10px 8px; color: ${apt.weather.saturday?.vfrColor ?? ""}; font-weight: bold; font-size: 13px;">
+          ${apt.weather.saturday?.weatherEmoji ?? ""} ${apt.weather.saturday?.vfrLabel.replace(" 🟢", "").replace(" 🟡", "").replace(" 🔴", "") ?? "N/D"}
+        </td>
+        <td style="padding: 10px 8px; color: ${apt.weather.sunday?.vfrColor ?? ""}; font-weight: bold; font-size: 13px;">
+          ${apt.weather.sunday?.weatherEmoji ?? ""} ${apt.weather.sunday?.vfrLabel.replace(" 🟢", "").replace(" 🟡", "").replace(" 🔴", "") ?? "N/D"}
+        </td>
+      </tr>
+    `;
+  }
+
+  const appUrl = process.env.APP_URL || "http://localhost:3000";
+  const briefingUrl = `${appUrl}/briefing?icao=${encodeURIComponent(baseIcao)}#specific-weather`;
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #1f2937; background-color: #f9fafb;">
+      <div style="margin: 0 0 24px; padding: 22px; border-radius: 24px; background: linear-gradient(135deg, #1f6f5b 0%, #114e3f 100%); color: #ffffff;">
+        <div style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.85; margin-bottom: 8px;">
+          Bollettino Meteo del Weekend
+        </div>
+        <div style="font-size: 26px; line-height: 1.1; font-weight: 800; margin-bottom: 8px;">
+          Pronti al Volo? ✈️
+        </div>
+        <div style="font-size: 14px; opacity: 0.95;">
+          Previsioni da Venerdì a Domenica nel raggio di 100km dalla tua base di <strong>${baseName} (${baseIcao.toUpperCase()})</strong>.
+        </div>
+      </div>
+      
+      <div style="font-size: 18px; font-weight: 800; color: #114e3f; margin: 24px 0 12px;">
+        🌤️ Meteo sulla Base (${baseIcao.toUpperCase()})
+      </div>
+      
+      ${formatDayHtml("friday", `Venerdì · ${formatDate(dates.friday)}`, baseWeather.friday)}
+      ${formatDayHtml("saturday", `Sabato · ${formatDate(dates.saturday)}`, baseWeather.saturday)}
+      ${formatDayHtml("sunday", `Domenica · ${formatDate(dates.sunday)}`, baseWeather.sunday)}
+      
+      ${
+        nearbyWeather.length > 0
+          ? `
+        <div style="font-size: 18px; font-weight: 800; color: #114e3f; margin: 28px 0 12px;">
+          🗺️ Indice Volabilità nei dintorni (100 km)
+        </div>
+        <div style="border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; background-color: #ffffff; margin-bottom: 24px;">
+          <table style="width: 100%; border-collapse: collapse; text-align: left;">
+            <thead>
+              <tr style="background-color: #f3f4f6; border-bottom: 1px solid #e5e7eb;">
+                <th style="padding: 10px 8px; font-size: 12px; text-transform: uppercase; color: #4b5563;">Aeroporto</th>
+                <th style="padding: 10px 8px; font-size: 12px; text-transform: uppercase; color: #4b5563;">Ven</th>
+                <th style="padding: 10px 8px; font-size: 12px; text-transform: uppercase; color: #4b5563;">Sab</th>
+                <th style="padding: 10px 8px; font-size: 12px; text-transform: uppercase; color: #4b5563;">Dom</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${tableRowsHtml}
+            </tbody>
+          </table>
+        </div>
+      `
+          : ""
+      }
+      
+      <div style="text-align: center; margin-top: 32px; margin-bottom: 24px;">
+        <a href="${briefingUrl}" style="display: inline-block; background-color: #1f6f5b; color: #ffffff; padding: 12px 28px; border-radius: 12px; font-weight: bold; text-decoration: none; font-size: 15px;">
+          Apri Briefing Meteo Completo ↗
+        </a>
+      </div>
+      
+      <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;" />
+      <div style="font-size: 11px; color: #6b7280; text-align: center; line-height: 1.5;">
+        Ricevi questa email perché hai impostato ${baseIcao.toUpperCase()} come aeroporto base nel tuo Flight Logbook.<br />
+        Le previsioni meteo fornite sono indicative e automatizzate. Consulta sempre i canali meteo aeronautici ufficiali prima di pianificare ed eseguire un volo.
+      </div>
+    </div>
+  `;
+
+  return { subject, text, html };
+}
+
+export async function sendWeekendWeatherDigest(now = new Date()) {
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: ROME_TIME_ZONE,
+    weekday: "long",
+  });
+  const weekdayName = formatter.format(now);
+  if (weekdayName !== "Thursday") {
+    return;
+  }
+
+  const { friday, saturday, sunday } = getWeekendDates(now);
+  const fridayKey = friday.toISOString().split("T")[0];
+
+  const users = await prisma.user.findMany({
+    include: { settings: true },
+  });
+
+  for (const user of users) {
+    const baseIcao = user.settings?.defaultBase;
+    if (!baseIcao) continue;
+
+    const jobKey = `weekend-weather-digest-${user.id}-${fridayKey}`;
+    const alreadySent = await prisma.dailyJobState.findUnique({
+      where: { key: jobKey },
+    });
+    if (alreadySent) continue;
+
+    const baseApt = ITALIAN_AIRPORTS[baseIcao.toUpperCase()];
+    if (!baseApt) continue;
+
+    // Recupera meteo base
+    const baseWeather = await fetchWeekendWeather(baseApt.lat, baseApt.lon, { friday, saturday, sunday });
+    if (!baseWeather) continue;
+
+    // Trova aeroporti entro 100km (max 4)
+    const nearby = getAirportsWithinRadius(baseIcao, 100).slice(0, 4);
+    const nearbyWeather = [];
+    for (const apt of nearby) {
+      const weather = await fetchWeekendWeather(apt.lat, apt.lon, { friday, saturday, sunday });
+      if (weather) {
+        nearbyWeather.push({
+          icao: apt.icao,
+          name: apt.name,
+          distanceKm: apt.distanceKm,
+          weather,
+        });
+      }
+    }
+
+    const email = buildWeekendWeatherDigestEmail({
+      user,
+      baseIcao,
+      baseName: baseApt.name,
+      baseWeather,
+      nearbyWeather,
+      dates: { friday, saturday, sunday },
+    });
+
+    try {
+      await sendUserEmail({
+        userId: user.id,
+        subject: email.subject,
+        text: email.text,
+        html: email.html,
+      });
+
+      console.log(`[daily-jobs] Email meteo weekend inviata con successo a ${user.email} (${user.id})`);
+
+      await prisma.dailyJobState.create({
+        data: {
+          key: jobKey,
+          lastRunDateKey: getPersistedLastRunDateKey ? getRomeDateKey(now) : "N/D",
+          lastRunAt: now,
+        },
+      });
+    } catch (err) {
+      console.error(`[daily-jobs] Errore nell'invio dell'email meteo weekend a ${user.email}:`, err);
     }
   }
 }
