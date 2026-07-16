@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.26.5",
+    "date": "2026-07-16",
+    "commits": [
+      {
+        "hash": "720495a",
+        "date": "2026-07-16",
+        "subject": "Added weekend meteo to briefing page"
+      }
+    ]
+  },
+  {
     "version": "1.26.4",
     "date": "2026-07-16",
     "commits": [
       {
-        "hash": "fe4b7c5",
+        "hash": "4a57881",
         "date": "2026-07-16",
         "subject": "Improved widget \"Ore di volo disponibili\""
       }

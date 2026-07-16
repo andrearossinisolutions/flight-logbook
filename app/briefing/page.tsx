@@ -1,6 +1,7 @@
 import { getSessionFromCookie } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/app-shell";
+import WeekendWeatherBriefing from "@/components/weekend-weather-briefing";
 import { 
   fetchMetar, 
   fetchTaf, 
@@ -983,6 +984,9 @@ export default async function BriefingPage({
         <a href="#specific-weather" className="btn secondary" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "0.9rem", padding: "8px 16px", textDecoration: "none", fontWeight: 700 }}>
           📍 Meteo Specifico
         </a>
+        <a href="#weekend-weather" className="btn secondary" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: "0.9rem", padding: "8px 16px", textDecoration: "none", fontWeight: 700 }}>
+          ☀️ Meteo Weekend
+        </a>
       </div>
 
       {/* 1. Carte SWLL (Aeronautica Militare) */}
@@ -1223,6 +1227,9 @@ export default async function BriefingPage({
           />
         </Suspense>
       )}
+
+      {/* 4. Meteo Weekend Generico */}
+      <WeekendWeatherBriefing defaultBase={defaultBase} />
     </AppShell>
   );
 }

@@ -1231,7 +1231,7 @@ function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): 
   return R * c;
 }
 
-function getAirportsWithinRadius(baseIcao: string, radiusKm = 100) {
+export function getAirportsWithinRadius(baseIcao: string, radiusKm = 100) {
   const baseApt = ITALIAN_AIRPORTS[baseIcao.toUpperCase()];
   if (!baseApt) return [];
 
@@ -1255,7 +1255,7 @@ function getAirportsWithinRadius(baseIcao: string, radiusKm = 100) {
   return list;
 }
 
-function getWeekendDates(referenceDate: Date) {
+export function getWeekendDates(referenceDate: Date) {
   const day = referenceDate.getDay(); // 0 = Dom, 1 = Lun, ..., 6 = Sab
   const dayOfWeek = day === 0 ? 7 : day;
 
@@ -1346,7 +1346,7 @@ function calculateVfrIndex(params: {
   };
 }
 
-async function fetchWeekendWeather(
+export async function fetchWeekendWeather(
   lat: number,
   lon: number,
   dates: { friday: Date; saturday: Date; sunday: Date }
