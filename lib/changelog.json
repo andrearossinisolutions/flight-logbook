@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.27.0",
+    "date": "2026-07-20",
+    "commits": [
+      {
+        "hash": "029ae6d",
+        "date": "2026-07-20",
+        "subject": "Added planned flights to map"
+      }
+    ]
+  },
+  {
     "version": "1.26.6",
     "date": "2026-07-20",
     "commits": [
       {
-        "hash": "c3e287b",
+        "hash": "9c5845b",
         "date": "2026-07-20",
         "subject": "Fixed booking deletion when adding flight from booking"
       }

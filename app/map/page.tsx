@@ -75,12 +75,11 @@ export default async function MapPage() {
   const baseName = settings?.defaultBase || null;
   const baseKey = baseName ? baseName.trim().toUpperCase() : null;
 
-  // Carica i movimenti di tipo FLIGHT non bozze (passati)
+  // Carica i movimenti di tipo FLIGHT (sia passati che programmati/bozze)
   const movements = await prisma.movement.findMany({
     where: {
       userId: user.id,
       type: "FLIGHT",
-      isDraft: false,
     },
     include: {
       flight: true,
@@ -90,6 +89,7 @@ export default async function MapPage() {
   interface PlaceStats {
     name: string;
     flightCount: number;
+    draftFlightCount: number;
     lastVisit: Date | null;
   }
 
@@ -110,11 +110,16 @@ export default async function MapPage() {
       const stats = statsMap.get(place) || {
         name: place,
         flightCount: 0,
+        draftFlightCount: 0,
         lastVisit: null,
       };
-      stats.flightCount += 1;
-      if (!stats.lastVisit || m.date > stats.lastVisit) {
-        stats.lastVisit = m.date;
+      if (m.isDraft) {
+        stats.draftFlightCount += 1;
+      } else {
+        stats.flightCount += 1;
+        if (!stats.lastVisit || m.date > stats.lastVisit) {
+          stats.lastVisit = m.date;
+        }
       }
       statsMap.set(place, stats);
     });
@@ -125,6 +130,7 @@ export default async function MapPage() {
     statsMap.set(baseKey, {
       name: baseKey,
       flightCount: 0,
+      draftFlightCount: 0,
       lastVisit: null,
     });
   }
@@ -142,6 +148,7 @@ export default async function MapPage() {
       lon: coords.lon,
       isBase: key === baseKey,
       flightCount: stats.flightCount,
+      draftFlightCount: stats.draftFlightCount,
       address: custom?.address || null,
       hasOverride: !!custom,
       lastVisit: stats.lastVisit
@@ -171,6 +178,8 @@ export default async function MapPage() {
       fromCoords: { lat: number; lon: number };
       toCoords: { lat: number; lon: number };
       count: number;
+      draftCount: number;
+      isDraft?: boolean;
     }
   >();
 
@@ -188,14 +197,21 @@ export default async function MapPage() {
         const key = [dep, arr].sort().join("-");
         const existing = routesMap.get(key);
         if (existing) {
-          existing.count += 1;
+          if (m.isDraft) {
+            existing.draftCount += 1;
+          } else {
+            existing.count += 1;
+            existing.isDraft = false; // Se c'è almeno un volo reale, non è bozza-only
+          }
         } else {
           routesMap.set(key, {
             from: dep,
             to: arr,
             fromCoords: depCoords,
             toCoords: arrCoords,
-            count: 1,
+            count: m.isDraft ? 0 : 1,
+            draftCount: m.isDraft ? 1 : 0,
+            isDraft: m.isDraft,
           });
         }
       }

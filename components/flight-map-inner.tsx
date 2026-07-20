@@ -10,6 +10,7 @@ export interface MapPoint {
   lon: number;
   isBase: boolean;
   flightCount: number;
+  draftFlightCount?: number;
   address: string | null;
   hasOverride: boolean;
   lastVisit: string | null;
@@ -21,6 +22,8 @@ export interface MapRoute {
   fromCoords: { lat: number; lon: number };
   toCoords: { lat: number; lon: number };
   count: number;
+  draftCount?: number;
+  isDraft?: boolean;
 }
 
 interface FlightMapProps {
@@ -112,35 +115,6 @@ export default function FlightMapInner({ points, routes, onEditPlace }: FlightMa
       popupAnchor: [0, -18],
     });
 
-    const pinIcon = L.divIcon({
-      html: `
-        <div style="
-          background-color: #e05e5e;
-          width: 28px;
-          height: 28px;
-          border-radius: 50%;
-          border: 2px solid white;
-          box-shadow: 0 3px 8px rgba(20, 32, 51, 0.2);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-size: 14px;
-          cursor: pointer;
-          transition: transform 0.2s ease;
-        "
-        onmouseover="this.style.transform='scale(1.15)'"
-        onmouseout="this.style.transform='scale(1)'"
-        >
-          📍
-        </div>
-      `,
-      className: "custom-pin-marker",
-      iconSize: [28, 28],
-      iconAnchor: [14, 14],
-      popupAnchor: [0, -14],
-    });
-
     // Aggiungi i marker
     points.forEach((p) => {
       if (typeof p.lat !== "number" || typeof p.lon !== "number" || isNaN(p.lat) || isNaN(p.lon)) {
@@ -150,14 +124,55 @@ export default function FlightMapInner({ points, routes, onEditPlace }: FlightMa
       const position: L.LatLngTuple = [p.lat, p.lon];
       latLngs.push(position);
 
+      let currentIcon;
+      if (p.isBase) {
+        currentIcon = homeIcon;
+      } else {
+        const isReached = p.flightCount > 0;
+        const isScheduledOnly = !isReached && (p.draftFlightCount && p.draftFlightCount > 0);
+        
+        // Colore verde chiaro per raggiunte (#4ade80), azzurro per programmate (#38bdf8), rosso per default (#e05e5e)
+        const bgColor = isReached ? "#4ade80" : (isScheduledOnly ? "#38bdf8" : "#e05e5e");
+
+        currentIcon = L.divIcon({
+          html: `
+            <div style="
+              background-color: ${bgColor};
+              width: 28px;
+              height: 28px;
+              border-radius: 50%;
+              border: 2px solid white;
+              box-shadow: 0 3px 8px rgba(20, 32, 51, 0.2);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-size: 14px;
+              cursor: pointer;
+              transition: transform 0.2s ease;
+            "
+            onmouseover="this.style.transform='scale(1.15)'"
+            onmouseout="this.style.transform='scale(1)'"
+            >
+              📍
+            </div>
+          `,
+          className: "custom-pin-marker",
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+          popupAnchor: [0, -14],
+        });
+      }
+
       const marker = L.marker(position, {
-        icon: p.isBase ? homeIcon : pinIcon,
+        icon: currentIcon,
         title: p.name,
       }).addTo(map);
 
       // Definisci il contenuto del popup
-      const popupContent = p.isBase
-        ? `
+      let popupContent = "";
+      if (p.isBase) {
+        popupContent = `
           <div style="font-family: sans-serif; padding: 4px; color: var(--text, #142033); min-width: 180px;">
             <h4 style="margin: 0 0 8px 0; font-size: 1rem; color: var(--primary, #1f6f5b); border-bottom: 1px solid var(--border, #d9e0ea); padding-bottom: 4px;">
               🏠 Base Operativa
@@ -167,26 +182,12 @@ export default function FlightMapInner({ points, routes, onEditPlace }: FlightMa
               <span style="color: var(--muted, #60708a);">Numero voli:</span>
               <strong>${p.flightCount}</strong>
             </div>
-            <button class="edit-location-btn" data-place-name="${p.name}" style="background: none; border: none; color: var(--primary, #1f6f5b); text-decoration: underline; font-size: 0.82rem; padding: 0; margin-top: 8px; cursor: pointer; display: block; text-align: left; font-family: inherit;">
-              ✏️ Modifica posizione
-            </button>
-          </div>
-        `
-        : `
-          <div style="font-family: sans-serif; padding: 4px; color: var(--text, #142033); min-width: 180px;">
-            <h4 style="margin: 0 0 8px 0; font-size: 1rem; color: #b42318; border-bottom: 1px solid var(--border, #d9e0ea); padding-bottom: 4px;">
-              📍 Destinazione Visitata
-            </h4>
-            <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 8px;">${p.name}</div>
-            <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 8px;">
-              <span style="color: var(--muted, #60708a);">Numero voli:</span>
-              <strong>${p.flightCount}</strong>
-            </div>
             ${
-              p.lastVisit
+              p.draftFlightCount && p.draftFlightCount > 0
                 ? `
-              <div style="font-size: 0.8rem; color: var(--muted, #60708a); border-top: 1px dashed var(--border, #d9e0ea); padding-top: 6px; margin-top: 4px; margin-bottom: 8px;">
-                Ultima visita: ${p.lastVisit}
+              <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 8px;">
+                <span style="color: var(--muted, #60708a);">Voli programmati:</span>
+                <strong>${p.draftFlightCount}</strong>
               </div>
             `
                 : ""
@@ -196,6 +197,63 @@ export default function FlightMapInner({ points, routes, onEditPlace }: FlightMa
             </button>
           </div>
         `;
+      } else {
+        const isReached = p.flightCount > 0;
+        const isScheduledOnly = !isReached && (p.draftFlightCount && p.draftFlightCount > 0);
+
+        if (isScheduledOnly) {
+          popupContent = `
+            <div style="font-family: sans-serif; padding: 4px; color: var(--text, #142033); min-width: 180px;">
+              <h4 style="margin: 0 0 8px 0; font-size: 1rem; color: #0284c7; border-bottom: 1px solid var(--border, #d9e0ea); padding-bottom: 4px;">
+                ✈️ Destinazione Programmata
+              </h4>
+              <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 8px;">${p.name}</div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 8px;">
+                <span style="color: var(--muted, #60708a);">Voli programmati:</span>
+                <strong>${p.draftFlightCount}</strong>
+              </div>
+              <button class="edit-location-btn" data-place-name="${p.name}" style="background: none; border: none; color: var(--primary, #1f6f5b); text-decoration: underline; font-size: 0.82rem; padding: 0; margin-top: 8px; cursor: pointer; display: block; text-align: left; font-family: inherit;">
+                ✏️ Modifica posizione
+              </button>
+            </div>
+          `;
+        } else {
+          popupContent = `
+            <div style="font-family: sans-serif; padding: 4px; color: var(--text, #142033); min-width: 180px;">
+              <h4 style="margin: 0 0 8px 0; font-size: 1rem; color: #16a34a; border-bottom: 1px solid var(--border, #d9e0ea); padding-bottom: 4px;">
+                📍 Destinazione Visitata
+              </h4>
+              <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 8px;">${p.name}</div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 8px;">
+                <span style="color: var(--muted, #60708a);">Numero voli:</span>
+                <strong>${p.flightCount}</strong>
+              </div>
+              ${
+                p.draftFlightCount && p.draftFlightCount > 0
+                  ? `
+                <div style="display: flex; justify-content: space-between; font-size: 0.88rem; margin-bottom: 8px;">
+                  <span style="color: var(--muted, #60708a);">Voli programmati:</span>
+                  <strong>${p.draftFlightCount}</strong>
+                </div>
+              `
+                  : ""
+              }
+              ${
+                p.lastVisit
+                  ? `
+                <div style="font-size: 0.8rem; color: var(--muted, #60708a); border-top: 1px dashed var(--border, #d9e0ea); padding-top: 6px; margin-top: 4px; margin-bottom: 8px;">
+                  Ultima visita: ${p.lastVisit}
+                </div>
+              `
+                  : ""
+              }
+              <button class="edit-location-btn" data-place-name="${p.name}" style="background: none; border: none; color: var(--primary, #1f6f5b); text-decoration: underline; font-size: 0.82rem; padding: 0; margin-top: 8px; cursor: pointer; display: block; text-align: left; font-family: inherit;">
+                ✏️ Modifica posizione
+              </button>
+            </div>
+          `;
+        }
+      }
 
       marker.bindPopup(popupContent);
     });
@@ -216,13 +274,13 @@ export default function FlightMapInner({ points, routes, onEditPlace }: FlightMa
         [r.toCoords.lat, r.toCoords.lon],
       ];
 
-      // Lo spessore varia in base al numero di voli effettuati su quella rotta (spessore base aumentato a 4.0)
-      const weight = 4.0 + Math.min(6.0, r.count * 0.75);
-
+      // Se la rotta è solo pianificata, usiamo una linea azzurra tratteggiata
+      const isDraftRoute = !!r.isDraft;
       const polyline = L.polyline(path, {
-        color: "#e6007e",
-        weight: weight,
-        opacity: 1.0,
+        color: isDraftRoute ? "#38bdf8" : "#e6007e",
+        weight: isDraftRoute ? 3.5 : 4.0 + Math.min(6.0, r.count * 0.75),
+        opacity: isDraftRoute ? 0.85 : 1.0,
+        dashArray: isDraftRoute ? "6, 8" : undefined,
         lineCap: "round",
         lineJoin: "round",
       }).addTo(map);
@@ -232,7 +290,10 @@ export default function FlightMapInner({ points, routes, onEditPlace }: FlightMa
         `
         <div style="font-family: sans-serif; font-size: 0.85rem; padding: 2px; color: #142033;">
           Rotta: <strong>${r.from}</strong> ⇄ <strong>${r.to}</strong><br/>
-          Voli effettuati: <strong>${r.count}</strong>
+          ${isDraftRoute 
+            ? `Voli programmati: <strong>${r.draftCount || 1}</strong>`
+            : `Voli effettuati: <strong>${r.count}</strong>${r.draftCount && r.draftCount > 0 ? `<br/>Voli programmati: <strong>${r.draftCount}</strong>` : ""}`
+          }
         </div>
       `,
         {
