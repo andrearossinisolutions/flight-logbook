@@ -1380,7 +1380,13 @@ function dashboardItem(item: any, movements: any[] = [], isFutureMovement = fals
             </div>
             {(item.flight?.takeoffPlace != null || item.flight?.arrivalPlace != null) &&
               <div className={isFutureMovement ? "future-movement" : undefined}>
-                🛫 {item.flight?.takeoffPlace ?? "?"} · 🛬 {item.flight?.arrivalPlace ?? "?"}
+                🛫 {item.flight?.takeoffPlace ?? "?"}
+                {item.flight?.intermediatePlaces &&
+                  item.flight.intermediatePlaces.split(",").map((s: string, idx: number) => (
+                    <span key={idx}> · 📍 {s.trim()}</span>
+                  ))
+                }
+                {" · 🛬 "}{item.flight?.arrivalPlace ?? "?"}
               </div>
             }
           </div>

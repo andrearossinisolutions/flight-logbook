@@ -53,6 +53,7 @@ function buildInitialValues(
     aircraftType: initialValues?.aircraftType ?? "P92",
     takeoffPlace: initialValues?.takeoffPlace ?? "",
     arrivalPlace: initialValues?.arrivalPlace ?? "",
+    intermediatePlaces: initialValues?.intermediatePlaces ?? "",
     engineOn: initialValues?.engineOn ?? "",
     engineOff: initialValues?.engineOff ?? "",
     passengerName: initialValues?.passengerName ?? "",
@@ -129,6 +130,13 @@ export default function FlightForm({
 
   const [warmupMinutes, setWarmupMinutes] = useState(initial.warmupMinutes);
   const [notes, setNotes] = useState(initial.notes);
+
+  const [tappe, setTappe] = useState<string[]>(() => {
+    if (initialValues?.intermediatePlaces) {
+      return initialValues.intermediatePlaces.split(",").map(s => s.trim()).filter(Boolean);
+    }
+    return [];
+  });
 
   const lastFetchedRegistrationRef = useRef("");
 
@@ -377,43 +385,92 @@ export default function FlightForm({
             </div>
           </div>
 
-          <div className="grid grid-2" style={{ marginTop: "16px" }}>
-            <div className="field">
-              <label htmlFor="takeoffPlace">Luogo decollo</label>
-              <input
-                className="input"
-                id="takeoffPlace"
-                name="takeoffPlace"
-                list="visitedPlacesList"
-                value={takeoffPlace}
-                onChange={(e) => setTakeoffPlace(e.target.value)}
-                placeholder="Es. Dovera"
-              />
-            </div>
-
-            <div className="field">
-              <label htmlFor="arrivalPlace">Luogo arrivo</label>
-              <div className="input-action">
+          <div style={{ marginTop: "16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div className="grid grid-2">
+              <div className="field">
+                <label htmlFor="takeoffPlace">Luogo decollo</label>
                 <input
                   className="input"
-                  id="arrivalPlace"
-                  name="arrivalPlace"
+                  id="takeoffPlace"
+                  name="takeoffPlace"
                   list="visitedPlacesList"
-                  value={arrivalPlace}
-                  onChange={(e) => setArrivalPlace(e.target.value)}
+                  value={takeoffPlace}
+                  onChange={(e) => setTakeoffPlace(e.target.value)}
                   placeholder="Es. Dovera"
                 />
-                <button
-                  className="btn secondary icon-btn"
-                  type="button"
-                  onClick={() => setArrivalPlace(takeoffPlace)}
-                  aria-label="Copia il luogo di decollo nell'arrivo"
-                  title="Volo locale"
-                >
-                  <CopyArrowIcon size={18} />
-                </button>
+              </div>
+
+              <div className="field">
+                <label htmlFor="arrivalPlace">Luogo arrivo</label>
+                <div className="input-action">
+                  <input
+                    className="input"
+                    id="arrivalPlace"
+                    name="arrivalPlace"
+                    list="visitedPlacesList"
+                    value={arrivalPlace}
+                    onChange={(e) => setArrivalPlace(e.target.value)}
+                    placeholder="Es. Dovera"
+                  />
+                  <button
+                    className="btn secondary icon-btn"
+                    type="button"
+                    onClick={() => setArrivalPlace(takeoffPlace)}
+                    aria-label="Copia il luogo di decollo nell'arrivo"
+                    title="Volo locale"
+                  >
+                    <CopyArrowIcon size={18} />
+                  </button>
+                </div>
               </div>
             </div>
+
+            {/* Tappe Intermedie */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", border: "1px solid var(--border)", borderRadius: "12px", padding: "16px", background: "var(--bg, rgba(0,0,0,0.02))" }}>
+              <label style={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--text)" }}>📍 Tappe Intermedie</label>
+              {tappe.length === 0 ? (
+                <span className="muted" style={{ fontSize: "0.85rem" }}>Nessuna tappa intermedia inserita.</span>
+              ) : null}
+              {tappe.map((tappa, idx) => (
+                <div key={idx} className="row" style={{ gap: "8px", alignItems: "center" }}>
+                  <span style={{ fontSize: "0.85rem", color: "var(--muted)", minWidth: "60px" }}>Tappa {idx + 1}:</span>
+                  <input
+                    className="input"
+                    type="text"
+                    list="visitedPlacesList"
+                    value={tappa}
+                    onChange={(e) => {
+                      const newTappe = [...tappe];
+                      newTappe[idx] = e.target.value;
+                      setTappe(newTappe);
+                    }}
+                    placeholder="Es. Linate"
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    className="btn secondary"
+                    type="button"
+                    onClick={() => {
+                      const newTappe = tappe.filter((_, i) => i !== idx);
+                      setTappe(newTappe);
+                    }}
+                    style={{ padding: "8px 12px", height: "auto", fontSize: "0.85rem", color: "var(--danger)", borderColor: "var(--danger)" }}
+                  >
+                    Rimuovi
+                  </button>
+                </div>
+              ))}
+              <button
+                className="btn secondary"
+                type="button"
+                onClick={() => setTappe([...tappe, ""])}
+                style={{ alignSelf: "flex-start", padding: "6px 12px", height: "auto", fontSize: "0.85rem", marginTop: "4px" }}
+              >
+                ➕ Aggiungi Tappa
+              </button>
+            </div>
+
+            <input type="hidden" name="intermediatePlaces" value={tappe.filter(t => t.trim() !== "").join(",")} />
           </div>
 
           <datalist id="visitedPlacesList">

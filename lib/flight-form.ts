@@ -10,6 +10,7 @@ export type FlightFormValues = {
   aircraftType: string;
   takeoffPlace: string;
   arrivalPlace: string;
+  intermediatePlaces: string;
   engineOn: string;
   engineOff: string;
   passengerName: string;
@@ -73,6 +74,7 @@ export function parseFlightFormData(formData: FormData) {
     String(formData.get("aircraftType") ?? "P92").trim() || "P92";
   const takeoffPlaceRaw = String(formData.get("takeoffPlace") ?? "").trim();
   const arrivalPlaceRaw = String(formData.get("arrivalPlace") ?? "").trim();
+  const intermediatePlacesRaw = String(formData.get("intermediatePlaces") ?? "").trim();
   const engineOn = parseOptionalDateTime(
     formData.get("engineOn"),
     "L'ora motore acceso"
@@ -180,6 +182,7 @@ export function parseFlightFormData(formData: FormData) {
     aircraftType,
     takeoffPlace: takeoffPlaceRaw || null,
     arrivalPlace: arrivalPlaceRaw || null,
+    intermediatePlaces: intermediatePlacesRaw || null,
     engineOn,
     engineOff,
     inputMode,
@@ -209,6 +212,7 @@ export function buildFlightInitialValues(args: {
     aircraftType: string | null;
     takeoffPlace: string | null;
     arrivalPlace: string | null;
+    intermediatePlaces?: string | null;
     engineOn: Date | null;
     engineOff: Date | null;
     passengerName: string | null;
@@ -237,6 +241,7 @@ export function buildFlightInitialValues(args: {
     aircraftType: flight.aircraftType ?? "P92",
     takeoffPlace: flight.takeoffPlace ?? "",
     arrivalPlace: flight.arrivalPlace ?? "",
+    intermediatePlaces: flight.intermediatePlaces ?? "",
     engineOn: formatDateTimeInput(flight.engineOn),
     engineOff: formatDateTimeInput(flight.engineOff),
     passengerName: flight.passengerName ?? "",

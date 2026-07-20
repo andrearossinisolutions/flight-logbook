@@ -100,10 +100,16 @@ export default async function MapPage() {
 
     const dep = m.flight.takeoffPlace ? m.flight.takeoffPlace.trim().toUpperCase() : "";
     const arr = m.flight.arrivalPlace ? m.flight.arrivalPlace.trim().toUpperCase() : "";
+    const inter = m.flight.intermediatePlaces
+      ? m.flight.intermediatePlaces.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean)
+      : [];
 
     // Calcoliamo i luoghi unici coinvolti in questo volo
     const places = new Set<string>();
     if (dep) places.add(dep);
+    for (const p of inter) {
+      places.add(p);
+    }
     if (arr) places.add(arr);
 
     places.forEach((place) => {
@@ -187,32 +193,46 @@ export default async function MapPage() {
     if (!m.flight) return;
     const dep = m.flight.takeoffPlace ? m.flight.takeoffPlace.trim().toUpperCase() : "";
     const arr = m.flight.arrivalPlace ? m.flight.arrivalPlace.trim().toUpperCase() : "";
+    const inter = m.flight.intermediatePlaces
+      ? m.flight.intermediatePlaces.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean)
+      : [];
 
-    if (dep && arr && dep !== arr) {
-      const depCoords = coordsMap.get(dep);
-      const arrCoords = coordsMap.get(arr);
+    const pathPlaces = [
+      dep,
+      ...inter,
+      arr
+    ].filter(Boolean);
 
-      if (depCoords && arrCoords) {
-        // Consideriamo la rotta come bidirezionale (ordinando alfabeticamente)
-        const key = [dep, arr].sort().join("-");
-        const existing = routesMap.get(key);
-        if (existing) {
-          if (m.isDraft) {
-            existing.draftCount += 1;
+    for (let i = 0; i < pathPlaces.length - 1; i++) {
+      const fromPlace = pathPlaces[i];
+      const toPlace = pathPlaces[i + 1];
+
+      if (fromPlace && toPlace && fromPlace !== toPlace) {
+        const fromCoords = coordsMap.get(fromPlace);
+        const toCoords = coordsMap.get(toPlace);
+
+        if (fromCoords && toCoords) {
+          // Consideriamo la rotta come bidirezionale (ordinando alfabeticamente)
+          const key = [fromPlace, toPlace].sort().join("-");
+          const existing = routesMap.get(key);
+          if (existing) {
+            if (m.isDraft) {
+              existing.draftCount += 1;
+            } else {
+              existing.count += 1;
+              existing.isDraft = false; // Se c'è almeno un volo reale, non è bozza-only
+            }
           } else {
-            existing.count += 1;
-            existing.isDraft = false; // Se c'è almeno un volo reale, non è bozza-only
+            routesMap.set(key, {
+              from: fromPlace,
+              to: toPlace,
+              fromCoords: fromCoords,
+              toCoords: toCoords,
+              count: m.isDraft ? 0 : 1,
+              draftCount: m.isDraft ? 1 : 0,
+              isDraft: m.isDraft,
+            });
           }
-        } else {
-          routesMap.set(key, {
-            from: dep,
-            to: arr,
-            fromCoords: depCoords,
-            toCoords: arrCoords,
-            count: m.isDraft ? 0 : 1,
-            draftCount: m.isDraft ? 1 : 0,
-            isDraft: m.isDraft,
-          });
         }
       }
     }

@@ -94,7 +94,7 @@ export default async function PrintLogbookPage() {
                 </td>
                 <td>
                   { (item.flight?.takeoffPlace != null || item.flight?.arrivalPlace != null) &&
-                    <>{item.flight?.takeoffPlace ?? "?"}</> }<br />
+                    <>{item.flight?.takeoffPlace ?? "?"}{item.flight?.intermediatePlaces ? ` ➔ ${item.flight.intermediatePlaces.split(',').map(s => s.trim()).join(' ➔ ')}` : ""}</> }<br />
                   { (item.flight?.durationMinutes != null) &&
                     <>
                       {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}

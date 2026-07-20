@@ -40,6 +40,7 @@ export async function POST(request: Request) {
     String(formData.get("aircraftType") ?? "P92").trim() || "P92";
   const takeoffPlace = String(formData.get("takeoffPlace") ?? "").trim() || null;
   const arrivalPlace = String(formData.get("arrivalPlace") ?? "").trim() || null;
+  const intermediatePlaces = String(formData.get("intermediatePlaces") ?? "").trim() || null;
   const engineOn = parseDateTimeValue(formData.get("engineOn"));
   const engineOff = parseDateTimeValue(formData.get("engineOff"));
 
@@ -175,6 +176,7 @@ export async function POST(request: Request) {
         aircraftType,
         takeoffPlace,
         arrivalPlace,
+        intermediatePlaces,
         engineOn,
         engineOff,
         inputMode,

@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.28.0",
+    "date": "2026-07-20",
+    "commits": [
+      {
+        "hash": "a3e9322",
+        "date": "2026-07-20",
+        "subject": "Added intermediate places"
+      }
+    ]
+  },
+  {
     "version": "1.27.0",
     "date": "2026-07-20",
     "commits": [
       {
-        "hash": "029ae6d",
+        "hash": "464df49",
         "date": "2026-07-20",
         "subject": "Added planned flights to map"
       }

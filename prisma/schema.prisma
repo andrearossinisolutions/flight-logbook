@@ -97,6 +97,7 @@ model Flight {
 
   takeoffPlace          String?
   arrivalPlace          String?
+  intermediatePlaces    String?         // Comma-separated list of intermediate stops
   engineOn              DateTime?
   engineOff             DateTime?
 
