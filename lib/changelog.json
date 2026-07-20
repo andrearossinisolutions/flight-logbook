@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.26.6",
+    "date": "2026-07-20",
+    "commits": [
+      {
+        "hash": "c3e287b",
+        "date": "2026-07-20",
+        "subject": "Fixed booking deletion when adding flight from booking"
+      }
+    ]
+  },
+  {
     "version": "1.26.5",
     "date": "2026-07-16",
     "commits": [
       {
-        "hash": "720495a",
+        "hash": "9941f29",
         "date": "2026-07-16",
         "subject": "Added weekend meteo to briefing page"
       }

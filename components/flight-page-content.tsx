@@ -205,20 +205,6 @@ export default async function FlightPageContent(
             partnershipAircraftId: partnershipAircraft ? partnershipAircraft.id : null,
           },
         });
-
-        if (bookingId) {
-          const b = await tx.partnershipBooking.findFirst({
-            where: {
-              id: bookingId,
-              userId: user.id
-            }
-          });
-          if (b) {
-            await tx.partnershipBooking.delete({
-              where: { id: bookingId }
-            });
-          }
-        }
       });
     } else {
       const movementId = String(formData.get("movementId") ?? "");
