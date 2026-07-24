@@ -172,9 +172,9 @@ export function medicalExamRemaining(medicalExamDate: Date) {
   var days = totDays - years * 365 - months * 30;
 
   if (years > 0)
-    return `${years > 1 ? years + " anni" : "1 anno"} e ${months > 1 ? months + " mesi" : "1 mese"}`;
+    return `${years}a e ${months}m`;
 
-  return `${months > 1 ? months + " mesi" : "1 mese"} e ${days > 1 ? days + " giorni" : "1 giorno"}`;
+  return `${months}m e ${days}g`;
 }
 
 function startOfLocalDay(date: Date | string) {
