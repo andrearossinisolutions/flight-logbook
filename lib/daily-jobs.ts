@@ -24,6 +24,7 @@ import {
   formatWind,
   formatVisibilityKm,
   decodeWeatherString,
+  getCoordinatesFromName,
 } from "@/lib/weather";
 
 
@@ -1231,16 +1232,13 @@ function getDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): 
   return R * c;
 }
 
-export function getAirportsWithinRadius(baseIcao: string, radiusKm = 100) {
-  const baseApt = ITALIAN_AIRPORTS[baseIcao.toUpperCase()];
-  if (!baseApt) return [];
-
+export function getAirportsWithinRadiusOfCoords(baseLat: number, baseLon: number, radiusKm = 100, excludeIcao?: string) {
   const list = [];
   for (const [icao, apt] of Object.entries(ITALIAN_AIRPORTS)) {
-    if (icao.toUpperCase() === baseIcao.toUpperCase()) {
+    if (excludeIcao && icao.toUpperCase() === excludeIcao.toUpperCase()) {
       continue;
     }
-    const dist = getDistanceKm(baseApt.lat, baseApt.lon, apt.lat, apt.lon);
+    const dist = getDistanceKm(baseLat, baseLon, apt.lat, apt.lon);
     if (dist <= radiusKm) {
       list.push({
         icao,
@@ -1253,6 +1251,13 @@ export function getAirportsWithinRadius(baseIcao: string, radiusKm = 100) {
   }
   list.sort((a, b) => a.distanceKm - b.distanceKm);
   return list;
+}
+
+export function getAirportsWithinRadius(baseIcao: string, radiusKm = 100) {
+  const baseApt = ITALIAN_AIRPORTS[baseIcao.toUpperCase()];
+  if (!baseApt) return [];
+
+  return getAirportsWithinRadiusOfCoords(baseApt.lat, baseApt.lon, radiusKm, baseIcao);
 }
 
 export function getWeekendDates(referenceDate: Date) {
@@ -1578,15 +1583,31 @@ export async function sendWeekendWeatherDigest(now = new Date()) {
     });
     if (alreadySent) continue;
 
-    const baseApt = ITALIAN_AIRPORTS[baseIcao.toUpperCase()];
-    if (!baseApt) continue;
+    let baseName: string;
+    let baseLat: number;
+    let baseLon: number;
+
+    const knownApt = ITALIAN_AIRPORTS[baseIcao.toUpperCase()];
+    if (knownApt) {
+      baseName = knownApt.name;
+      baseLat = knownApt.lat;
+      baseLon = knownApt.lon;
+    } else {
+      // Base non è un codice ICAO noto (es. campo di volo privato inserito come testo libero):
+      // proviamo a geocodificarlo, come già fatto per il briefing meteo manuale.
+      const coords = await getCoordinatesFromName(baseIcao);
+      if (!coords) continue;
+      baseName = baseIcao;
+      baseLat = coords.lat;
+      baseLon = coords.lon;
+    }
 
     // Recupera meteo base
-    const baseWeather = await fetchWeekendWeather(baseApt.lat, baseApt.lon, { friday, saturday, sunday });
+    const baseWeather = await fetchWeekendWeather(baseLat, baseLon, { friday, saturday, sunday });
     if (!baseWeather) continue;
 
     // Trova aeroporti entro 100km (max 4)
-    const nearby = getAirportsWithinRadius(baseIcao, 100).slice(0, 4);
+    const nearby = getAirportsWithinRadiusOfCoords(baseLat, baseLon, 100, knownApt ? baseIcao : undefined).slice(0, 4);
     const nearbyWeather = [];
     for (const apt of nearby) {
       const weather = await fetchWeekendWeather(apt.lat, apt.lon, { friday, saturday, sunday });
@@ -1603,7 +1624,7 @@ export async function sendWeekendWeatherDigest(now = new Date()) {
     const email = buildWeekendWeatherDigestEmail({
       user,
       baseIcao,
-      baseName: baseApt.name,
+      baseName,
       baseWeather,
       nearbyWeather,
       dates: { friday, saturday, sunday },
