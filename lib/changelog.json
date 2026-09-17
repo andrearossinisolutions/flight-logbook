@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.28.3",
+    "date": "2026-09-17",
+    "commits": [
+      {
+        "hash": "0899533",
+        "date": "2026-09-17",
+        "subject": "Simplified \"Ultimi utilizzi\" partnership card"
+      }
+    ]
+  },
+  {
     "version": "1.28.2",
     "date": "2026-09-17",
     "commits": [
       {
-        "hash": "34270de",
+        "hash": "c9b6e00",
         "date": "2026-09-17",
         "subject": "Improved texts"
       }

@@ -821,26 +821,10 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                         </div>
                         
                         <div style={{ fontSize: "0.85rem", color: "var(--muted)", marginBottom: 8, display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
-                          <span>🛫 {flight.takeoffPlace || "?"} 🛬 {flight.arrivalPlace || "?"}</span>
-                          <span style={{ color: "var(--border)" }}>•</span>
                           <span>⏱️ {formatMinutes(flight.durationMinutes)}</span>
-                          {(() => {
-                            const orametro = getFlightOrametro(flight);
-                            if (!orametro) return null;
-                            return (
-                              <>
-                                <span style={{ color: "var(--border)" }}>•</span>
-                                <span>Oram.: {formatHoursToHHMM(orametro.start)} ➔ {formatHoursToHHMM(orametro.end)}</span>
-                              </>
-                            );
-                          })()}
+                          <span style={{ color: "var(--border)" }}>•</span>
+                          <span>🛫 {flight.takeoffPlace || "?"} 🛬 {flight.arrivalPlace || "?"}</span>
                         </div>
-
-                        {(flight.instructorName || flight.passengerName) && (
-                          <div style={{ fontSize: "0.8rem", color: "var(--muted)", marginBottom: 8 }}>
-                            {flight.instructorName ? `👨‍✈️ Istr. ${flight.instructorName}` : `👤 Pass. ${flight.passengerName}`}
-                          </div>
-                        )}
                       </div>
 
                       {flight.movement.notes && (
