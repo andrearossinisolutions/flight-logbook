@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.28.4",
+    "date": "2026-09-17",
+    "commits": [
+      {
+        "hash": "ee03337",
+        "date": "2026-09-17",
+        "subject": "Simplified data; Added total hours to print page; Fixed top bar logged out state"
+      }
+    ]
+  },
+  {
     "version": "1.28.3",
     "date": "2026-09-17",
     "commits": [
       {
-        "hash": "0899533",
+        "hash": "db07a4a",
         "date": "2026-09-17",
         "subject": "Simplified \"Ultimi utilizzi\" partnership card"
       }

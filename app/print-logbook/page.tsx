@@ -24,9 +24,19 @@ export default async function PrintLogbookPage() {
     orderBy: [{ date: "asc" }, { createdAt: "asc" }],
   });
 
+  const totalInstructorMinutes = flights.reduce(
+    (acc, item) => acc + (item.flight?.instructorMinutes ?? 0),
+    0
+  );
+
+  const totalPICMinutes = flights.reduce(
+    (acc, item) => acc + (item.flight?.durationMinutes ?? 0) - (item.flight?.instructorMinutes ?? 0),
+    0
+  );
+
   return (
     <>
-      <Navbar />
+      <Navbar isLoggedIn={true} />
       <main className="container print-page" style={{ paddingTop: 8 }}>
         <div className="between no-print" style={{ marginBottom: 24, alignItems: "flex-start" }}>
           <div>
@@ -49,8 +59,12 @@ export default async function PrintLogbookPage() {
             </div>
           </div>
           <div className="muted" style={{ textAlign: "right" }}>
-            <div>Totale voli: {flights.length}</div>
-            <div>Generato il {formatDateDisplay(new Date())} {formatTimeDisplay(new Date())}</div>
+            <div>Ore PiC: {minutesToHoursMinutes(totalPICMinutes)}</div>
+            <div>Ore con Istruttore: {minutesToHoursMinutes(totalInstructorMinutes)}</div>
+          </div>
+          <div className="muted" style={{ textAlign: "right" }}>
+            <div>Generato il {formatDateDisplay(new Date())}</div>
+            <div>ore {formatTimeDisplay(new Date())}</div>
           </div>
         </div>
 
@@ -88,9 +102,7 @@ export default async function PrintLogbookPage() {
                   { (item.flight?.takeoffPlace != null || item.flight?.arrivalPlace != null) &&
                     <>Rotta:</> }<br />
                   {item.flight?.durationMinutes != null &&
-                    <>Durata:</> }<br />
-                  { (item.flight?.engineOn != null || item.flight?.engineOff != null) &&
-                    <>Motore:</> }
+                    <>Durata:</> }
                 </td>
                 <td>
                   { (item.flight?.takeoffPlace != null || item.flight?.arrivalPlace != null) &&
@@ -98,20 +110,13 @@ export default async function PrintLogbookPage() {
                   { (item.flight?.durationMinutes != null) &&
                     <>
                       {minutesToHoursMinutes(item.flight?.durationMinutes ?? 0)}
-                      { (item.flight?.hobbsStartMinutes != null || item.flight?.hobbsEndMinutes != null) &&
-                        <> (hobbs: {formatOptionalHobbs(item.flight?.hobbsStartMinutes)} ➔ {formatOptionalHobbs(item.flight?.hobbsEndMinutes)})</> }
-                    </> }<br />
-                  
-                  { (item.flight?.engineOn != null || item.flight?.engineOff != null) &&
-                    <>{formatOptionalDateTime(item.flight?.engineOn)}</> }
+                    </> }
                 </td>
                 <td>
                   { (item.flight?.arrivalPlace != null || item.flight?.engineOff != null) &&
                     <>➔ {item.flight?.arrivalPlace ?? "?"}</> }<br />
                   { (item.flight?.durationMinutes != null) &&
-                    <></> }<br />
-                  { (item.flight?.engineOff != null) &&
-                    <>➔ {formatOptionalDateTime(item.flight?.engineOff)}</> }
+                    <></> }
                 </td>
                 <td>
                   {item.flight?.instructorName && item.flight?.instructorMinutes > 0 ? (
@@ -144,8 +149,6 @@ function flightType(flight: any, short = false) {
     return "Lezione";
   } else if (flight.instructorMinutes > 0 && flight.instructorMinutes < flight.durationMinutes) {
     return isPartnership ? <>Volo Società<br />con lezione</> : <>Noleggio<br />con lezione</>;
-  } else if (flight.passengerName) {
-    return isPartnership ? <>Volo Società<br />con passeggero</> : <>Noleggio<br />con passeggero</>;
   }
   return isPartnership ? "Volo Società" : "Noleggio";
 }
@@ -153,9 +156,4 @@ function flightType(flight: any, short = false) {
 function formatOptionalDateTime(date: Date | null | undefined) {
   if (!date) return "—";
   return `${formatDateDisplay(date)} ${formatTimeDisplay(date)}`;
-}
-
-function formatOptionalHobbs(value: number | null | undefined) {
-  if (value == null) return "—";
-  return minutesToHoursMinutes(value);
 }
