@@ -953,11 +953,11 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             </div>
           </div>
 
-          {/* Card: Documenti Aerei */}
+          {/* Card: Documentazione */}
             <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div>
                 <h2 style={{ marginTop: 0, marginBottom: 8, fontSize: "1.25rem", display: "flex", alignItems: "center", gap: 8 }}>
-                  📄 Documenti Aerei
+                  📄 Documentazione
                 </h2>
                 <p className="muted" style={{ margin: 0, fontSize: "0.9rem" }}>
                   Documenti e manuali dei velivoli societari.
@@ -2969,15 +2969,15 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                   </div>
                                 )}
 
-                                 {/* 📄 Documenti Velivolo */}
+                                 {/* 📄 Documentazione */}
                                  <div style={{ marginTop: 16, borderTop: "1px solid var(--border)", paddingTop: 16 }}>
                                    <div style={{ fontWeight: 600, fontSize: "0.95rem", color: "var(--primary-strong)", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
-                                     <span>📄 Documenti Velivolo ({a.registration})</span>
+                                     <span>📄 Documentazione {a.registration}</span>
                                    </div>
 
                                    {(!a.documents || a.documents.length === 0) ? (
                                      <div className="muted" style={{ fontSize: "0.85rem", fontStyle: "italic", marginBottom: 12 }}>
-                                       Nessun documento allegato a questo aereo.
+                                       Ancora nessun documento caricato per questo aereo.
                                      </div>
                                    ) : (
                                      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
@@ -3436,7 +3436,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                 </label>
               </div>
               <p className="muted" style={{ fontSize: "0.8rem", marginTop: -8, marginLeft: 28, lineHeight: 1.4 }}>
-                Se attivato, il saldo della cassa comune verrà nascosto e il rendiconto mensile calcolerà i trasferimenti diretti necessari tra i soci per pareggiare le spese sostenute.
+                Se spuntato, il saldo della cassa comune verrà nascosto e il rendiconto mensile calcolerà i trasferimenti diretti necessari tra i soci per pareggiare le spese sostenute.
               </p>
 
               <SubmitButton style={{ marginTop: 4 }}>

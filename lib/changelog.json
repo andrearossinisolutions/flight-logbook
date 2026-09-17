@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.28.2",
+    "date": "2026-09-17",
+    "commits": [
+      {
+        "hash": "34270de",
+        "date": "2026-09-17",
+        "subject": "Improved texts"
+      }
+    ]
+  },
+  {
     "version": "1.28.1",
     "date": "2026-07-24",
     "commits": [
       {
-        "hash": "5031405",
+        "hash": "8b89e04",
         "date": "2026-07-24",
         "subject": "Shortened medicalExamRemaining"
       }
