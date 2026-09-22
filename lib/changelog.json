@@ -1,10 +1,31 @@
 [
   {
+    "version": "1.28.7",
+    "date": "2026-09-22",
+    "commits": [
+      {
+        "hash": "db7f6a9",
+        "date": "2026-09-22",
+        "subject": "Integrated booking into new-flight/edit-flight page"
+      },
+      {
+        "hash": "b119131",
+        "date": "2026-09-22",
+        "subject": "Split logbook new flight action in aggiungi volo passato + pianifica volo"
+      },
+      {
+        "hash": "3b49779",
+        "date": "2026-09-22",
+        "subject": "Added already booked error"
+      }
+    ]
+  },
+  {
     "version": "1.28.6",
     "date": "2026-09-22",
     "commits": [
       {
-        "hash": "428a303",
+        "hash": "f9dd2d0",
         "date": "2026-09-22",
         "subject": "Fixed redirect to partnership dashboard after flight saving"
       }

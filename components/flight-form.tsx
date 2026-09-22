@@ -295,6 +295,46 @@ export default function FlightForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date, durationMinutes, bookingAllDay, bookingTimesTouched, hasLinkedBooking]);
 
+  const [bookingOverlap, setBookingOverlap] = useState<{
+    startTime: string;
+    endTime: string;
+    notes: string | null;
+    userName: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!bookingSectionChecked || !isPartnershipAircraft || !bookingStartTime || !bookingEndTime) {
+      setBookingOverlap(null);
+      return;
+    }
+
+    let active = true;
+    const timeoutId = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({
+          aircraftId: isPartnershipAircraft.id,
+          start: bookingStartTime,
+          end: bookingEndTime,
+        });
+        if (bookingId) {
+          params.set("excludeBookingId", bookingId);
+        }
+        const res = await fetch(`/api/partnership-bookings/check-overlap?${params.toString()}`);
+        if (!res.ok || !active) return;
+        const data = await res.json();
+        if (!active) return;
+        setBookingOverlap(data.overlapping ?? null);
+      } catch (err) {
+        console.error("Failed to check booking overlap:", err);
+      }
+    }, 400);
+
+    return () => {
+      active = false;
+      clearTimeout(timeoutId);
+    };
+  }, [bookingSectionChecked, isPartnershipAircraft, bookingStartTime, bookingEndTime, bookingId]);
+
   const configuredRentalAircraft = useMemo(() => {
     return rentalAircrafts.find(a => a.registration === aircraftRegistration);
   }, [rentalAircrafts, aircraftRegistration]);
@@ -833,10 +873,6 @@ export default function FlightForm({
             />
           </div>
 
-          {(durationMinutes === 0 || durationMinutes === Number(warmupMinutes || 0) || (instructorMinutesNumber > 0 && instructorMinutesNumber > durationMinutes)) && <div className="error" style={{ marginTop: 16 }}>
-            <span>Imposta una durata valida.</span>
-          </div>}
-
           {(isPartnershipAircraft || hasLinkedBooking) && (
             <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12, border: "1px solid var(--border)", borderRadius: 12, padding: 16 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
@@ -905,11 +941,34 @@ export default function FlightForm({
                   </div>
                 </div>
               )}
+
+              {bookingSectionChecked && bookingOverlap && (
+                <div className="error">
+                  <span>
+                    ⚠️ L&apos;aereo è già prenotato da <strong>{bookingOverlap.userName}</strong> in questa fascia oraria:
+                    <br />
+                    Dal {new Date(bookingOverlap.startTime).toLocaleString("it-IT")} al {new Date(bookingOverlap.endTime).toLocaleString("it-IT")}
+                    {bookingOverlap.notes ? <>
+                      <br />
+                      Note: <i>{bookingOverlap.notes}</i>
+                    </> : null}
+                  </span>
+                </div>
+              )}
             </div>
           )}
 
+          {(durationMinutes === 0 || durationMinutes === Number(warmupMinutes || 0) || (instructorMinutesNumber > 0 && instructorMinutesNumber > durationMinutes)) && <div className="error" style={{ marginTop: 16 }}>
+            <span>Imposta una durata valida.</span>
+          </div>}
+
           <div className="row" style={{ gap: 12, marginTop: "16px" }}>
-            <SubmitButton disabled={durationMinutes === 0 || durationMinutes === Number(warmupMinutes || 0) || (instructorMinutesNumber > 0 && instructorMinutesNumber > durationMinutes)}>
+            <SubmitButton disabled={
+              durationMinutes === 0 ||
+              durationMinutes === Number(warmupMinutes || 0) ||
+              (instructorMinutesNumber > 0 && instructorMinutesNumber > durationMinutes) ||
+              (bookingSectionChecked && !!bookingOverlap)
+            }>
               {effectiveSubmitLabel}
             </SubmitButton>
 
