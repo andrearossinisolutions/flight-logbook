@@ -262,8 +262,15 @@ export default function FlightForm({
     return { start: formatDateTimeInput(start), end: formatDateTimeInput(end) };
   }
 
+  function isAllDayWindow(startValue: string, endValue: string) {
+    if (!startValue || !endValue) return false;
+    return startValue.endsWith("T00:00") && endValue.endsWith("T23:59");
+  }
+
   const [addBookingChecked, setAddBookingChecked] = useState(true);
-  const [bookingAllDay, setBookingAllDay] = useState(false);
+  const [bookingAllDay, setBookingAllDay] = useState(
+    bookingWindow ? isAllDayWindow(bookingWindow.startTime, bookingWindow.endTime) : false
+  );
   const [bookingTimesTouched, setBookingTimesTouched] = useState(false);
   const [bookingStartTime, setBookingStartTime] = useState(
     bookingWindow?.startTime ?? computeDefaultBookingStart(initial.date)

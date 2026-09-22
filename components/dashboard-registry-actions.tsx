@@ -52,7 +52,15 @@ export function DashboardRegistryActions() {
               onClick={() => setIsOpen(false)}
             >
               <span className="dropdown-item-icon">✈️</span>
-              <span className="dropdown-item-text">Aggiungi volo</span>
+              <span className="dropdown-item-text">Aggiungi volo passato</span>
+            </Link>
+            <Link
+              href={"/new-flight?prefillIsDraft=true" as Route}
+              className="dropdown-item"
+              onClick={() => setIsOpen(false)}
+            >
+              <span className="dropdown-item-icon">📅</span>
+              <span className="dropdown-item-text">Pianifica volo</span>
             </Link>
             <Link
               href="/new-payment"
