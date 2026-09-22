@@ -14,9 +14,14 @@
         "subject": "Split logbook new flight action in aggiungi volo passato + pianifica volo"
       },
       {
-        "hash": "3b49779",
+        "hash": "4c94da7",
         "date": "2026-09-22",
         "subject": "Added already booked error"
+      },
+      {
+        "hash": "fe6e0ee",
+        "date": "2026-09-22",
+        "subject": "Disabled booking handling on past flights"
       }
     ]
   },

@@ -279,7 +279,8 @@ export default function FlightForm({
     bookingWindow?.endTime ?? computeDefaultBookingEnd(initial.date, 0)
   );
 
-  const bookingSectionChecked = hasLinkedBooking ? true : addBookingChecked;
+  const bookingSectionChecked =
+    insertMode === "FUTURE" && (hasLinkedBooking ? true : addBookingChecked);
 
   useEffect(() => {
     if (!bookingAllDay) return;
@@ -873,7 +874,7 @@ export default function FlightForm({
             />
           </div>
 
-          {(isPartnershipAircraft || hasLinkedBooking) && (
+          {insertMode === "FUTURE" && (isPartnershipAircraft || hasLinkedBooking) && (
             <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12, border: "1px solid var(--border)", borderRadius: 12, padding: 16 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
                 <label style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600 }}>
