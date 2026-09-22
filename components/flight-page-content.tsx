@@ -10,8 +10,8 @@ import {
   splitMinutes,
   type FlightFormValues,
 } from "@/lib/flight-form";
-import { defaultWarmupMinutesForDate, formatDateTimeInput } from "@/lib/utils";
-import { MovementType } from "@prisma/client";
+import { defaultWarmupMinutesForDate, formatDateTimeInput, parseRomeDateTime } from "@/lib/utils";
+import { MovementType, Prisma } from "@prisma/client";
 
 type FlightPageContentProps =
   | {
@@ -78,6 +78,31 @@ export default async function FlightPageContent(
         targetUserId = m.userId;
       }
     }
+  }
+
+  let linkedBooking =
+    props.mode === "edit" && movementToEdit?.flight?.bookingId
+      ? await prisma.partnershipBooking.findUnique({
+          where: { id: movementToEdit.flight.bookingId },
+          select: { id: true, startTime: true, endTime: true },
+        })
+      : null;
+
+  // Older flights were never explicitly linked (Flight.bookingId), but the logbook
+  // detects them as booked by matching aircraft + overlapping time window. Fall back
+  // to that same matching so the edit page also recognizes them as already booked.
+  if (!linkedBooking && props.mode === "edit" && movementToEdit?.flight?.partnershipAircraftId) {
+    const flightStart = movementToEdit.date;
+    const flightEnd = new Date(flightStart.getTime() + movementToEdit.flight.durationMinutes * 60 * 1000);
+
+    linkedBooking = await prisma.partnershipBooking.findFirst({
+      where: {
+        aircraftId: movementToEdit.flight.partnershipAircraftId,
+        startTime: { lt: flightEnd },
+        endTime: { gt: flightStart },
+      },
+      select: { id: true, startTime: true, endTime: true },
+    });
   }
 
   const movements = await prisma.movement.findMany({
@@ -158,10 +183,73 @@ export default async function FlightPageContent(
     const parsed = parseFlightFormData(formData);
     const bookingId = formData.get("bookingId") ? String(formData.get("bookingId")).trim() : null;
     const backTo = formData.get("backTo") ? String(formData.get("backTo")).trim() : null;
+    const addBookingChecked = formData.get("addBooking") === "on";
+    const bookingStartRaw = String(formData.get("bookingStartTime") ?? "").trim();
+    const bookingEndRaw = String(formData.get("bookingEndTime") ?? "").trim();
     let partnershipId: string | null = null;
 
+    const partnershipAircraft = partnershipAircrafts.find(a => a.registration === parsed.aircraftRegistration);
+
+    async function upsertBooking(
+      tx: Prisma.TransactionClient,
+      aircraft: { id: string; partnershipId: string },
+      ownerUserId: string
+    ) {
+      if (!bookingStartRaw || !bookingEndRaw) {
+        throw new Error("Gli orari della prenotazione sono obbligatori.");
+      }
+
+      const startDateTime = parseRomeDateTime(bookingStartRaw);
+      const endDateTime = parseRomeDateTime(bookingEndRaw);
+
+      if (!startDateTime || !endDateTime || Number.isNaN(startDateTime.getTime()) || Number.isNaN(endDateTime.getTime())) {
+        throw new Error("Orari prenotazione non validi.");
+      }
+
+      if (startDateTime >= endDateTime) {
+        throw new Error("L'inizio della prenotazione deve precedere la fine.");
+      }
+
+      const overlapping = await tx.partnershipBooking.findFirst({
+        where: {
+          aircraftId: aircraft.id,
+          ...(bookingId ? { id: { not: bookingId } } : {}),
+          startTime: { lt: endDateTime },
+          endTime: { gt: startDateTime },
+        },
+        include: { user: true },
+      });
+
+      if (overlapping) {
+        const occupantName = overlapping.user.fullName || overlapping.user.email;
+        throw new Error(`L'aereo è già prenotato da ${occupantName} nel periodo selezionato.`);
+      }
+
+      if (bookingId) {
+        return tx.partnershipBooking.update({
+          where: { id: bookingId },
+          data: {
+            aircraftId: aircraft.id,
+            startTime: startDateTime,
+            endTime: endDateTime,
+            notes: parsed.notes,
+          },
+        });
+      }
+
+      return tx.partnershipBooking.create({
+        data: {
+          partnershipId: aircraft.partnershipId,
+          userId: ownerUserId,
+          aircraftId: aircraft.id,
+          startTime: startDateTime,
+          endTime: endDateTime,
+          notes: parsed.notes,
+        },
+      });
+    }
+
     if (props.mode === "create") {
-      const partnershipAircraft = partnershipAircrafts.find(a => a.registration === parsed.aircraftRegistration);
       if (partnershipAircraft) {
         partnershipId = partnershipAircraft.partnershipId;
       }
@@ -169,6 +257,12 @@ export default async function FlightPageContent(
       await prisma.$transaction(async (tx) => {
         // If it's a partnership flight, the movement amount only subtracts the instructor cost (if any)
         const movementAmount = partnershipAircraft ? -(parsed.instructorCost || 0) : parsed.movementAmount;
+
+        let resolvedBookingId: string | null = bookingId;
+        if (addBookingChecked && partnershipAircraft) {
+          const booking = await upsertBooking(tx, partnershipAircraft, user.id);
+          resolvedBookingId = booking.id;
+        }
 
         const movement = await tx.movement.create({
           data: {
@@ -204,6 +298,7 @@ export default async function FlightPageContent(
             instructorCost: parsed.instructorCost,
             totalCost: parsed.totalCost,
             partnershipAircraftId: partnershipAircraft ? partnershipAircraft.id : null,
+            bookingId: resolvedBookingId,
           },
         });
       });
@@ -259,8 +354,13 @@ export default async function FlightPageContent(
       }
 
       await prisma.$transaction(async (tx) => {
-        const partnershipAircraft = partnershipAircrafts.find(a => a.registration === parsed.aircraftRegistration);
         const movementAmount = partnershipAircraft ? -(parsed.instructorCost || 0) : parsed.movementAmount;
+
+        let resolvedBookingId: string | null = bookingId;
+        if (addBookingChecked && partnershipAircraft) {
+          const booking = await upsertBooking(tx, partnershipAircraft, dbMovement.userId);
+          resolvedBookingId = booking.id;
+        }
 
         await tx.flight.update({
           where: {
@@ -287,6 +387,7 @@ export default async function FlightPageContent(
             instructorCost: parsed.instructorCost,
             totalCost: parsed.totalCost,
             partnershipAircraftId: partnershipAircraft ? partnershipAircraft.id : null,
+            bookingId: resolvedBookingId,
           },
         });
 
@@ -398,13 +499,23 @@ export default async function FlightPageContent(
     });
   }
 
+  const activeBooking = booking ?? linkedBooking;
+
   return (
     <AppShell title={title} subtitle={subtitle}>
       <FlightForm
         mode={props.mode}
         action={saveFlight}
         movementId={movementId}
-        bookingId={booking?.id}
+        bookingId={activeBooking?.id}
+        bookingWindow={
+          activeBooking
+            ? {
+                startTime: formatDateTimeInput(activeBooking.startTime),
+                endTime: formatDateTimeInput(activeBooking.endTime),
+              }
+            : undefined
+        }
         currentBalance={currentBalance}
         totalFlightMinutes={totalFlightMinutes}
         dateBipoExam={settings?.dateBipoExam ?? null}

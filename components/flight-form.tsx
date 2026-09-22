@@ -20,6 +20,7 @@ type FlightFormProps = {
   initialValues?: Partial<FlightFormValues>;
   movementId?: string;
   bookingId?: string;
+  bookingWindow?: { startTime: string; endTime: string };
   submitLabel?: string;
   partnershipAircrafts?: Array<{
     id: string;
@@ -83,6 +84,7 @@ export default function FlightForm({
   initialValues,
   movementId,
   bookingId,
+  bookingWindow,
   partnershipAircrafts = [],
   rentalAircrafts = [],
   visitedPlaces = [],
@@ -233,6 +235,58 @@ export default function FlightForm({
   const isPartnershipAircraft = useMemo(() => {
     return partnershipAircrafts.find(a => a.registration === aircraftRegistration);
   }, [partnershipAircrafts, aircraftRegistration]);
+
+  const hasLinkedBooking = !!bookingId;
+
+  function computeDefaultBookingStart(dateValue: string) {
+    const d = new Date(dateValue);
+    if (Number.isNaN(d.getTime())) return "";
+    d.setMinutes(d.getMinutes() - 60);
+    return formatDateTimeInput(d);
+  }
+
+  function computeDefaultBookingEnd(dateValue: string, durationMin: number) {
+    const d = new Date(dateValue);
+    if (Number.isNaN(d.getTime())) return "";
+    d.setMinutes(d.getMinutes() + durationMin + 60);
+    return formatDateTimeInput(d);
+  }
+
+  function computeAllDayRange(dateValue: string) {
+    const d = new Date(dateValue);
+    if (Number.isNaN(d.getTime())) return { start: "", end: "" };
+    const start = new Date(d);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(d);
+    end.setHours(23, 59, 0, 0);
+    return { start: formatDateTimeInput(start), end: formatDateTimeInput(end) };
+  }
+
+  const [addBookingChecked, setAddBookingChecked] = useState(true);
+  const [bookingAllDay, setBookingAllDay] = useState(false);
+  const [bookingTimesTouched, setBookingTimesTouched] = useState(false);
+  const [bookingStartTime, setBookingStartTime] = useState(
+    bookingWindow?.startTime ?? computeDefaultBookingStart(initial.date)
+  );
+  const [bookingEndTime, setBookingEndTime] = useState(
+    bookingWindow?.endTime ?? computeDefaultBookingEnd(initial.date, 0)
+  );
+
+  const bookingSectionChecked = hasLinkedBooking ? true : addBookingChecked;
+
+  useEffect(() => {
+    if (!bookingAllDay) return;
+    const { start, end } = computeAllDayRange(date);
+    setBookingStartTime(start);
+    setBookingEndTime(end);
+  }, [bookingAllDay, date]);
+
+  useEffect(() => {
+    if (bookingAllDay || bookingTimesTouched || hasLinkedBooking) return;
+    setBookingStartTime(computeDefaultBookingStart(date));
+    setBookingEndTime(computeDefaultBookingEnd(date, durationMinutes));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, durationMinutes, bookingAllDay, bookingTimesTouched, hasLinkedBooking]);
 
   const configuredRentalAircraft = useMemo(() => {
     return rentalAircrafts.find(a => a.registration === aircraftRegistration);
@@ -775,6 +829,77 @@ export default function FlightForm({
           {(durationMinutes === 0 || durationMinutes === Number(warmupMinutes || 0) || (instructorMinutesNumber > 0 && instructorMinutesNumber > durationMinutes)) && <div className="error" style={{ marginTop: 16 }}>
             <span>Imposta una durata valida.</span>
           </div>}
+
+          {(isPartnershipAircraft || hasLinkedBooking) && (
+            <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12, border: "1px solid var(--border)", borderRadius: 12, padding: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600 }}>
+                  <input
+                    type="checkbox"
+                    checked={bookingSectionChecked}
+                    disabled={hasLinkedBooking}
+                    onChange={(e) => setAddBookingChecked(e.target.checked)}
+                    {...(!hasLinkedBooking ? { name: "addBooking" } : {})}
+                  />
+                  {hasLinkedBooking ? "Aggiorna prenotazione" : "Aggiungi prenotazione"}
+                </label>
+
+                {bookingSectionChecked && (
+                  <label style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <input
+                      type="checkbox"
+                      name="bookingAllDay"
+                      checked={bookingAllDay}
+                      onChange={(e) => setBookingAllDay(e.target.checked)}
+                    />
+                    Tutto il giorno
+                  </label>
+                )}
+              </div>
+
+              {hasLinkedBooking ? (
+                <input type="hidden" name="addBooking" value="on" />
+              ) : null}
+
+              {bookingSectionChecked && (
+                <div className="grid grid-2">
+                  <div className="field">
+                    <label htmlFor="bookingStartTime">Inizio prenotazione</label>
+                    <input
+                      className="input"
+                      id="bookingStartTime"
+                      name="bookingStartTime"
+                      type="datetime-local"
+                      value={bookingStartTime}
+                      readOnly={bookingAllDay}
+                      onChange={(e) => {
+                        setBookingTimesTouched(true);
+                        setBookingStartTime(e.target.value);
+                      }}
+                      required
+                    />
+                  </div>
+
+                  <div className="field">
+                    <label htmlFor="bookingEndTime">Fine prenotazione</label>
+                    <input
+                      className="input"
+                      id="bookingEndTime"
+                      name="bookingEndTime"
+                      type="datetime-local"
+                      value={bookingEndTime}
+                      readOnly={bookingAllDay}
+                      onChange={(e) => {
+                        setBookingTimesTouched(true);
+                        setBookingEndTime(e.target.value);
+                      }}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="row" style={{ gap: 12, marginTop: "16px" }}>
             <SubmitButton disabled={durationMinutes === 0 || durationMinutes === Number(warmupMinutes || 0) || (instructorMinutesNumber > 0 && instructorMinutesNumber > durationMinutes)}>
