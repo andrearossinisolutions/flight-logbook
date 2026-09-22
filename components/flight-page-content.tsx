@@ -302,15 +302,10 @@ export default async function FlightPageContent(
       });
     }
 
-    if (partnershipId) {
-      revalidatePath(`/societa/${partnershipId}`);
-    }
     revalidatePath("/logbook");
 
     if (backTo) {
       redirect(backTo as any);
-    } else if (partnershipId) {
-      redirect(`/societa/${partnershipId}?tab=LOGBOOK` as any);
     } else {
       redirect("/logbook");
     }
