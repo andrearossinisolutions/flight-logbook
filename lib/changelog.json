@@ -4,9 +4,14 @@
     "date": "2026-09-22",
     "commits": [
       {
-        "hash": "7ebae9e",
+        "hash": "37f2437",
         "date": "2026-09-22",
         "subject": "Added times pre-filling in flight planning from last past same route"
+      },
+      {
+        "hash": "b1e7e29",
+        "date": "2026-09-22",
+        "subject": "Fixed past flight pre-filling issues"
       }
     ]
   },

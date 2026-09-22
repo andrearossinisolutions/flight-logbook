@@ -98,11 +98,16 @@ export default function FlightForm({
   const shouldAutoConfirmDraftFlight =
     mode === "edit" && initial.isDraft && initialIsTodayOrPastDateTime;
 
-  const [insertMode, setInsertMode] = useState<"PAST" | "FUTURE">(
-    shouldAutoConfirmDraftFlight ? "PAST" : initial.isDraft ? "FUTURE" : "PAST"
-  );
+  const initialInsertMode: "PAST" | "FUTURE" =
+    shouldAutoConfirmDraftFlight ? "PAST" : initial.isDraft ? "FUTURE" : "PAST";
+
+  const [insertMode, setInsertMode] = useState<"PAST" | "FUTURE">(initialInsertMode);
   const [inputMode, setInputMode] = useState<"HOBBS" | "MANUAL">(
-    shouldAutoConfirmDraftFlight ? "HOBBS" : initial.inputMode
+    shouldAutoConfirmDraftFlight
+      ? "HOBBS"
+      : initialInsertMode === "FUTURE"
+        ? "MANUAL"
+        : initial.inputMode
   );
   const [routeMode, setRouteMode] = useState<"SINGLE" | "DOUBLE">(initial.routeMode);
 
@@ -146,6 +151,7 @@ export default function FlightForm({
     Boolean(initial.manualHours || initial.manualMinutes)
   );
   const lastFetchedRouteRef = useRef("");
+  const routeFetchSeqRef = useRef(0);
 
   useEffect(() => {
     if (insertMode !== "FUTURE") {
@@ -169,6 +175,7 @@ export default function FlightForm({
     }
 
     let active = true;
+    const requestId = ++routeFetchSeqRef.current;
 
     async function fetchLastByRoute() {
       try {
@@ -178,9 +185,9 @@ export default function FlightForm({
           intermediatePlaces: tappe.filter((t) => t.trim() !== "").join(","),
         });
         const res = await fetch(`/api/movements/flight/last-by-route?${params.toString()}`);
-        if (!res.ok || !active) return;
+        if (!res.ok || !active || requestId !== routeFetchSeqRef.current) return;
         const data = await res.json();
-        if (!active) return;
+        if (!active || requestId !== routeFetchSeqRef.current) return;
 
         lastFetchedRouteRef.current = routeKey;
 
@@ -199,10 +206,11 @@ export default function FlightForm({
       }
     }
 
-    fetchLastByRoute();
+    const timeoutId = setTimeout(fetchLastByRoute, 350);
 
     return () => {
       active = false;
+      clearTimeout(timeoutId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [takeoffPlace, arrivalPlace, tappe, insertMode, date]);
@@ -336,7 +344,8 @@ export default function FlightForm({
   const [bookingAllDay, setBookingAllDay] = useState(
     bookingWindow ? isAllDayWindow(bookingWindow.startTime, bookingWindow.endTime) : false
   );
-  const [bookingTimesTouched, setBookingTimesTouched] = useState(false);
+  const [bookingStartTouched, setBookingStartTouched] = useState(false);
+  const [bookingEndTouched, setBookingEndTouched] = useState(false);
   const [bookingStartTime, setBookingStartTime] = useState(
     bookingWindow?.startTime ?? computeDefaultBookingStart(initial.date)
   );
@@ -355,11 +364,16 @@ export default function FlightForm({
   }, [bookingAllDay, date]);
 
   useEffect(() => {
-    if (bookingAllDay || bookingTimesTouched || hasLinkedBooking) return;
+    if (bookingAllDay || bookingStartTouched || hasLinkedBooking) return;
     setBookingStartTime(computeDefaultBookingStart(date));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [date, bookingAllDay, bookingStartTouched, hasLinkedBooking]);
+
+  useEffect(() => {
+    if (bookingAllDay || bookingEndTouched || hasLinkedBooking) return;
     setBookingEndTime(computeDefaultBookingEnd(date, durationMinutes));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date, durationMinutes, bookingAllDay, bookingTimesTouched, hasLinkedBooking]);
+  }, [date, durationMinutes, bookingAllDay, bookingEndTouched, hasLinkedBooking]);
 
   const [bookingOverlap, setBookingOverlap] = useState<{
     startTime: string;
@@ -676,6 +690,7 @@ export default function FlightForm({
                     name="hobbsStartHours"
                     type="number"
                     min="0"
+                    autoComplete="off"
                     value={hobbsStartHours}
                     placeholder="Ore partenza"
                     onChange={(e) => setHobbsStartHours(e.target.value)}
@@ -691,6 +706,7 @@ export default function FlightForm({
                     type="number"
                     min="0"
                     max="59"
+                    autoComplete="off"
                     value={hobbsStartMinutes}
                     placeholder="Minuti partenza"
                     onChange={(e) => setHobbsStartMinutes(e.target.value)}
@@ -705,6 +721,7 @@ export default function FlightForm({
                     name="hobbsEndHours"
                     type="number"
                     min="0"
+                    autoComplete="off"
                     value={hobbsEndHours}
                     placeholder="Ore arrivo"
                     onChange={(e) => setHobbsEndHours(e.target.value)}
@@ -720,6 +737,7 @@ export default function FlightForm({
                     type="number"
                     min="0"
                     max="59"
+                    autoComplete="off"
                     value={hobbsEndMinutes}
                     placeholder="Minuti arrivo"
                     onChange={(e) => setHobbsEndMinutes(e.target.value)}
@@ -755,6 +773,7 @@ export default function FlightForm({
                       name="warmupMinutes"
                       type="number"
                       min="0"
+                      autoComplete="off"
                       value={warmupMinutes}
                       onChange={(e) => setWarmupMinutes(e.target.value)}
                       required
@@ -770,6 +789,7 @@ export default function FlightForm({
                   name="manualHours"
                   type="number"
                   min="0"
+                  autoComplete="off"
                   value={manualHours}
                   onChange={(e) => {
                     manualDurationTouchedRef.current = true;
@@ -786,6 +806,7 @@ export default function FlightForm({
                   type="number"
                   min="0"
                   max="59"
+                  autoComplete="off"
                   value={manualMinutes}
                   onChange={(e) => {
                     manualDurationTouchedRef.current = true;
@@ -988,7 +1009,7 @@ export default function FlightForm({
                       value={bookingStartTime}
                       readOnly={bookingAllDay}
                       onChange={(e) => {
-                        setBookingTimesTouched(true);
+                        setBookingStartTouched(true);
                         setBookingStartTime(e.target.value);
                       }}
                       required
@@ -1005,7 +1026,7 @@ export default function FlightForm({
                       value={bookingEndTime}
                       readOnly={bookingAllDay}
                       onChange={(e) => {
-                        setBookingTimesTouched(true);
+                        setBookingEndTouched(true);
                         setBookingEndTime(e.target.value);
                       }}
                       required
