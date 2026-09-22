@@ -142,6 +142,71 @@ export default function FlightForm({
 
   const lastFetchedRegistrationRef = useRef("");
 
+  const manualDurationTouchedRef = useRef(
+    Boolean(initial.manualHours || initial.manualMinutes)
+  );
+  const lastFetchedRouteRef = useRef("");
+
+  useEffect(() => {
+    if (insertMode !== "FUTURE") {
+      lastFetchedRouteRef.current = "";
+      return;
+    }
+
+    if (manualDurationTouchedRef.current) {
+      return;
+    }
+
+    if (!takeoffPlace.trim() || !arrivalPlace.trim()) {
+      return;
+    }
+
+    const tappeKey = tappe.map((t) => t.trim().toUpperCase()).filter(Boolean).join(",");
+    const routeKey = `${takeoffPlace.trim().toUpperCase()}|${arrivalPlace.trim().toUpperCase()}|${tappeKey}`;
+
+    if (routeKey === lastFetchedRouteRef.current) {
+      return;
+    }
+
+    let active = true;
+
+    async function fetchLastByRoute() {
+      try {
+        const params = new URLSearchParams({
+          takeoffPlace,
+          arrivalPlace,
+          intermediatePlaces: tappe.filter((t) => t.trim() !== "").join(","),
+        });
+        const res = await fetch(`/api/movements/flight/last-by-route?${params.toString()}`);
+        if (!res.ok || !active) return;
+        const data = await res.json();
+        if (!active) return;
+
+        lastFetchedRouteRef.current = routeKey;
+
+        if (manualDurationTouchedRef.current) return;
+
+        if (data.lastFlight) {
+          const warmup = defaultWarmupMinutesForDate(date);
+          const netMinutes = Math.max(0, data.lastFlight.durationMinutes - warmup);
+          const hours = Math.floor(netMinutes / 60);
+          const minutes = netMinutes % 60;
+          setManualHours(String(hours));
+          setManualMinutes(String(minutes));
+        }
+      } catch (err) {
+        console.error("Failed to fetch last flight for route:", err);
+      }
+    }
+
+    fetchLastByRoute();
+
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [takeoffPlace, arrivalPlace, tappe, insertMode, date]);
+
   useEffect(() => {
     if (
       mode !== "create" ||
@@ -706,7 +771,10 @@ export default function FlightForm({
                   type="number"
                   min="0"
                   value={manualHours}
-                  onChange={(e) => setManualHours(e.target.value)}
+                  onChange={(e) => {
+                    manualDurationTouchedRef.current = true;
+                    setManualHours(e.target.value);
+                  }}
                 />
               </div>
 
@@ -719,7 +787,10 @@ export default function FlightForm({
                   min="0"
                   max="59"
                   value={manualMinutes}
-                  onChange={(e) => setManualMinutes(e.target.value)}
+                  onChange={(e) => {
+                    manualDurationTouchedRef.current = true;
+                    setManualMinutes(e.target.value);
+                  }}
                 />
               </div>
             </div>
