@@ -373,6 +373,34 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
     }
   }
 
+  // Calcolo percentuale ore volate per ogni scadenza manutenzione a ore (Bacheca)
+  const maintenanceHoursProgress: any[] = [];
+  if (partnership.aircrafts) {
+    for (const a of partnership.aircrafts) {
+      const totalHours = a.totalHours;
+      for (const r of (a.reminders || [])) {
+        if (r.hoursInterval === null || r.hoursInterval === undefined) continue;
+
+        const hoursInt = Number(r.hoursInterval);
+        const lastCompletedHours = Number(r.lastCompletedHours);
+        const hoursUsed = totalHours - lastCompletedHours;
+        const hoursRemaining = hoursInt - hoursUsed;
+        const percent = Math.min(100, Math.max(0, (hoursUsed / hoursInt) * 100));
+
+        maintenanceHoursProgress.push({
+          key: r.id,
+          aircraftRegistration: a.registration,
+          reminderDescription: r.description,
+          hoursIntervalLabel: `${hoursInt}h`,
+          hoursUsed,
+          hoursRemaining,
+          percent,
+          isOverdue: hoursRemaining <= 0
+        });
+      }
+    }
+  }
+
   // Edit state
   const [editingAircraftId, setEditingAircraftId] = useState<string | null>(null);
   const [loggingReminderId, setLoggingReminderId] = useState<string | null>(null);
@@ -887,7 +915,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               </div>
             </form>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, maxHeight: 420, overflowY: "auto", paddingRight: 4 }}>
               {partnership.messages?.length === 0 ? (
                 <div className="muted" style={{ textAlign: "center", padding: "40px 0" }}>Nessun messaggio in bacheca. Rompi il ghiaccio!</div>
               ) : (
@@ -930,6 +958,88 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                     </div>
                     <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.5, fontSize: "0.95rem" }}>
                       {msg.content}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Card: Percentuale ore volate per scadenza manutenzione */}
+          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <div>
+              <h2 style={{ marginTop: 0, marginBottom: 8, fontSize: "1.25rem", display: "flex", alignItems: "center", gap: 8 }}>
+                🔧 Scadenze manutenzione a ore
+              </h2>
+              <p className="muted" style={{ margin: 0, fontSize: "0.9rem" }}>
+                Ore volate rispetto alla prossima scadenza per ciascun intervallo.
+              </p>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {maintenanceHoursProgress.length === 0 ? (
+                <div className="muted" style={{
+                  padding: 20,
+                  border: "1px dashed var(--border)",
+                  borderRadius: 16,
+                  textAlign: "center",
+                  fontSize: "0.95rem"
+                }}>
+                  Nessuna scadenza manutenzione basata sulle ore.
+                </div>
+              ) : (
+                maintenanceHoursProgress.map((m) => (
+                  <div key={m.key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div className="between" style={{ alignItems: "center" }}>
+                      <span style={{ fontWeight: 600, fontSize: "0.9rem" }}>
+                        {m.aircraftRegistration} · {m.reminderDescription}
+                      </span>
+                      <span className="muted" style={{ fontSize: "0.8rem" }}>
+                        ogni {m.hoursIntervalLabel}
+                      </span>
+                    </div>
+                    <div style={{
+                      position: "relative",
+                      height: 32,
+                      borderRadius: 10,
+                      background: "var(--bg, #f6f8fb)",
+                      border: "1px solid var(--border)",
+                      overflow: "hidden"
+                    }}>
+                      <div style={{
+                        position: "absolute",
+                        left: 0,
+                        top: 0,
+                        bottom: 0,
+                        width: `${m.percent}%`,
+                        background: m.isOverdue ? "var(--danger)" : "var(--primary)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "flex-end",
+                        paddingRight: 8,
+                        transition: "width 0.3s"
+                      }}>
+                        {m.percent > 12 && (
+                          <span style={{ color: "white", fontSize: "0.78rem", fontWeight: 700, whiteSpace: "nowrap" }}>
+                            {formatHoursToHHMM(m.hoursUsed)}h
+                          </span>
+                        )}
+                      </div>
+                      <div style={{
+                        position: "absolute",
+                        left: `${m.percent}%`,
+                        top: 0,
+                        bottom: 0,
+                        right: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        paddingLeft: 8,
+                        overflow: "hidden"
+                      }}>
+                        <span style={{ color: "var(--muted)", fontSize: "0.78rem", fontWeight: 600, whiteSpace: "nowrap" }}>
+                          {m.isOverdue ? "SCADUTO" : `${formatHoursToHHMM(m.hoursRemaining)}h`}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))
