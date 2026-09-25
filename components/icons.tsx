@@ -125,6 +125,28 @@ export function PencilIcon(props: IconProps) {
   );
 }
 
+export function ExpandIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+      <path d="M16 3h3a2 2 0 0 1 2 2v3" />
+      <path d="M21 16v3a2 2 0 0 1-2 2h-3" />
+      <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+    </BaseIcon>
+  );
+}
+
+export function CollapseIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M9 3v3a2 2 0 0 1-2 2H4" />
+      <path d="M15 3v3a2 2 0 0 0 2 2h3" />
+      <path d="M15 21v-3a2 2 0 0 1 2-2h3" />
+      <path d="M9 21v-3a2 2 0 0 0-2-2H4" />
+    </BaseIcon>
+  );
+}
+
 export function TrashIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>

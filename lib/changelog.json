@@ -1,5 +1,21 @@
 [
   {
+    "version": "1.30.0",
+    "date": "2026-09-25",
+    "commits": [
+      {
+        "hash": "6e9580c",
+        "date": "2026-09-25",
+        "subject": "Added partnership maintainance widget"
+      },
+      {
+        "hash": "c225ad0",
+        "date": "2026-09-25",
+        "subject": "Collapsed messages widget"
+      }
+    ]
+  },
+  {
     "version": "1.29.0",
     "date": "2026-09-22",
     "commits": [
@@ -9,7 +25,7 @@
         "subject": "Added times pre-filling in flight planning from last past same route"
       },
       {
-        "hash": "b1e7e29",
+        "hash": "5059f6d",
         "date": "2026-09-22",
         "subject": "Fixed past flight pre-filling issues"
       }

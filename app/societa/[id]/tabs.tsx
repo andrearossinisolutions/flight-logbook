@@ -13,7 +13,9 @@ import {
   SettingsIcon,
   CalendarIcon,
   AirplaneIcon,
-  PencilIcon
+  PencilIcon,
+  ExpandIcon,
+  CollapseIcon
 } from "@/components/icons";
 
 function formatMinutes(minutes: number) {
@@ -276,6 +278,9 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
 
     return { startMismatches, endMismatches };
   }, [partnership.aircrafts, partnershipFlights, getFlightOrametro]);
+
+  // Stato espansione widget Bacheca Messaggi
+  const [isMessagesExpanded, setIsMessagesExpanded] = useState(false);
 
   // Stato filtri per la scheda Logbook
   const [logbookAircraft, setLogbookAircraft] = useState("");
@@ -889,37 +894,58 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
           {/* Colonna Destra: Bacheca Messaggi */}
           <div className="bacheca-content" style={{ display: "flex", flexDirection: "column", gap: 24 }}>
             <div className="card">
-              <div>
-              <h2 style={{ marginTop: 0, marginBottom: 8, fontSize: "1.25rem" }}>Bacheca Messaggi</h2>
-              <p className="muted" style={{ margin: "0 0 20px 0", fontSize: "0.9rem" }}>
-                Messaggi e comunicazioni tra i soci.
-              </p>
-            </div>
-            
-            <form action={async (fd) => {
-              const form = document.getElementById("message-form") as HTMLFormElement;
-              await addMessage(partnership.id, fd);
-              form?.reset();
-            }} id="message-form" style={{ marginBottom: 24 }}>
-              <div className="field">
-                <textarea 
-                  name="content" 
-                  className="textarea" 
-                  placeholder="Scrivi un messaggio a tutti i soci..."
-                  required
-                  style={{ minHeight: 80 }}
-                />
+              <div className="between" style={{ alignItems: "flex-start", gap: 12 }}>
+                <div>
+                  <h2 style={{ marginTop: 0, marginBottom: 8, fontSize: "1.25rem" }}>Bacheca Messaggi</h2>
+                  <p className="muted" style={{ margin: "0 0 20px 0", fontSize: "0.9rem" }}>
+                    Messaggi e comunicazioni tra i soci.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMessagesExpanded((prev) => !prev)}
+                  className="btn secondary"
+                  style={{ borderRadius: 12, fontSize: "0.85rem", padding: "8px 12px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, flexShrink: 0 }}
+                  title={isMessagesExpanded ? "Comprimi bacheca messaggi" : "Espandi bacheca messaggi / Scrivi un messaggio"}
+                >
+                  {isMessagesExpanded ? (
+                    <CollapseIcon size={18} />
+                  ) : (
+                    <>
+                      <ExpandIcon size={18} />
+                      <span className="muted" style={{ fontSize: "0.9rem" }}>/</span>
+                      <PencilIcon size={18} />
+                    </>
+                  )}
+                </button>
               </div>
-              <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
-                <SubmitButton>Invia messaggio</SubmitButton>
-              </div>
-            </form>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, maxHeight: 420, overflowY: "auto", paddingRight: 4 }}>
+            {isMessagesExpanded && (
+              <form action={async (fd) => {
+                const form = document.getElementById("message-form") as HTMLFormElement;
+                await addMessage(partnership.id, fd);
+                form?.reset();
+              }} id="message-form" style={{ marginBottom: 24 }}>
+                <div className="field">
+                  <textarea
+                    name="content"
+                    className="textarea"
+                    placeholder="Scrivi un messaggio a tutti i soci..."
+                    required
+                    style={{ minHeight: 80 }}
+                  />
+                </div>
+                <div style={{ marginTop: 12, display: "flex", justifyContent: "flex-end" }}>
+                  <SubmitButton>Invia messaggio</SubmitButton>
+                </div>
+              </form>
+            )}
+
+            <div style={isMessagesExpanded ? { display: "flex", flexDirection: "column", gap: 16, maxHeight: 420, overflowY: "auto", paddingRight: 4 } : { display: "flex", flexDirection: "column", gap: 16 }}>
               {partnership.messages?.length === 0 ? (
                 <div className="muted" style={{ textAlign: "center", padding: "40px 0" }}>Nessun messaggio in bacheca. Rompi il ghiaccio!</div>
               ) : (
-                partnership.messages?.map((msg: any) => (
+                (isMessagesExpanded ? partnership.messages : partnership.messages?.slice(0, 1))?.map((msg: any) => (
                   <div key={msg.id} style={{
                     background: msg.userId === currentUserId ? "var(--bg)" : "white",
                     border: "1px solid var(--border)",
