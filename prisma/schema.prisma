@@ -37,6 +37,7 @@ model User {
   paidMaintenances      PartnershipAircraftMaintenanceLog[] @relation("MaintenancePayer")
   partnershipReceivedTransactns PartnershipTransaction[] @relation("TransactionRecipient")
   customLocations       CustomLocation[]
+  mapShareLinks         MapShareLink[]
   createdAt             DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
@@ -336,4 +337,16 @@ model CustomLocation {
   @@unique([userId, name])
 }
 
+model MapShareLink {
+  id                  String   @id @default(cuid())
+  userId              String
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token               String   @unique
+  includeFuturePlans  Boolean  @default(false)
+  passengerFilter     String?  // Comma-separated list of passenger names (empty/null = no filter)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  @@index([userId])
+}
 

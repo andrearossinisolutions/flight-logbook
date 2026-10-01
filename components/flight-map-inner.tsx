@@ -29,10 +29,23 @@ export interface MapRoute {
 interface FlightMapProps {
   points: MapPoint[];
   routes: MapRoute[];
-  onEditPlace: (name: string) => void;
+  onEditPlace?: (name: string) => void;
+  /** Quando false, i marker non sono cliccabili/popup (modalità sola visualizzazione, es. link pubblico) */
+  interactive?: boolean;
+  /** Quando true, mostra il nome di ogni meta permanentemente sotto il pin */
+  showLabels?: boolean;
+  /** Quando false, nasconde il riquadro "Riepilogo" in alto a destra */
+  showSummary?: boolean;
 }
 
-export default function FlightMapInner({ points, routes, onEditPlace }: FlightMapProps) {
+export default function FlightMapInner({
+  points,
+  routes,
+  onEditPlace,
+  interactive = true,
+  showLabels = false,
+  showSummary = true,
+}: FlightMapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const onEditPlaceRef = useRef(onEditPlace);
@@ -67,7 +80,7 @@ export default function FlightMapInner({ points, routes, onEditPlace }: FlightMa
           btn.addEventListener("click", () => {
             const placeName = btn.getAttribute("data-place-name");
             if (placeName) {
-              onEditPlaceRef.current(placeName);
+              onEditPlaceRef.current?.(placeName);
             }
           });
         }
@@ -167,7 +180,21 @@ export default function FlightMapInner({ points, routes, onEditPlace }: FlightMa
       const marker = L.marker(position, {
         icon: currentIcon,
         title: p.name,
+        interactive,
       }).addTo(map);
+
+      if (showLabels) {
+        marker.bindTooltip(p.name, {
+          permanent: true,
+          direction: "bottom",
+          offset: [0, 4],
+          className: "map-point-label",
+        });
+      }
+
+      if (!interactive) {
+        return;
+      }
 
       // Definisci il contenuto del popup
       let popupContent = "";
@@ -319,41 +346,56 @@ export default function FlightMapInner({ points, routes, onEditPlace }: FlightMa
       // Centro sull'Italia se non ci sono punti
       map.setView([42.0, 12.5], 6);
     }
-  }, [points, routes]);
+  }, [points, routes, interactive, showLabels]);
 
   return (
     <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
-      {/* Stile CSS per spostare i controlli di zoom di Leaflet al di sotto della navbar flottante */}
+      {/* Stile CSS per spostare i controlli di zoom di Leaflet al di sotto della navbar flottante e per le etichette dei pin */}
       <style dangerouslySetInnerHTML={{ __html: `
         .leaflet-top {
-          top: 92px !important;
+          top: ${interactive ? "92px" : "12px"} !important;
+        }
+        .map-point-label {
+          background: rgba(20, 32, 51, 0.82);
+          color: white;
+          border: none;
+          box-shadow: none;
+          font-size: 12px;
+          font-weight: 600;
+          padding: 2px 6px;
+          border-radius: 6px;
+        }
+        .map-point-label::before {
+          display: none;
         }
       `}} />
 
       {/* Informazioni sovrapposte alla mappa in alto a destra */}
-      <div
-        style={{
-          position: "absolute",
-          top: 96,
-          right: 12,
-          zIndex: 1000,
-          background: "rgba(255, 255, 255, 0.9)",
-          backdropFilter: "blur(10px)",
-          border: "1px solid var(--border)",
-          padding: "10px 16px",
-          borderRadius: 12,
-          boxShadow: "0 4px 15px rgba(0,0,0,0.06)",
-          maxWidth: 240,
-        }}
-      >
-        <h3 style={{ margin: "0 0 6px 0", fontSize: "0.95rem", color: "var(--text)" }}>Riepilogo</h3>
-        <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", color: "var(--muted)" }}>
-          Destinazioni: <strong>{points.filter(p => !p.isBase).length}</strong>
-        </p>
-        <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--muted)" }}>
-          Base: <strong>{points.find(p => p.isBase)?.name || "Non impostata"}</strong>
-        </p>
-      </div>
+      {showSummary && (
+        <div
+          style={{
+            position: "absolute",
+            top: 150,
+            right: 12,
+            zIndex: 1000,
+            background: "rgba(255, 255, 255, 0.9)",
+            backdropFilter: "blur(10px)",
+            border: "1px solid var(--border)",
+            padding: "10px 16px",
+            borderRadius: 12,
+            boxShadow: "0 4px 15px rgba(0,0,0,0.06)",
+            maxWidth: 240,
+          }}
+        >
+          <h3 style={{ margin: "0 0 6px 0", fontSize: "0.95rem", color: "var(--text)" }}>Riepilogo</h3>
+          <p style={{ margin: "0 0 4px 0", fontSize: "0.85rem", color: "var(--muted)" }}>
+            Destinazioni: <strong>{points.filter(p => !p.isBase).length}</strong>
+          </p>
+          <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--muted)" }}>
+            Base: <strong>{points.find(p => p.isBase)?.name || "Non impostata"}</strong>
+          </p>
+        </div>
+      )}
 
       <div
         ref={mapContainerRef}
