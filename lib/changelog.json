@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.32.0",
+    "date": "2026-10-01",
+    "commits": [
+      {
+        "hash": "3def0eb",
+        "date": "2026-10-01",
+        "subject": "Added GPX upload"
+      }
+    ]
+  },
+  {
     "version": "1.31.0",
     "date": "2026-10-01",
     "commits": [
@@ -9,7 +20,7 @@
         "subject": "Added sharable map"
       },
       {
-        "hash": "90b1819",
+        "hash": "c4ea85c",
         "date": "2026-10-01",
         "subject": "Added QR to generic /public-map url to handle easy custom map showing"
       }

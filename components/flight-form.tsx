@@ -8,8 +8,9 @@ import {
   formatDateTimeInput,
   minutesToHoursMinutes,
 } from "@/lib/utils";
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo, useState, useEffect, useRef, type ChangeEvent } from "react";
 import type { FlightFormValues } from "@/lib/flight-form";
+import { extractGpxTimeRange } from "@/lib/gpx";
 
 type FlightFormProps = {
   mode: "create" | "edit";
@@ -38,6 +39,7 @@ type FlightFormProps = {
   }>;
   visitedPlaces?: string[];
   backTo?: string;
+  existingGpxFiles?: Array<{ id: string; name: string }>;
 };
 
 function buildInitialValues(
@@ -89,6 +91,7 @@ export default function FlightForm({
   rentalAircrafts = [],
   visitedPlaces = [],
   backTo,
+  existingGpxFiles = [],
 }: FlightFormProps) {
   const initial = buildInitialValues(initialValues);
 
@@ -138,6 +141,10 @@ export default function FlightForm({
   const [warmupMinutes, setWarmupMinutes] = useState(initial.warmupMinutes);
   const [notes, setNotes] = useState(initial.notes);
 
+  const [gpxFileNames, setGpxFileNames] = useState<string[]>([]);
+  const [gpxError, setGpxError] = useState<string | null>(null);
+  const gpxInputRef = useRef<HTMLInputElement>(null);
+
   const [tappe, setTappe] = useState<string[]>(() => {
     if (initialValues?.intermediatePlaces) {
       return initialValues.intermediatePlaces.split(",").map(s => s.trim()).filter(Boolean);
@@ -152,6 +159,42 @@ export default function FlightForm({
   );
   const lastFetchedRouteRef = useRef("");
   const routeFetchSeqRef = useRef(0);
+
+  async function handleGpxFilesChange(e: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    setGpxFileNames(files.map((f) => f.name));
+    setGpxError(null);
+
+    if (files.length === 0) return;
+
+    try {
+      const range = await extractGpxTimeRange(files);
+      if (!range) {
+        setGpxError("Nessun orario trovato nei file GPX caricati.");
+        return;
+      }
+
+      const totalMinutes = Math.max(0, Math.round(range.durationMs / 60000));
+
+      const hobbsStartTotal = Number(hobbsStartHours || 0) * 60 + Number(hobbsStartMinutes || 0);
+      const hobbsEndTotal = Number(hobbsEndHours || 0) * 60 + Number(hobbsEndMinutes || 0);
+      const hobbsAlreadyEntered =
+        inputMode === "HOBBS" && hobbsEndTotal > hobbsStartTotal;
+
+      setInsertMode("PAST");
+      setDate(formatDateTimeInput(range.start));
+
+      if (!hobbsAlreadyEntered) {
+        setInputMode("MANUAL");
+        manualDurationTouchedRef.current = true;
+        setManualHours(String(Math.floor(totalMinutes / 60)));
+        setManualMinutes(String(totalMinutes % 60));
+      }
+    } catch (err) {
+      console.error("Failed to parse GPX files:", err);
+      setGpxError("Impossibile leggere i file GPX caricati.");
+    }
+  }
 
   useEffect(() => {
     if (insertMode !== "FUTURE") {
@@ -659,6 +702,36 @@ export default function FlightForm({
               <option key={place} value={place} />
             ))}
           </datalist>
+
+          <div className="field" style={{ marginTop: "16px" }}>
+            <label htmlFor="gpxFiles">Tracce GPX</label>
+            <input
+              ref={gpxInputRef}
+              className="input"
+              id="gpxFiles"
+              name="gpxFiles"
+              type="file"
+              accept=".gpx,application/gpx+xml"
+              multiple
+              onChange={handleGpxFilesChange}
+            />
+            <span className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+              Carica uno o più file GPX per precompilare data/ora di partenza e durata totale del volo.
+            </span>
+            {gpxFileNames.length > 0 && (
+              <span className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                File selezionati: {gpxFileNames.join(", ")}
+              </span>
+            )}
+            {gpxError && (
+              <span style={{ fontSize: 12, marginTop: 4, color: "var(--danger)" }}>{gpxError}</span>
+            )}
+            {existingGpxFiles.length > 0 && (
+              <span className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                Già caricati: {existingGpxFiles.map((f) => f.name).join(", ")}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="card">

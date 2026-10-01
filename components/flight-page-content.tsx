@@ -50,7 +50,7 @@ export default async function FlightPageContent(
   if (props.mode === "edit") {
     const m = await prisma.movement.findUnique({
       where: { id: props.movementId },
-      include: { flight: true }
+      include: { flight: { include: { gpxFiles: { select: { id: true, name: true } } } } }
     });
     if (m && m.type === "FLIGHT") {
       let isAuthorized = m.userId === user.id;
@@ -188,6 +188,10 @@ export default async function FlightPageContent(
     const bookingEndRaw = String(formData.get("bookingEndTime") ?? "").trim();
     let partnershipId: string | null = null;
 
+    const gpxFiles = formData
+      .getAll("gpxFiles")
+      .filter((f): f is File => f instanceof File && f.size > 0);
+
     const partnershipAircraft = partnershipAircrafts.find(a => a.registration === parsed.aircraftRegistration);
 
     async function upsertBooking(
@@ -275,7 +279,7 @@ export default async function FlightPageContent(
           },
         });
 
-        await tx.flight.create({
+        const flight = await tx.flight.create({
           data: {
             movementId: movement.id,
             aircraftRegistration: parsed.aircraftRegistration,
@@ -301,6 +305,19 @@ export default async function FlightPageContent(
             bookingId: resolvedBookingId,
           },
         });
+
+        for (const file of gpxFiles) {
+          const content = Buffer.from(await file.arrayBuffer());
+          await tx.flightGpxFile.create({
+            data: {
+              flightId: flight.id,
+              name: file.name,
+              contentType: file.type || "application/gpx+xml",
+              size: content.byteLength,
+              content,
+            },
+          });
+        }
       });
     } else {
       const movementId = String(formData.get("movementId") ?? "");
@@ -400,6 +417,19 @@ export default async function FlightPageContent(
             notes: parsed.notes,
           },
         });
+
+        for (const file of gpxFiles) {
+          const content = Buffer.from(await file.arrayBuffer());
+          await tx.flightGpxFile.create({
+            data: {
+              flightId: dbMovement.flight!.id,
+              name: file.name,
+              contentType: file.type || "application/gpx+xml",
+              size: content.byteLength,
+              content,
+            },
+          });
+        }
       });
     }
 
@@ -524,6 +554,7 @@ export default async function FlightPageContent(
         rentalAircrafts={rentalAircrafts}
         visitedPlaces={visitedPlaces}
         backTo={props.backTo}
+        existingGpxFiles={movementToEdit?.flight?.gpxFiles ?? []}
       />
     </AppShell>
   );

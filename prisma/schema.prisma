@@ -111,8 +111,23 @@ model Flight {
   instructorCost        Decimal
   totalCost             Decimal
 
+  gpxFiles              FlightGpxFile[]
+
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
+}
+
+model FlightGpxFile {
+  id          String   @id @default(cuid())
+  flightId    String
+  flight      Flight   @relation(fields: [flightId], references: [id], onDelete: Cascade)
+  name        String
+  contentType String
+  size        Int
+  content     Bytes
+  createdAt   DateTime @default(now())
+
+  @@index([flightId])
 }
 
 model DailyJobState {
