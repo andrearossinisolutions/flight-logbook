@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getCoordinatesFromName, ITALIAN_AIRPORTS, PLACE_TO_METAR } from "@/lib/weather";
-import type { MapPoint, MapRoute } from "@/components/flight-map-inner";
+import { parseGpxTrackPoints, downsamplePoints } from "@/lib/gpx";
+import type { MapPoint, MapRoute, MapGpxTrack } from "@/components/flight-map-inner";
 
 export interface MapDataOptions {
   includeFuturePlans: boolean;
@@ -51,7 +52,7 @@ export async function buildMapData(userId: string, options: MapDataOptions) {
 
   const allMovements = await prisma.movement.findMany({
     where: { userId, type: "FLIGHT" },
-    include: { flight: true },
+    include: { flight: { include: { gpxFiles: true } } },
   });
 
   // Rispetta sempre l'opzione "includi pianificazioni future" e, se presente, il filtro passeggeri
@@ -163,6 +164,8 @@ export async function buildMapData(userId: string, options: MapDataOptions) {
     }
   >();
 
+  const gpxTracks: MapGpxTrack[] = [];
+
   movements.forEach((m) => {
     if (!m.flight) return;
     const dep = m.flight.takeoffPlace ? m.flight.takeoffPlace.trim().toUpperCase() : "";
@@ -172,6 +175,32 @@ export async function buildMapData(userId: string, options: MapDataOptions) {
       : [];
 
     const pathPlaces = [dep, ...inter, arr].filter(Boolean);
+
+    // Se per questo volo sono stati caricati dei GPX, disegniamo il tragitto reale
+    // registrato al posto delle linee rette tra le tappe: niente aggregazione per
+    // coppia di luoghi, solo i pin restano a indicare partenza/tappe/arrivo.
+    if (m.flight.gpxFiles.length > 0) {
+      const filesWithPoints = m.flight.gpxFiles
+        .map((f) => parseGpxTrackPoints(Buffer.from(f.content).toString("utf8")))
+        .filter((pts) => pts.length > 0);
+
+      filesWithPoints.sort((a, b) => {
+        const aTime = a.find((p) => p.time)?.time?.getTime() ?? 0;
+        const bTime = b.find((p) => p.time)?.time?.getTime() ?? 0;
+        return aTime - bTime;
+      });
+
+      const allPoints = filesWithPoints.flat();
+      if (allPoints.length > 1) {
+        const path = downsamplePoints(
+          allPoints.map((p) => [p.lat, p.lon] as [number, number]),
+          400
+        );
+        gpxTracks.push({ path, isDraft: m.isDraft });
+      }
+
+      return;
+    }
 
     for (let i = 0; i < pathPlaces.length - 1; i++) {
       const fromPlace = pathPlaces[i];
@@ -209,7 +238,7 @@ export async function buildMapData(userId: string, options: MapDataOptions) {
 
   const routes = Array.from(routesMap.values()) as MapRoute[];
 
-  return { points, routes, hasBase: !!baseName };
+  return { points, routes, gpxTracks, hasBase: !!baseName };
 }
 
 export async function getDistinctPassengers(userId: string): Promise<string[]> {

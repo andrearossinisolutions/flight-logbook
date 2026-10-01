@@ -25,7 +25,7 @@ export default async function MapPage({ searchParams }: MapPageProps) {
     redirect("/onboarding");
   }
 
-  const { points, routes, hasBase } = await buildMapData(user.id, { includeFuturePlans: true });
+  const { points, routes, gpxTracks, hasBase } = await buildMapData(user.id, { includeFuturePlans: true });
   const knownPassengers = await getDistinctPassengers(user.id);
 
   return (
@@ -40,6 +40,7 @@ export default async function MapPage({ searchParams }: MapPageProps) {
         <FlightMap
           points={points}
           routes={routes}
+          gpxTracks={gpxTracks}
           hasBase={hasBase}
           knownPassengers={knownPassengers}
           autoOpenShareMenu={openShare === "1"}

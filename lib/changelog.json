@@ -4,9 +4,14 @@
     "date": "2026-10-01",
     "commits": [
       {
-        "hash": "3def0eb",
+        "hash": "425888f",
         "date": "2026-10-01",
         "subject": "Added GPX upload"
+      },
+      {
+        "hash": "2d55dfa",
+        "date": "2026-10-01",
+        "subject": "Added track drawing on map if GPX is avail for the route"
       }
     ]
   },

@@ -26,9 +26,15 @@ export interface MapRoute {
   isDraft?: boolean;
 }
 
+export interface MapGpxTrack {
+  path: [number, number][];
+  isDraft?: boolean;
+}
+
 interface FlightMapProps {
   points: MapPoint[];
   routes: MapRoute[];
+  gpxTracks?: MapGpxTrack[];
   onEditPlace?: (name: string) => void;
   /** Quando false, i marker non sono cliccabili/popup (modalità sola visualizzazione, es. link pubblico) */
   interactive?: boolean;
@@ -41,6 +47,7 @@ interface FlightMapProps {
 export default function FlightMapInner({
   points,
   routes,
+  gpxTracks = [],
   onEditPlace,
   interactive = true,
   showLabels = false,
@@ -330,6 +337,23 @@ export default function FlightMapInner({
       );
     });
 
+    // Aggiungi i tragitti reali registrati via GPX, al posto delle linee rette
+    gpxTracks.forEach((t) => {
+      if (t.path.length < 2) return;
+
+      t.path.forEach((p) => latLngs.push(p));
+
+      const isDraftTrack = !!t.isDraft;
+      L.polyline(t.path, {
+        color: isDraftTrack ? "#38bdf8" : "#e6007e",
+        weight: isDraftTrack ? 3.5 : 4.0,
+        opacity: isDraftTrack ? 0.85 : 1.0,
+        dashArray: isDraftTrack ? "6, 8" : undefined,
+        lineCap: "round",
+        lineJoin: "round",
+      }).addTo(map);
+    });
+
     // Centra e adatta la mappa
     if (latLngs.length > 0) {
       if (latLngs.length === 1) {
@@ -346,7 +370,7 @@ export default function FlightMapInner({
       // Centro sull'Italia se non ci sono punti
       map.setView([42.0, 12.5], 6);
     }
-  }, [points, routes, interactive, showLabels]);
+  }, [points, routes, gpxTracks, interactive, showLabels]);
 
   return (
     <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", height: "100%" }}>

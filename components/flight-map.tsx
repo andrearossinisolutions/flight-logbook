@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { MapPoint, MapRoute } from "./flight-map-inner";
+import type { MapPoint, MapRoute, MapGpxTrack } from "./flight-map-inner";
 
 const FlightMapInner = dynamic(() => import("./flight-map-inner"), {
   ssr: false,
@@ -28,18 +28,19 @@ const FlightMapInner = dynamic(() => import("./flight-map-inner"), {
   ),
 });
 
-export type { MapPoint, MapRoute };
+export type { MapPoint, MapRoute, MapGpxTrack };
 
 interface FlightMapProps {
   points: MapPoint[];
   routes: MapRoute[];
+  gpxTracks?: MapGpxTrack[];
   hasBase?: boolean;
   knownPassengers?: string[];
   autoOpenShareMenu?: boolean;
   pairingCode?: string;
 }
 
-export default function FlightMap({ points, routes, hasBase, knownPassengers = [], autoOpenShareMenu, pairingCode }: FlightMapProps) {
+export default function FlightMap({ points, routes, gpxTracks = [], hasBase, knownPassengers = [], autoOpenShareMenu, pairingCode }: FlightMapProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [editingPlaceName, setEditingPlaceName] = useState<string | null>(null);
@@ -238,7 +239,7 @@ export default function FlightMap({ points, routes, hasBase, knownPassengers = [
 
   return (
     <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
-      <FlightMapInner points={points} routes={routes} onEditPlace={handleEditPlace} />
+      <FlightMapInner points={points} routes={routes} gpxTracks={gpxTracks} onEditPlace={handleEditPlace} />
 
       {/* Bottone per condividere la mappa senza necessità di login (es. per un televisore) */}
       <div style={{ position: "absolute", top: 96, right: 12, zIndex: 1001 }}>

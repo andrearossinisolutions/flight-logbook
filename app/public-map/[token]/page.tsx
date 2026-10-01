@@ -21,14 +21,14 @@ export default async function PublicMapPage({ params }: PublicMapPageProps) {
     ? link.passengerFilter.split(",").map((p: string) => p.trim()).filter(Boolean)
     : null;
 
-  const { points, routes } = await buildMapData(link.userId, {
+  const { points, routes, gpxTracks } = await buildMapData(link.userId, {
     includeFuturePlans: link.includeFuturePlans,
     passengerFilter,
   });
 
   return (
     <div style={{ width: "100vw", height: "100vh", overflow: "hidden" }}>
-      <PublicFlightMap token={token} points={points} routes={routes} />
+      <PublicFlightMap token={token} points={points} routes={routes} gpxTracks={gpxTracks} />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
-import type { MapPoint, MapRoute } from "./flight-map-inner";
+import type { MapPoint, MapRoute, MapGpxTrack } from "./flight-map-inner";
 
 const FlightMapInner = dynamic(() => import("./flight-map-inner"), {
   ssr: false,
@@ -28,11 +28,13 @@ interface PublicFlightMapProps {
   token: string;
   points: MapPoint[];
   routes: MapRoute[];
+  gpxTracks?: MapGpxTrack[];
 }
 
-export default function PublicFlightMap({ token, points: initialPoints, routes: initialRoutes }: PublicFlightMapProps) {
+export default function PublicFlightMap({ token, points: initialPoints, routes: initialRoutes, gpxTracks: initialGpxTracks = [] }: PublicFlightMapProps) {
   const [points, setPoints] = useState(initialPoints);
   const [routes, setRoutes] = useState(initialRoutes);
+  const [gpxTracks, setGpxTracks] = useState(initialGpxTracks);
   const isFetchingRef = useRef(false);
 
   useEffect(() => {
@@ -45,6 +47,7 @@ export default function PublicFlightMap({ token, points: initialPoints, routes: 
           const data = await res.json();
           setPoints(data.points);
           setRoutes(data.routes);
+          setGpxTracks(data.gpxTracks ?? []);
         }
       } catch {
         // Ignora errori di rete transitori: riprova al prossimo giro di polling
@@ -59,7 +62,7 @@ export default function PublicFlightMap({ token, points: initialPoints, routes: 
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
-      <FlightMapInner points={points} routes={routes} interactive={false} showLabels showSummary={false} />
+      <FlightMapInner points={points} routes={routes} gpxTracks={gpxTracks} interactive={false} showLabels showSummary={false} />
     </div>
   );
 }

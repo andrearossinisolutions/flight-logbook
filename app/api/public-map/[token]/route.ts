@@ -19,12 +19,12 @@ export async function GET(_req: Request, { params }: RouteParams) {
       ? link.passengerFilter.split(",").map((p) => p.trim()).filter(Boolean)
       : null;
 
-    const { points, routes } = await buildMapData(link.userId, {
+    const { points, routes, gpxTracks } = await buildMapData(link.userId, {
       includeFuturePlans: link.includeFuturePlans,
       passengerFilter,
     });
 
-    return NextResponse.json({ points, routes });
+    return NextResponse.json({ points, routes, gpxTracks });
   } catch (err: any) {
     console.error("Errore nel refresh della mappa pubblica:", err);
     return NextResponse.json({ error: err.message || "Errore interno del server" }, { status: 500 });
