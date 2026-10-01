@@ -1,10 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import type { Route } from "next";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
-export default function LoginForm() {
+interface LoginFormProps {
+  redirectTo?: string;
+}
+
+export default function LoginForm({ redirectTo = "/logbook" }: LoginFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -31,7 +36,7 @@ export default function LoginForm() {
       return;
     }
 
-    router.push("/logbook");
+    router.push(redirectTo as Route);
     router.refresh();
   }
 

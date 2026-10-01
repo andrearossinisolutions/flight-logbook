@@ -7,7 +7,12 @@ import FlightMap from "@/components/flight-map";
 
 export const dynamic = "force-dynamic";
 
-export default async function MapPage() {
+interface MapPageProps {
+  searchParams: Promise<{ openShare?: string; pairingCode?: string }>;
+}
+
+export default async function MapPage({ searchParams }: MapPageProps) {
+  const { openShare, pairingCode } = await searchParams;
   const session = await getSessionFromCookie();
   if (!session) {
     redirect("/login");
@@ -32,7 +37,14 @@ export default async function MapPage() {
 
       {/* Mappa a tutto schermo (si estende dietro la barra di navigazione) */}
       <div style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", zIndex: 1 }}>
-        <FlightMap points={points} routes={routes} hasBase={hasBase} knownPassengers={knownPassengers} />
+        <FlightMap
+          points={points}
+          routes={routes}
+          hasBase={hasBase}
+          knownPassengers={knownPassengers}
+          autoOpenShareMenu={openShare === "1"}
+          pairingCode={pairingCode}
+        />
       </div>
     </div>
   );

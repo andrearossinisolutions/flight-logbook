@@ -350,3 +350,14 @@ model MapShareLink {
   @@index([userId])
 }
 
+// Pairing effimero tra la pagina pubblica mostrata su un televisore (che genera il codice e
+// mostra il QR) e il telefono che scansiona, effettua il login e genera/recupera il proprio
+// link mappa: una volta associato il token, la TV (in polling) passa a mostrare quella mappa.
+model MapPairing {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  token     String?
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+}
+

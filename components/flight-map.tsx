@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { MapPoint, MapRoute } from "./flight-map-inner";
@@ -35,9 +35,11 @@ interface FlightMapProps {
   routes: MapRoute[];
   hasBase?: boolean;
   knownPassengers?: string[];
+  autoOpenShareMenu?: boolean;
+  pairingCode?: string;
 }
 
-export default function FlightMap({ points, routes, hasBase, knownPassengers = [] }: FlightMapProps) {
+export default function FlightMap({ points, routes, hasBase, knownPassengers = [], autoOpenShareMenu, pairingCode }: FlightMapProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [editingPlaceName, setEditingPlaceName] = useState<string | null>(null);
@@ -55,6 +57,27 @@ export default function FlightMap({ points, routes, hasBase, knownPassengers = [
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [isEditingOptions, setIsEditingOptions] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Apre automaticamente il pannello di condivisione quando si arriva da /map?openShare=1
+  // (es. dopo il login effettuato scansionando il QR code della mappa pubblica su TV)
+  useEffect(() => {
+    if (!autoOpenShareMenu) return;
+    handleOpenShareMenu();
+    router.replace("/map", { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoOpenShareMenu]);
+
+  // Quando siamo arrivati da uno scan del QR della mappa TV (pairingCode presente), appena un
+  // link mappa è disponibile (esistente o appena generato) lo associamo al codice di pairing,
+  // così la TV in polling può passare automaticamente a mostrarlo.
+  const pairingAssociatedRef = useRef(false);
+  useEffect(() => {
+    if (!pairingCode || !generatedLink || pairingAssociatedRef.current) return;
+    pairingAssociatedRef.current = true;
+    fetch(`/api/map-pairing/${pairingCode}`, { method: "POST" }).catch(() => {
+      pairingAssociatedRef.current = false;
+    });
+  }, [pairingCode, generatedLink]);
 
   async function handleOpenShareMenu() {
     const willOpen = !isShareMenuOpen;

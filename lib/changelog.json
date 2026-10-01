@@ -1,5 +1,21 @@
 [
   {
+    "version": "1.31.0",
+    "date": "2026-10-01",
+    "commits": [
+      {
+        "hash": "1743cfc",
+        "date": "2026-10-01",
+        "subject": "Added sharable map"
+      },
+      {
+        "hash": "90b1819",
+        "date": "2026-10-01",
+        "subject": "Added QR to generic /public-map url to handle easy custom map showing"
+      }
+    ]
+  },
+  {
     "version": "1.30.0",
     "date": "2026-09-25",
     "commits": [
@@ -9,7 +25,7 @@
         "subject": "Added partnership maintainance widget"
       },
       {
-        "hash": "c225ad0",
+        "hash": "c89fa9b",
         "date": "2026-09-25",
         "subject": "Collapsed messages widget"
       }
