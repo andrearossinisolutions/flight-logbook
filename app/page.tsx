@@ -186,6 +186,58 @@ export default async function HomePage({
               </div>
             </div>
 
+            {/* Feature Mappa */}
+            <div className="showcase-row">
+              <div className="showcase-text">
+                <span className="showcase-badge">Mappa dei Voli</span>
+                <h3>Tutti i tuoi voli, sulla mappa</h3>
+                <p>
+                  Visualizza su una mappa interattiva le destinazioni dei voli effettuati e quelle dei
+                  voli futuri pianificati. Se carichi la traccia GPX, vedi l'esatta rotta percorsa.
+                </p>
+                <ul className="showcase-features-list">
+                  <li>
+                    <CheckIcon />
+                    <span>Rotta esatta dei voli effettuati, caricando le tracce GPX</span>
+                  </li>
+                  <li>
+                    <CheckIcon />
+                    <span>Voli futuri mostrati in base alle programmazioni inserite</span>
+                  </li>
+                  <li>
+                    <CheckIcon />
+                    <span>Link e QR code per condividere la mappa con amici e soci</span>
+                  </li>
+                </ul>
+                <div style={{ marginTop: 24 }}>
+                  <Link href="/login" className="btn" style={{ display: "inline-flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
+                    Accedi e inizia <ArrowRightIcon size={16} />
+                  </Link>
+                </div>
+              </div>
+              <div className="showcase-visual">
+                <div className="browser-mockup">
+                  <div className="browser-header">
+                    <div className="browser-dots">
+                      <div className="browser-dot red"></div>
+                      <div className="browser-dot yellow"></div>
+                      <div className="browser-dot green"></div>
+                    </div>
+                    <div className="browser-address">/map</div>
+                  </div>
+                  <div className="browser-content">
+                    <Image
+                      src="/images/screenshots/map.webp"
+                      alt="Mappa dei voli effettuati e pianificati con rotte GPX"
+                      width={800}
+                      height={500}
+                      className="browser-image"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Feature 1 */}
             <div className="showcase-row">
               <div className="showcase-text">

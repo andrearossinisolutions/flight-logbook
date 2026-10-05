@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.32.2",
+    "date": "2026-10-05",
+    "commits": [
+      {
+        "hash": "d597032",
+        "date": "2026-10-05",
+        "subject": "Added map section to home"
+      }
+    ]
+  },
+  {
     "version": "1.32.1",
     "date": "2026-10-05",
     "commits": [
       {
-        "hash": "48404bf",
+        "hash": "f9dadf3",
         "date": "2026-10-05",
         "subject": "Fixed public map session"
       }
