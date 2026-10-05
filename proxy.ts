@@ -20,6 +20,8 @@ const PUBLIC_API_PREFIXES = [
   "/api/register",
   "/api/auth/forgot-password",
   "/api/auth/reset-password",
+  "/public-map",
+  "/api/public-map",
 ];
 
 export async function proxy(request: NextRequest) {
@@ -39,8 +41,13 @@ export async function proxy(request: NextRequest) {
   // Normalize the pathname: convert to lowercase and remove trailing slash for comparison
   const normalizedPath = pathname.toLowerCase().replace(/\/$/, "") || "/";
 
+  // Il polling della TV sul pairing è pubblico (solo GET); l'associazione (POST) richiede login.
+  const isPublicPairingPoll =
+    request.method === "GET" && normalizedPath.startsWith("/api/map-pairing/");
+
   const isPublicPath =
     PUBLIC_PATHS.has(normalizedPath) ||
+    isPublicPairingPoll ||
     PUBLIC_API_PREFIXES.some((prefix) => normalizedPath.startsWith(prefix));
 
   if (isPublicPath) {

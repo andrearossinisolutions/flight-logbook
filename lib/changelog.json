@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.32.1",
+    "date": "2026-10-05",
+    "commits": [
+      {
+        "hash": "48404bf",
+        "date": "2026-10-05",
+        "subject": "Fixed public map session"
+      }
+    ]
+  },
+  {
     "version": "1.32.0",
     "date": "2026-10-01",
     "commits": [
@@ -9,7 +20,7 @@
         "subject": "Added GPX upload"
       },
       {
-        "hash": "2d55dfa",
+        "hash": "d94f85d",
         "date": "2026-10-01",
         "subject": "Added track drawing on map if GPX is avail for the route"
       }
