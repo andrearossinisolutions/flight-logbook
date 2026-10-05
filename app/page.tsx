@@ -116,6 +116,13 @@ export default async function HomePage({
               Accedi al tuo account
             </Link>
           </div>
+          <div className="hero-chips">
+            <span className="hero-chip">📒 Logbook</span>
+            <span className="hero-chip">🗺️ Mappa voli</span>
+            <span className="hero-chip">🌦️ Briefing meteo</span>
+            <span className="hero-chip">👥 Società di volo</span>
+            <span className="hero-chip">🛠️ Manutenzioni</span>
+          </div>
         </div>
       </section>
 
