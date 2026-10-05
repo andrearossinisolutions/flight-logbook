@@ -73,6 +73,7 @@ export async function buildMapData(userId: string, options: MapDataOptions) {
     flightCount: number;
     draftFlightCount: number;
     lastVisit: Date | null;
+    isLanding: boolean;
   }
 
   const statsMap = new Map<string, PlaceStats>();
@@ -86,10 +87,29 @@ export async function buildMapData(userId: string, options: MapDataOptions) {
       ? m.flight.intermediatePlaces.split(",").map((s) => s.trim().toUpperCase()).filter(Boolean)
       : [];
 
+    const overflights = new Set(
+      (m.flight.overflightPlaces ?? "")
+        .split(",")
+        .map((s) => s.trim().toUpperCase())
+        .filter(Boolean)
+    );
+
+    // Partenza e destinazione sono sempre atterraggi; le tappe lo sono salvo
+    // che siano state contrassegnate come solo sorvolo.
     const places = new Set<string>();
-    if (dep) places.add(dep);
-    for (const p of inter) places.add(p);
-    if (arr) places.add(arr);
+    const landings = new Set<string>();
+    if (dep) {
+      places.add(dep);
+      landings.add(dep);
+    }
+    for (const p of inter) {
+      places.add(p);
+      if (!overflights.has(p)) landings.add(p);
+    }
+    if (arr) {
+      places.add(arr);
+      landings.add(arr);
+    }
 
     places.forEach((place) => {
       const stats = statsMap.get(place) || {
@@ -97,7 +117,9 @@ export async function buildMapData(userId: string, options: MapDataOptions) {
         flightCount: 0,
         draftFlightCount: 0,
         lastVisit: null,
+        isLanding: false,
       };
+      if (landings.has(place)) stats.isLanding = true;
       if (m.isDraft) {
         stats.draftFlightCount += 1;
       } else {
@@ -116,6 +138,7 @@ export async function buildMapData(userId: string, options: MapDataOptions) {
       flightCount: 0,
       draftFlightCount: 0,
       lastVisit: null,
+      isLanding: true,
     });
   }
 
@@ -130,6 +153,7 @@ export async function buildMapData(userId: string, options: MapDataOptions) {
       lat: coords.lat,
       lon: coords.lon,
       isBase: key === baseKey,
+      isLanding: stats.isLanding,
       flightCount: stats.flightCount,
       draftFlightCount: stats.draftFlightCount,
       address: custom?.address || null,

@@ -1382,9 +1382,13 @@ function dashboardItem(item: any, movements: any[] = [], isFutureMovement = fals
               <div className={isFutureMovement ? "future-movement" : undefined}>
                 🛫 {item.flight?.takeoffPlace ?? "?"}
                 {item.flight?.intermediatePlaces &&
-                  item.flight.intermediatePlaces.split(",").map((s: string, idx: number) => (
-                    <span key={idx}> · 📍 {s.trim()}</span>
-                  ))
+                  item.flight.intermediatePlaces.split(",").map((s: string, idx: number) => {
+                    const name = s.trim();
+                    const isOverflight = (item.flight?.overflightPlaces ?? "")
+                      .split(",")
+                      .some((o: string) => o.trim().toUpperCase() === name.toUpperCase());
+                    return <span key={idx}> · {isOverflight ? "📍" : "🛬"} {name}</span>;
+                  })
                 }
                 {" · 🛬 "}{item.flight?.arrivalPlace ?? "?"}
               </div>

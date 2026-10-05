@@ -41,6 +41,7 @@ export async function POST(request: Request) {
   const takeoffPlace = String(formData.get("takeoffPlace") ?? "").trim() || null;
   const arrivalPlace = String(formData.get("arrivalPlace") ?? "").trim() || null;
   const intermediatePlaces = String(formData.get("intermediatePlaces") ?? "").trim() || null;
+  const overflightPlaces = String(formData.get("overflightPlaces") ?? "").trim() || null;
   const engineOn = parseDateTimeValue(formData.get("engineOn"));
   const engineOff = parseDateTimeValue(formData.get("engineOff"));
 
@@ -177,6 +178,7 @@ export async function POST(request: Request) {
         takeoffPlace,
         arrivalPlace,
         intermediatePlaces,
+        overflightPlaces,
         engineOn,
         engineOff,
         inputMode,

@@ -9,6 +9,8 @@ export interface MapPoint {
   lat: number;
   lon: number;
   isBase: boolean;
+  /** true se in almeno un volo il luogo è un atterraggio (non solo sorvolo) */
+  isLanding?: boolean;
   flightCount: number;
   draftFlightCount?: number;
   address: string | null;
@@ -147,6 +149,39 @@ export default function FlightMapInner({
       let currentIcon;
       if (p.isBase) {
         currentIcon = homeIcon;
+      } else if (p.isLanding) {
+        const isReached = p.flightCount > 0;
+        const isScheduledOnly = !isReached && (p.draftFlightCount && p.draftFlightCount > 0);
+        const bgColor = isReached ? "#4ade80" : (isScheduledOnly ? "#38bdf8" : "#e05e5e");
+
+        currentIcon = L.divIcon({
+          html: `
+            <div style="
+              background-color: ${bgColor};
+              width: 28px;
+              height: 28px;
+              border-radius: 50%;
+              border: 2px solid white;
+              box-shadow: 0 3px 8px rgba(20, 32, 51, 0.2);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: white;
+              font-size: 14px;
+              cursor: pointer;
+              transition: transform 0.2s ease;
+            "
+            onmouseover="this.style.transform='scale(1.15)'"
+            onmouseout="this.style.transform='scale(1)'"
+            >
+              🛬
+            </div>
+          `,
+          className: "custom-landing-marker",
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+          popupAnchor: [0, -14],
+        });
       } else {
         const isReached = p.flightCount > 0;
         const isScheduledOnly = !isReached && (p.draftFlightCount && p.draftFlightCount > 0);

@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.33.0",
+    "date": "2026-10-05",
+    "commits": [
+      {
+        "hash": "bf19d51",
+        "date": "2026-10-05",
+        "subject": "Added landing flag on route steps"
+      }
+    ]
+  },
+  {
     "version": "1.32.2",
     "date": "2026-10-05",
     "commits": [
@@ -9,7 +20,7 @@
         "subject": "Added map section to home"
       },
       {
-        "hash": "724cbce",
+        "hash": "9694d59",
         "date": "2026-10-05",
         "subject": "Restyled homepage"
       }

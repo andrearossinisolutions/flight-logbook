@@ -57,6 +57,7 @@ function buildInitialValues(
     takeoffPlace: initialValues?.takeoffPlace ?? "",
     arrivalPlace: initialValues?.arrivalPlace ?? "",
     intermediatePlaces: initialValues?.intermediatePlaces ?? "",
+    overflightPlaces: initialValues?.overflightPlaces ?? "",
     engineOn: initialValues?.engineOn ?? "",
     engineOff: initialValues?.engineOff ?? "",
     passengerName: initialValues?.passengerName ?? "",
@@ -151,6 +152,29 @@ export default function FlightForm({
     }
     return [];
   });
+
+  // Indici delle tappe che sono solo sorvolo (default: atterraggio)
+  const [overflights, setOverflights] = useState<number[]>(() => {
+    if (!initialValues?.intermediatePlaces || !initialValues.overflightPlaces) return [];
+    const overflightNames = initialValues.overflightPlaces
+      .split(",")
+      .map((s) => s.trim().toUpperCase())
+      .filter(Boolean);
+    const result: number[] = [];
+    initialValues.intermediatePlaces
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .forEach((name, idx) => {
+        if (overflightNames.includes(name.toUpperCase())) result.push(idx);
+      });
+    return result;
+  });
+
+  const overflightPlacesValue = tappe
+    .map((t, i) => (overflights.includes(i) ? t.trim() : ""))
+    .filter((t) => t !== "")
+    .join(",");
 
   const lastFetchedRegistrationRef = useRef("");
 
@@ -671,12 +695,29 @@ export default function FlightForm({
                     placeholder="Es. Linate"
                     style={{ flex: 1 }}
                   />
+                  <label style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.85rem", whiteSpace: "nowrap" }}>
+                    <input
+                      type="checkbox"
+                      checked={!overflights.includes(idx)}
+                      onChange={(e) =>
+                        setOverflights(
+                          e.target.checked
+                            ? overflights.filter((i) => i !== idx)
+                            : [...overflights, idx]
+                        )
+                      }
+                    />
+                    🛬 Atterraggio
+                  </label>
                   <button
                     className="btn secondary"
                     type="button"
                     onClick={() => {
                       const newTappe = tappe.filter((_, i) => i !== idx);
                       setTappe(newTappe);
+                      setOverflights(
+                        overflights.filter((i) => i !== idx).map((i) => (i > idx ? i - 1 : i))
+                      );
                     }}
                     style={{ padding: "8px 12px", height: "auto", fontSize: "0.85rem", color: "var(--danger)", borderColor: "var(--danger)" }}
                   >
@@ -695,6 +736,7 @@ export default function FlightForm({
             </div>
 
             <input type="hidden" name="intermediatePlaces" value={tappe.filter(t => t.trim() !== "").join(",")} />
+            <input type="hidden" name="overflightPlaces" value={overflightPlacesValue} />
           </div>
 
           <datalist id="visitedPlacesList">
