@@ -50,6 +50,7 @@ model Settings {
   instructorRatePerHour Decimal  @default(80)
   currency              String   @default("EUR")
   defaultBase           String?
+  basePromptDismissedAt DateTime?
   dateMonoExam          DateTime?
   dateMedicalExam       DateTime?
   dateBipoExam          DateTime?

@@ -4,6 +4,7 @@ import type { Route } from "next";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { AppShell } from "@/components/app-shell";
+import { BaseSetupPrompt } from "@/components/base-setup-prompt";
 import { DashboardWidgets } from "@/components/dashboard-widgets";
 import { DeleteMovementButton } from "@/components/delete-movement-button";
 import { DeleteBookingButton } from "@/components/delete-booking-button";
@@ -573,6 +574,7 @@ export default async function DashboardPage({
       subtitle="Saldo, movimenti e accesso rapido a inserimento volo, ricarica e settings."
       className="dashboard-container"
     >
+      <BaseSetupPrompt userId={user.id} />
       {errorMsg && (
         <div style={{ 
           backgroundColor: "rgba(220, 38, 38, 0.1)", 

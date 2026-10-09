@@ -1689,9 +1689,9 @@ function buildNoBaseReminderEmail(user: any) {
     `Ciao${user.fullName ? ` ${user.fullName}` : ""},\n\n` +
     `Abbiamo notato che non hai ancora impostato il tuo aeroporto base nel tuo profilo.\n\n` +
     `Configurare un aeroporto base (es. LIME, LIML) ti permette di:\n` +
-    `- Avere le origini/destinazioni dei voli precompilate automaticamente sul logbook.\n` +
+    `- Avere il luogo di partenza dei nuovi voli precompilato automaticamente sul logbook.\n` +
     `- Ricevere il Briefing Meteo del Weekend ogni giovedì mattina entro 100km dalla tua base.\n` +
-    `- Usufruire di tutte le future funzionalità mirate e personalizzate.\n\n` +
+    `- Vedere la tua base sulla mappa dei voli e usufruire delle future funzionalità personalizzate.\n\n` +
     `Impostala subito qui: ${settingsUrl}\n\n` +
     `Buon volo,\nIl Team di Flight Logbook`;
 
@@ -1718,13 +1718,13 @@ function buildNoBaseReminderEmail(user: any) {
       
       <ul style="font-size: 14px; line-height: 1.6; color: #374151; padding-left: 20px; margin-bottom: 24px;">
         <li style="margin-bottom: 8px;">
-          <strong>Precompilazione logbook:</strong> Le origini e destinazioni dei tuoi nuovi inserimenti saranno precompilate automaticamente con la tua base per farti risparmiare tempo.
+          <strong>Precompilazione logbook:</strong> Il luogo di partenza dei tuoi nuovi voli sarà precompilato automaticamente con la tua base per farti risparmiare tempo.
         </li>
         <li style="margin-bottom: 8px;">
           <strong>Briefing Meteo del Weekend:</strong> Riceverai ogni giovedì mattina una notifica email con le condizioni VFR stimate per venerdì, sabato e domenica in un raggio di 100 km dalla tua base.
         </li>
         <li style="margin-bottom: 8px;">
-          <strong>Calcoli intelligenti:</strong> Le pianificazioni di rotta e le mappe interattive useranno la tua base come punto di partenza predefinito.
+          <strong>Mappa dei voli:</strong> La tua base sarà evidenziata con 🏠 sulla mappa interattiva, insieme alle destinazioni raggiunte.
         </li>
       </ul>
       
@@ -1752,7 +1752,12 @@ export async function checkAndSendNoBaseReminders(now = new Date()) {
   const SIX_MONTHS_MS = 180 * 24 * 60 * 60 * 1000;
 
   for (const user of users) {
-    const hasBase = !!user.settings?.defaultBase?.trim();
+    // Stesse condizioni dell'avviso a schermo nel logbook (components/base-setup-prompt.tsx):
+    // solo utenti che hanno completato l'onboarding e non hanno una base.
+    if (!user.settings?.onboardingCompleted) {
+      continue;
+    }
+    const hasBase = !!user.settings.defaultBase?.trim();
     if (hasBase) {
       continue;
     }
