@@ -22,6 +22,7 @@ const PUBLIC_API_PREFIXES = [
   "/api/auth/reset-password",
   "/public-map",
   "/api/public-map",
+  "/embed",
 ];
 
 export async function proxy(request: NextRequest) {

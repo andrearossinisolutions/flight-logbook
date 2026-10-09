@@ -1,10 +1,40 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getWeekendWeatherAction } from "@/app/briefing/actions";
 
-export default function WeekendWeatherBriefing({ defaultBase }: { defaultBase: string }) {
-  const [loading, setLoading] = useState(false);
+export default function WeekendWeatherBriefing({
+  defaultBase,
+  canShare = false,
+  embedded = false,
+}: {
+  defaultBase: string;
+  /** Mostra i pulsanti per copiare il link / l'iframe di condivisione (solo utenti loggati) */
+  canShare?: boolean;
+  /** Versione per iframe: senza margini esterni né pulsanti di condivisione */
+  embedded?: boolean;
+}) {
+  const [shareMsg, setShareMsg] = useState<string | null>(null);
+
+  const copyShare = async (kind: "link" | "iframe") => {
+    try {
+      const res = await fetch("/api/weekend-weather-share", { method: "POST" });
+      const json = await res.json();
+      if (!res.ok || !json.token) throw new Error(json.error || "Errore");
+      const url = `${window.location.origin}/embed/weekend-weather/${json.token}`;
+      const text =
+        kind === "link"
+          ? url
+          : `<iframe src="${url}" style="width:100%;height:100%;border:0" loading="lazy" title="Meteo Weekend"></iframe>`;
+      await navigator.clipboard.writeText(text);
+      setShareMsg(kind === "link" ? "Link copiato ✓" : "Codice iframe copiato ✓");
+    } catch {
+      setShareMsg("Impossibile creare il link di condivisione");
+    }
+    setTimeout(() => setShareMsg(null), 3000);
+  };
+
+  const [loading, setLoading] = useState(true);
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -20,22 +50,32 @@ export default function WeekendWeatherBriefing({ defaultBase }: { defaultBase: s
     setLoading(false);
   };
 
+  // Caricamento automatico dopo il render della pagina, senza ritardarne l'apertura
+  useEffect(() => {
+    loadWeather();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [defaultBase]);
+
   return (
-    <div id="weekend-weather" className="card" style={{ marginTop: 48, scrollMarginTop: 64, padding: "28px 32px" }}>
+    <div id="weekend-weather" className="card" style={{ marginTop: embedded ? 0 : 48, scrollMarginTop: 64, padding: "28px 32px" }}>
       <h2 style={{ marginTop: 0, marginBottom: 8, fontSize: "1.4rem", fontWeight: 800, display: "flex", alignItems: "center", gap: 10 }}>
         ☀️ Meteo Weekend Generico
+        {canShare && !embedded && (
+          <span style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8, fontSize: "0.85rem", fontWeight: 400 }}>
+            {shareMsg && <span className="muted">{shareMsg}</span>}
+            <button type="button" className="btn secondary" onClick={() => copyShare("link")} style={{ padding: "6px 12px", height: "auto", fontSize: "0.85rem" }}>
+              🔗 Copia link
+            </button>
+            <button type="button" className="btn secondary" onClick={() => copyShare("iframe")} style={{ padding: "6px 12px", height: "auto", fontSize: "0.85rem" }}>
+              {"</>"} Copia iframe
+            </button>
+          </span>
+        )}
       </h2>
       <p className="muted" style={{ fontSize: "0.9rem", marginBottom: 20 }}>
         Previsioni per Venerdì, Sabato e Domenica con indice di volabilità VFR nel raggio di 100km dalla tua base di <strong>{defaultBase.toUpperCase()}</strong>.
       </p>
 
-      {!data && !loading && (
-        <div style={{ textAlign: "center", padding: "20px 0" }}>
-          <button type="button" onClick={loadWeather} className="btn" style={{ fontWeight: 700 }}>
-            ☁️ Carica Meteo Weekend
-          </button>
-        </div>
-      )}
 
       {loading && (
         <div style={{ textAlign: "center", padding: "40px 0", color: "var(--text-muted)" }}>
@@ -47,6 +87,11 @@ export default function WeekendWeatherBriefing({ defaultBase }: { defaultBase: s
       {error && (
         <div className="error" style={{ padding: 12, borderRadius: 8, marginBottom: 16 }}>
           ⚠️ {error}
+          <div style={{ marginTop: 8 }}>
+            <button type="button" onClick={loadWeather} className="btn secondary">
+              Riprova
+            </button>
+          </div>
         </div>
       )}
 
@@ -55,7 +100,7 @@ export default function WeekendWeatherBriefing({ defaultBase }: { defaultBase: s
           {/* Griglia giorni del Weekend */}
           <div className="grid grid-3" style={{ gap: 16, marginBottom: 28 }}>
             {["friday", "saturday", "sunday"].map((dayKey) => {
-              const dayData = data.baseWeather[dayKey];
+              const dayData = data.baseWeather?.[dayKey];
               const dayLabel = dayKey === "friday" ? `Venerdì (${data.dates.friday})` : dayKey === "saturday" ? `Sabato (${data.dates.saturday})` : `Domenica (${data.dates.sunday})`;
               
               if (!dayData) return null;

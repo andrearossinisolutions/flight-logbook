@@ -51,6 +51,7 @@ model Settings {
   currency              String   @default("EUR")
   defaultBase           String?
   basePromptDismissedAt DateTime?
+  weatherShareToken     String?  @unique
   dateMonoExam          DateTime?
   dateMedicalExam       DateTime?
   dateBipoExam          DateTime?

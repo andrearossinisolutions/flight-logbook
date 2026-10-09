@@ -1229,7 +1229,7 @@ export default async function BriefingPage({
       )}
 
       {/* 4. Meteo Weekend Generico */}
-      <WeekendWeatherBriefing defaultBase={defaultBase} />
+      <WeekendWeatherBriefing defaultBase={defaultBase} canShare={!!session} />
     </AppShell>
   );
 }
