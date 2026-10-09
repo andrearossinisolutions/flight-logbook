@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.33.1",
+    "date": "2026-10-09",
+    "commits": [
+      {
+        "hash": "51fc1b4",
+        "date": "2026-10-09",
+        "subject": "Fixed meteo briefing w/ rain"
+      }
+    ]
+  },
+  {
     "version": "1.33.0",
     "date": "2026-10-05",
     "commits": [
       {
-        "hash": "bf19d51",
+        "hash": "9005c19",
         "date": "2026-10-05",
         "subject": "Added landing flag on route steps"
       }

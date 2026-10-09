@@ -1304,14 +1304,30 @@ function calculateVfrIndex(params: {
   let score = 100;
   let reasons: string[] = [];
 
-  if (precipSumMm > 5 || weatherCode >= 95) {
+  // Per aerei leggeri e ultraleggeri la pioggia non è accettabile: con pioggia
+  // probabile il volo è sconsigliato, con rischio pioggia al massimo marginale.
+  const isRainCode =
+    (weatherCode >= 51 && weatherCode <= 67) ||
+    (weatherCode >= 71 && weatherCode <= 77) ||
+    (weatherCode >= 80 && weatherCode <= 86) ||
+    weatherCode >= 95;
+  let maxScore = 100;
+
+  if (weatherCode >= 95 || precipSumMm > 5) {
     score -= 60;
+    maxScore = Math.min(maxScore, 30);
     reasons.push("Pioggia abbondante / temporali");
-  } else if (precipSumMm > 1 || precipProbMax > 40) {
+  } else if (isRainCode || precipSumMm > 1 || precipProbMax >= 70) {
+    score -= 50;
+    maxScore = Math.min(maxScore, 30);
+    reasons.push("Pioggia");
+  } else if (precipSumMm > 0.1 || precipProbMax > 40) {
     score -= 30;
+    maxScore = Math.min(maxScore, 65);
     reasons.push("Rischio pioggia");
-  } else if (precipSumMm > 0.1 || precipProbMax > 20) {
+  } else if (precipProbMax > 20) {
     score -= 10;
+    maxScore = Math.min(maxScore, 65);
     reasons.push("Umidità / deboli piogge");
   }
 
@@ -1329,6 +1345,8 @@ function calculateVfrIndex(params: {
   } else if (weatherCode === 3) {
     score -= 5;
   }
+
+  score = Math.min(score, maxScore);
 
   let label = "Ottimo 🟢";
   let color = "#16a34a";
@@ -1556,13 +1574,16 @@ function buildWeekendWeatherDigestEmail(args: {
   return { subject, text, html };
 }
 
-export async function sendWeekendWeatherDigest(now = new Date()) {
+export async function sendWeekendWeatherDigest(
+  now = new Date(),
+  opts: { force?: boolean; userEmail?: string } = {}
+) {
   const formatter = new Intl.DateTimeFormat("en-US", {
     timeZone: ROME_TIME_ZONE,
     weekday: "long",
   });
   const weekdayName = formatter.format(now);
-  if (weekdayName !== "Thursday") {
+  if (weekdayName !== "Thursday" && !opts.force) {
     return;
   }
 
@@ -1570,6 +1591,7 @@ export async function sendWeekendWeatherDigest(now = new Date()) {
   const fridayKey = friday.toISOString().split("T")[0];
 
   const users = await prisma.user.findMany({
+    where: opts.userEmail ? { email: opts.userEmail } : undefined,
     include: { settings: true },
   });
 
@@ -1581,7 +1603,7 @@ export async function sendWeekendWeatherDigest(now = new Date()) {
     const alreadySent = await prisma.dailyJobState.findUnique({
       where: { key: jobKey },
     });
-    if (alreadySent) continue;
+    if (alreadySent && !opts.force) continue;
 
     let baseName: string;
     let baseLat: number;
@@ -1640,13 +1662,15 @@ export async function sendWeekendWeatherDigest(now = new Date()) {
 
       console.log(`[daily-jobs] Email meteo weekend inviata con successo a ${user.email} (${user.id})`);
 
-      await prisma.dailyJobState.create({
-        data: {
-          key: jobKey,
-          lastRunDateKey: getRomeDateKey(now),
-          lastRunAt: now,
-        },
-      });
+      if (!alreadySent) {
+        await prisma.dailyJobState.create({
+          data: {
+            key: jobKey,
+            lastRunDateKey: getRomeDateKey(now),
+            lastRunAt: now,
+          },
+        });
+      }
     } catch (err) {
       console.error(`[daily-jobs] Errore nell'invio dell'email meteo weekend a ${user.email}:`, err);
     }
