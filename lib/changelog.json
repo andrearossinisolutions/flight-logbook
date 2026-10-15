@@ -1,12 +1,28 @@
 [
   {
-    "version": "1.34.0",
-    "date": "2026-10-09",
+    "version": "1.34.1",
+    "date": "2026-10-15",
     "commits": [
       {
-        "hash": "8e22c74",
+        "hash": "7099eae",
+        "date": "2026-10-15",
+        "subject": "Simplified page Società"
+      }
+    ]
+  },
+  {
+    "version": "1.34.0",
+    "date": "2026-10-15",
+    "commits": [
+      {
+        "hash": "60fe062",
         "date": "2026-10-09",
         "subject": "Auto-loading weekend meteo on meteo page; Added sharable weekend meteo brefing embeddable link"
+      },
+      {
+        "hash": "bd09d52",
+        "date": "2026-10-15",
+        "subject": "Merge settlement into Spese Soci tab and hide monthly report when shared fund is disabled"
       }
     ]
   },

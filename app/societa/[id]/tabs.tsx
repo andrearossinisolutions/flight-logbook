@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipSettings, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog, addRecommendedReminders, addBooking, deleteBooking, updateBooking, settleDirectPayment, uploadAircraftDocument, deleteAircraftDocument } from "./actions";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateDisplay, daysFromDate, formatDateTimeInput, getRomeDateTimeParts, formatDateInput, formatHoursToHHMM } from "@/lib/utils";
 import {
   DashboardIcon,
-  UsersIcon,
   FileTextIcon,
   WalletIcon,
   SettingsIcon,
@@ -194,6 +194,12 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
     return "BACHECA";
   });
   const router = useRouter();
+
+  // Il tab bar viene mostrato nell'header della pagina (accanto al titolo), se presente
+  const [tabSlot, setTabSlot] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    setTabSlot(document.getElementById("partnership-tabs-slot"));
+  }, []);
 
   // State for transaction type when adding a new transaction with cassa disabled
   const [newTxType, setNewTxType] = useState("MEMBER_EXPENSE");
@@ -540,10 +546,10 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
   };
 
   useEffect(() => {
-    if (activeTab === "REPORT") {
+    if (activeTab === "REPORT" || (activeTab === "CASSA" && partnership.disableSharedFund)) {
       loadReport();
     }
-  }, [activeTab, reportMonth, reportYear]);
+  }, [activeTab, reportMonth, reportYear, partnership.transactions]);
 
   async function loadReport() {
     setIsLoadingReport(true);
@@ -557,9 +563,114 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
     }
   }
 
-  return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "flex-start", marginBottom: 24 }}>
+  function renderSettlement() {
+    if (!reportData || !reportData.reports || reportData.reports.length < 2) return null;
+                const reports = reportData.reports;
+                const balances = reports.map((r: any) => ({
+                  userId: r.userId,
+                  name: r.fullName,
+                  amount: r.totalBalance || 0,
+                }));
+
+                const debtors = balances.filter((b: any) => b.amount > 0.01).map((b: any) => ({ ...b }));
+                const creditors = balances.filter((b: any) => b.amount < -0.01).map((b: any) => ({ ...b }));
+
+                const payments: { from: string; fromId: string; to: string; toId: string; amount: number }[] = [];
+                let debtorIdx = 0;
+                let creditorIdx = 0;
+
+                debtors.sort((a: any, b: any) => b.amount - a.amount);
+                creditors.sort((a: any, b: any) => a.amount - b.amount);
+
+                while (debtorIdx < debtors.length && creditorIdx < creditors.length) {
+                  const d = debtors[debtorIdx];
+                  const c = creditors[creditorIdx];
+                  const amountToPay = Math.min(d.amount, -c.amount);
+
+                  if (amountToPay > 0.01) {
+                    payments.push({
+                      from: d.name,
+                      fromId: d.userId,
+                      to: c.name,
+                      toId: c.userId,
+                      amount: amountToPay,
+                    });
+                  }
+
+                  d.amount -= amountToPay;
+                  c.amount += amountToPay;
+
+                  if (d.amount <= 0.01) debtorIdx++;
+                  if (c.amount >= -0.01) creditorIdx++;
+                }
+
+                return (
+                  <div style={{ padding: 20, background: "rgba(37, 99, 235, 0.04)", border: "1px solid rgba(37, 99, 235, 0.15)", borderRadius: 12 }}>
+                    <h3 style={{ marginTop: 0, color: "var(--primary-strong)", display: "flex", alignItems: "center", gap: 8 }}>
+                      <span>🤝</span> Regolamento dei Conti
+                    </h3>
+                    <p className="muted" style={{ fontSize: "0.9rem", marginTop: 4, marginBottom: 16 }}>
+                      Per pareggiare spese e voli fino ad oggi, i soci devono effettuare i seguenti trasferimenti diretti:
+                    </p>
+
+                    {payments.length === 0 ? (
+                      <div style={{ padding: "12px 16px", background: "white", border: "1px solid var(--border)", borderRadius: 8, color: "var(--success)", fontWeight: 500 }}>
+                        ✅ I conti sono perfettamente in pareggio. Non è necessario alcun trasferimento!
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        {payments.map((p, idx) => (
+                          <div key={idx} style={{ 
+                            display: "flex", 
+                            alignItems: "center", 
+                            justifyContent: "space-between", 
+                            background: "white", 
+                            padding: "12px 16px", 
+                            border: "1px solid var(--border)", 
+                            borderRadius: 8,
+                            boxShadow: "0 1px 2px rgba(0,0,0,0.02)"
+                          }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                              <span style={{ fontWeight: 600, color: "var(--danger)" }}>{p.from}</span>
+                              <span className="muted" style={{ fontSize: "0.9rem" }}>deve dare</span>
+                              <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--primary)" }}>€ {p.amount.toFixed(2)}</span>
+                              <span className="muted" style={{ fontSize: "0.9rem" }}>a</span>
+                              <span style={{ fontWeight: 600, color: "var(--success)" }}>{p.to}</span>
+                            </div>
+                            <button
+                              className="btn secondary"
+                              style={{ padding: "6px 12px", fontSize: "0.8rem", borderRadius: 8, display: "flex", alignItems: "center", gap: 6 }}
+                              onClick={async (e) => {
+                                if (!confirm(`Sei sicuro di voler registrare il pagamento di € ${p.amount.toFixed(2)} da ${p.from} a ${p.to} per regolare i conti?`)) {
+                                  return;
+                                }
+                                const btn = e.currentTarget;
+                                btn.disabled = true;
+                                const origText = btn.innerHTML;
+                                btn.innerText = "Registrazione...";
+                                try {
+                                  const now = new Date();
+                                  const desc = `Saldato regolamento conti - ${formatMonth(now.getMonth() + 1)} ${now.getFullYear()}`;
+                                  await settleDirectPayment(partnership.id, p.fromId, p.toId, p.amount, desc, new Date().getFullYear(), new Date().getMonth());
+                                  await loadReport();
+                                  router.refresh();
+                                } catch (err: any) {
+                                  alert("Errore durante la registrazione: " + err.message);
+                                  btn.disabled = false;
+                                  btn.innerHTML = origText;
+                                }
+                              }}
+                            >
+                              <span>💸</span> Registra pagamento
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+  }
+  const tabBar = (
         <div className="navbar-tabs" style={{ display: "flex", flexWrap: "wrap", width: "fit-content" }}>
           <button
             type="button"
@@ -592,16 +703,8 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             <span className="navbar-tab-text">Logbook</span>
           </button>
 
-          <button
-            type="button"
-            className={`navbar-tab ${activeTab === "MEMBERS" ? "active" : ""}`}
-            style={{ border: "none", cursor: "pointer", background: activeTab === "MEMBERS" ? "white" : "transparent" }}
-            onClick={() => setActiveTab("MEMBERS")}
-            title="Soci"
-          >
-            <UsersIcon size={18} />
-            <span className="navbar-tab-text">Soci</span>
-          </button>
+          
+          {!partnership.disableSharedFund && (
           <button
             type="button"
             className={`navbar-tab ${activeTab === "REPORT" ? "active" : ""}`}
@@ -612,6 +715,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             <FileTextIcon size={18} />
             <span className="navbar-tab-text">Rendiconto Mensile</span>
           </button>
+          )}
           <button
             type="button"
             className={`navbar-tab ${activeTab === "CASSA" ? "active" : ""}`}
@@ -633,7 +737,13 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             <span className="navbar-tab-text">Impostazioni</span>
           </button>
         </div>
-      </div>
+  );
+
+  return (
+    <div>
+      {tabSlot ? createPortal(tabBar, tabSlot) : (
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>{tabBar}</div>
+      )}
 
       {activeTab === "BACHECA" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -1876,97 +1986,6 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
 
       
 
-      {activeTab === "MEMBERS" && (
-        <div className="grid grid-2">
-          <div className="card">
-            <h2 style={{ marginTop: 0 }}>Elenco Soci</h2>
-            <table className="table members-table">
-              <thead>
-                <tr>
-                  <th>Socio</th>
-                  <th>Ruolo</th>
-                  {isAdmin && <th style={{ textAlign: "right" }}>Azioni</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {partnership.members.map((m: any) => (
-                  <tr key={m.id}>
-                    <td>
-                      <div style={{ fontWeight: 600, color: "var(--text)" }}>
-                        {m.user.fullName || "Utente senza nome"} {m.user.id === currentUserId ? " (Tu)" : ""}
-                      </div>
-                      <div className="muted" style={{ fontSize: "0.85rem", marginTop: 2 }}>
-                        {m.user.email}
-                      </div>
-                    </td>
-                    <td>{m.role === "ADMIN" ? "Amministratore" : "Socio"}</td>
-                    {isAdmin && (
-                      <td style={{ textAlign: "right" }}>
-                        {m.user.id !== currentUserId && (
-                          <button
-                            className="btn secondary"
-                            style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
-                            onClick={() => {
-                              if (confirm(`Sei sicuro di voler rimuovere l'utente ${m.user.email}?`)) {
-                                removeMember(partnership.id, m.userId);
-                              }
-                            }}
-                          >
-                            Rimuovi
-                          </button>
-                        )}
-                      </td>
-                    )}
-                  </tr>
-                ))}
-                {partnership.invitations && partnership.invitations.map((inv: any) => (
-                  <tr key={inv.id} style={{ opacity: 0.75 }}>
-                    <td>
-                      <div style={{ fontWeight: 600, color: "var(--muted)", fontStyle: "italic" }}>
-                        Invito in attesa
-                      </div>
-                      <div className="muted" style={{ fontSize: "0.85rem", marginTop: 2 }}>
-                        {inv.email}
-                      </div>
-                    </td>
-                    <td>Socio (in attesa)</td>
-                    {isAdmin && (
-                      <td style={{ textAlign: "right" }}>
-                        <button
-                          className="btn secondary"
-                          style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
-                          onClick={async () => {
-                            if (confirm(`Sei sicuro di voler annullare l'invito per ${inv.email}?`)) {
-                              await cancelInvitation(partnership.id, inv.id);
-                            }
-                          }}
-                        >
-                          Annulla
-                        </button>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {isAdmin && (
-            <div className="card">
-              <h2 style={{ marginTop: 0 }}>Aggiungi Socio</h2>
-              <p className="muted">Se l'utente non è registrato, riceverà un invito email per creare un account.</p>
-              <form action={addMember.bind(null, partnership.id)} className="grid">
-                <div className="field">
-                  <label>Email utente</label>
-                  <input className="input" type="email" name="email" required placeholder="email@esempio.it" />
-                </div>
-                <SubmitButton>Aggiungi alla società</SubmitButton>
-              </form>
-            </div>
-          )}
-        </div>
-      )}
-
       {activeTab === "REPORT" && (
         <div className="card">
           <div className="between" style={{ marginBottom: 24 }}>
@@ -2146,113 +2165,6 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                 </tbody>
               </table>
 
-              {/* Regolamento dei Conti (se la cassa è disattivata) */}
-              {partnership.disableSharedFund && reportData && reportData.reports && reportData.reports.length > 1 && (() => {
-                const reports = reportData.reports;
-                const balances = reports.map((r: any) => ({
-                  userId: r.userId,
-                  name: r.fullName,
-                  amount: r.totalBalance || 0,
-                }));
-
-                const debtors = balances.filter((b: any) => b.amount > 0.01).map((b: any) => ({ ...b }));
-                const creditors = balances.filter((b: any) => b.amount < -0.01).map((b: any) => ({ ...b }));
-
-                const payments: { from: string; fromId: string; to: string; toId: string; amount: number }[] = [];
-                let debtorIdx = 0;
-                let creditorIdx = 0;
-
-                debtors.sort((a: any, b: any) => b.amount - a.amount);
-                creditors.sort((a: any, b: any) => a.amount - b.amount);
-
-                while (debtorIdx < debtors.length && creditorIdx < creditors.length) {
-                  const d = debtors[debtorIdx];
-                  const c = creditors[creditorIdx];
-                  const amountToPay = Math.min(d.amount, -c.amount);
-
-                  if (amountToPay > 0.01) {
-                    payments.push({
-                      from: d.name,
-                      fromId: d.userId,
-                      to: c.name,
-                      toId: c.userId,
-                      amount: amountToPay,
-                    });
-                  }
-
-                  d.amount -= amountToPay;
-                  c.amount += amountToPay;
-
-                  if (d.amount <= 0.01) debtorIdx++;
-                  if (c.amount >= -0.01) creditorIdx++;
-                }
-
-                return (
-                  <div style={{ marginTop: 32, padding: 20, background: "rgba(37, 99, 235, 0.04)", border: "1px solid rgba(37, 99, 235, 0.15)", borderRadius: 12 }}>
-                    <h3 style={{ marginTop: 0, color: "var(--primary-strong)", display: "flex", alignItems: "center", gap: 8 }}>
-                      <span>🤝</span> Regolamento dei Conti
-                    </h3>
-                    <p className="muted" style={{ fontSize: "0.9rem", marginTop: 4, marginBottom: 16 }}>
-                      La cassa comune è disattivata. Per pareggiare le spese e i voli di questo mese, i soci devono effettuare i seguenti trasferimenti diretti:
-                    </p>
-
-                    {payments.length === 0 ? (
-                      <div style={{ padding: "12px 16px", background: "white", border: "1px solid var(--border)", borderRadius: 8, color: "var(--success)", fontWeight: 500 }}>
-                        ✅ I conti sono perfettamente in pareggio. Non è necessario alcun trasferimento!
-                      </div>
-                    ) : (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                        {payments.map((p, idx) => (
-                          <div key={idx} style={{ 
-                            display: "flex", 
-                            alignItems: "center", 
-                            justifyContent: "space-between", 
-                            background: "white", 
-                            padding: "12px 16px", 
-                            border: "1px solid var(--border)", 
-                            borderRadius: 8,
-                            boxShadow: "0 1px 2px rgba(0,0,0,0.02)"
-                          }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                              <span style={{ fontWeight: 600, color: "var(--danger)" }}>{p.from}</span>
-                              <span className="muted" style={{ fontSize: "0.9rem" }}>deve dare</span>
-                              <span style={{ fontSize: "1.1rem", fontWeight: 700, color: "var(--primary)" }}>€ {p.amount.toFixed(2)}</span>
-                              <span className="muted" style={{ fontSize: "0.9rem" }}>a</span>
-                              <span style={{ fontWeight: 600, color: "var(--success)" }}>{p.to}</span>
-                            </div>
-                            <button
-                              className="btn secondary"
-                              style={{ padding: "6px 12px", fontSize: "0.8rem", borderRadius: 8, display: "flex", alignItems: "center", gap: 6 }}
-                              onClick={async (e) => {
-                                if (!confirm(`Sei sicuro di voler registrare il pagamento di € ${p.amount.toFixed(2)} da ${p.from} a ${p.to} per regolare i conti?`)) {
-                                  return;
-                                }
-                                const btn = e.currentTarget;
-                                btn.disabled = true;
-                                const origText = btn.innerHTML;
-                                btn.innerText = "Registrazione...";
-                                try {
-                                  const monthName = formatMonth(reportMonth + 1);
-                                  const desc = `Saldato regolamento conti - ${monthName} ${reportYear}`;
-                                  await settleDirectPayment(partnership.id, p.fromId, p.toId, p.amount, desc, reportYear, reportMonth);
-                                  await loadReport();
-                                  router.refresh();
-                                } catch (err: any) {
-                                  alert("Errore durante la registrazione: " + err.message);
-                                  btn.disabled = false;
-                                  btn.innerHTML = origText;
-                                }
-                              }}
-                            >
-                              <span>💸</span> Registra pagamento
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
             </>
           ) : (
             <div className="error">Errore nel caricamento del rendiconto.</div>
@@ -2288,8 +2200,18 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               </div>
             ) : null}
 
-            <h3 style={{ marginTop: partnership.disableSharedFund ? 0 : 24 }}>
-              {partnership.disableSharedFund ? "Riepilogo Spese Anticipate dai Soci" : "Riepilogo Crediti Versati / Anticipati dai Soci"}
+            {partnership.disableSharedFund ? (
+              <div style={{ marginBottom: 24 }}>
+                {isLoadingReport && !reportData ? (
+                  <div className="muted">Caricamento in corso...</div>
+                ) : (
+                  renderSettlement()
+                )}
+              </div>
+            ) : (
+              <>
+<h3 style={{ marginTop: partnership.disableSharedFund ? 0 : 24 }}>
+              Riepilogo Crediti Versati / Anticipati dai Soci
             </h3>
             <div className="grid grid-3" style={{ marginBottom: 24 }}>
               {partnership.members.map((m: any) => {
@@ -2317,6 +2239,9 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                 );
               })}
             </div>
+
+            </>
+            )}
 
             <div style={{ marginBottom: 24, padding: 16, background: "var(--bg-secondary)", borderRadius: 8 }}>
               <h3 style={{ marginTop: 0 }}>Nuova Transazione</h3>
@@ -3567,6 +3492,95 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
 
 
             )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+          <div className="card">
+            <h2 style={{ marginTop: 0 }}>Elenco Soci</h2>
+            <table className="table members-table">
+              <thead>
+                <tr>
+                  <th>Socio</th>
+                  <th>Ruolo</th>
+                  {isAdmin && <th style={{ textAlign: "right" }}>Azioni</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {partnership.members.map((m: any) => (
+                  <tr key={m.id}>
+                    <td>
+                      <div style={{ fontWeight: 600, color: "var(--text)" }}>
+                        {m.user.fullName || "Utente senza nome"} {m.user.id === currentUserId ? " (Tu)" : ""}
+                      </div>
+                      <div className="muted" style={{ fontSize: "0.85rem", marginTop: 2 }}>
+                        {m.user.email}
+                      </div>
+                    </td>
+                    <td>{m.role === "ADMIN" ? "Amministratore" : "Socio"}</td>
+                    {isAdmin && (
+                      <td style={{ textAlign: "right" }}>
+                        {m.user.id !== currentUserId && (
+                          <button
+                            className="btn secondary"
+                            style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
+                            onClick={() => {
+                              if (confirm(`Sei sicuro di voler rimuovere l'utente ${m.user.email}?`)) {
+                                removeMember(partnership.id, m.userId);
+                              }
+                            }}
+                          >
+                            Rimuovi
+                          </button>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                ))}
+                {partnership.invitations && partnership.invitations.map((inv: any) => (
+                  <tr key={inv.id} style={{ opacity: 0.75 }}>
+                    <td>
+                      <div style={{ fontWeight: 600, color: "var(--muted)", fontStyle: "italic" }}>
+                        Invito in attesa
+                      </div>
+                      <div className="muted" style={{ fontSize: "0.85rem", marginTop: 2 }}>
+                        {inv.email}
+                      </div>
+                    </td>
+                    <td>Socio (in attesa)</td>
+                    {isAdmin && (
+                      <td style={{ textAlign: "right" }}>
+                        <button
+                          className="btn secondary"
+                          style={{ padding: "4px 8px", fontSize: 12, color: "var(--danger)" }}
+                          onClick={async () => {
+                            if (confirm(`Sei sicuro di voler annullare l'invito per ${inv.email}?`)) {
+                              await cancelInvitation(partnership.id, inv.id);
+                            }
+                          }}
+                        >
+                          Annulla
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {isAdmin && (
+            <div className="card">
+              <h2 style={{ marginTop: 0 }}>Aggiungi Socio</h2>
+              <p className="muted">Se l'utente non è registrato, riceverà un invito email per creare un account.</p>
+              <form action={addMember.bind(null, partnership.id)} className="grid">
+                <div className="field">
+                  <label>Email utente</label>
+                  <input className="input" type="email" name="email" required placeholder="email@esempio.it" />
+                </div>
+                <SubmitButton>Aggiungi alla società</SubmitButton>
+              </form>
+            </div>
+          )}
+            </div>
 
             {/* Zona Pericolo (solo Admin) */}
             {isAdmin && (

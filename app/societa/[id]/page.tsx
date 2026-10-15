@@ -296,14 +296,20 @@ export default async function SocietaDetailsPage({
   }));
 
   return (
-    <AppShell title={partnership.name} subtitle="Gestione società">
-      <div className="between" style={{ marginBottom: 24, alignItems: "center", gap: 16 }}>
-        <Link href={"/societa?manage=true" as Route} className="muted" style={{ textDecoration: "none" }}>
+    <AppShell
+      title={partnership.name}
+      titleAdornment={
+        <Link href={"/societa?manage=true" as Route} className="muted" style={{ textDecoration: "none", whiteSpace: "nowrap" }}>
           ← Tutte le società
         </Link>
-        <PartnershipSelector partnerships={userPartnerships} currentId={id} />
-      </div>
-
+      }
+      headerActions={
+        <>
+          <div id="partnership-tabs-slot" style={{ marginLeft: "auto" }} />
+          <PartnershipSelector partnerships={userPartnerships} currentId={id} />
+        </>
+      }
+    >
       <PartnershipTabs 
         partnership={serializedPartnership} 
         isAdmin={isAdmin} 
