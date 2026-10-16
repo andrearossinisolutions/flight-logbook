@@ -67,6 +67,11 @@ type ReminderMovement = Prisma.MovementGetPayload<{
   };
 }>;
 
+type FlightForecast = {
+  placeLabel: string;
+  day: NonNullable<Awaited<ReturnType<typeof fetchWeekendWeather>>>[string];
+};
+
 declare global {
   var __dailyJobsSchedulerState: DailyJobsSchedulerState | undefined;
 }
@@ -144,8 +149,9 @@ export function buildDailyDigestEmail(args: {
   tomorrowFlights: FlightMovement[];
   duePayments: PaymentMovement[];
   todayReminders: ReminderMovement[];
+  forecasts?: Map<string, FlightForecast>;
 }) {
-  const { tomorrowFlights, duePayments, todayReminders } = args;
+  const { tomorrowFlights, duePayments, todayReminders, forecasts } = args;
   const totalPaymentsAmount = duePayments.reduce((sum, item) => sum + Math.abs(Number(item.amount)), 0);
 
   const subjectParts = [];
@@ -197,7 +203,14 @@ export function buildDailyDigestEmail(args: {
           const appUrl = process.env.APP_URL || "http://localhost:3000";
           const routeParam = [item.flight?.takeoffPlace, item.flight?.arrivalPlace].filter(Boolean).join(" - ") || item.notes || "";
           const briefingUrl = `${appUrl}/briefing?icao=${encodeURIComponent(routeParam)}&date=${encodeURIComponent(item.date.toISOString())}`;
-          const briefingLinkText = `\n  Briefing Meteo: ${briefingUrl}`;
+          const forecast = forecasts?.get(item.id);
+          const forecastText = forecast
+            ? `\n  Previsioni ${forecast.placeLabel}: ${forecast.day.weatherEmoji} ${forecast.day.weatherText}, ` +
+              `vento ${forecast.day.windSpeed} km/h (raff. ${forecast.day.windGusts}), ` +
+              `VFR: ${forecast.day.vfrLabel}` +
+              (forecast.day.vfrReasons !== "Nessuna criticità" ? ` (${forecast.day.vfrReasons})` : "")
+            : "";
+          const briefingLinkText = `${forecastText}\n  Briefing Meteo: ${briefingUrl}`;
 
           return `${index + 1}. ${formatDateDisplay(item.date)} ${formatTimeDisplay(item.date)} · ${flightType(item.flight)} · ` +
             `${item.flight?.aircraftRegistration ?? "I-4150"} (${item.flight?.aircraftType ?? "P92"}) · ` +
@@ -300,6 +313,26 @@ export function buildDailyDigestEmail(args: {
             const routeParam = [item.flight?.takeoffPlace, item.flight?.arrivalPlace].filter(Boolean).join(" - ") || item.notes || "";
             const briefingUrl = `${appUrl}/briefing?icao=${encodeURIComponent(routeParam)}&date=${encodeURIComponent(item.date.toISOString())}`;
 
+            const forecast = forecasts?.get(item.id);
+            const forecastHtml = forecast
+              ? `
+                <div style="margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: #f3f7fb; border: 1px solid #dbe5f0; font-size: 13px; color: #4c5f76; line-height: 1.5;">
+                  <div style="font-weight: 800; color: #17324d; margin-bottom: 4px;">
+                    ${forecast.day.weatherEmoji} Previsioni di domani · ${escapeHtml(forecast.placeLabel)}
+                  </div>
+                  ${escapeHtml(forecast.day.weatherText)} · ${forecast.day.tempMin}°C / ${forecast.day.tempMax}°C<br />
+                  Vento ${forecast.day.windSpeed} km/h (raffiche ${forecast.day.windGusts} km/h) · Precipitazioni ${forecast.day.precipSum} mm (${forecast.day.precipProb}%)<br />
+                  <strong>Volabilità:</strong> <span style="color: ${forecast.day.vfrColor}; font-weight: 800;">${forecast.day.vfrLabel}</span>
+                  ${
+                    forecast.day.vfrReasons !== "Nessuna criticità"
+                      ? `<br /><span style="font-size: 12px; color: #b45309; font-weight: bold;">⚠️ ${escapeHtml(forecast.day.vfrReasons)}</span>`
+                      : ""
+                  }
+                  <div style="margin-top: 6px; font-size: 11px; color: #8b9bb0;">Previsione indicativa: il briefing METAR/TAF dettagliato arriverà poco prima del volo.</div>
+                </div>
+              `
+              : "";
+
             return `
               <div style="margin: 0 0 14px; padding: 18px; border: 1px solid #dbe5f0; border-radius: 20px; background: #ffffff;">
                 <div style="display: flex; justify-content: space-between; gap: 12px; align-items: flex-start;">
@@ -326,6 +359,7 @@ export function buildDailyDigestEmail(args: {
 
                 ${route}
                 ${notes}
+                ${forecastHtml}
 
                 <div style="margin-top: 16px;">
                   <a href="${briefingUrl}" style="display: inline-block; background-color: #16a34a; color: #ffffff; padding: 8px 16px; font-size: 13px; font-weight: 700; text-decoration: none; border-radius: 8px; border: 1px solid #15803d;">
@@ -441,6 +475,43 @@ function buildSingleReminderEmail(reminder: ReminderMovement) {
   `;
 
   return { subject, text, html };
+}
+
+// Mini-briefing previsionale per i voli di domani: stessa logica/indice VFR del
+// bollettino del weekend, calcolato sul luogo di partenza (fallback: base dell'utente).
+async function getTomorrowFlightForecasts(
+  flights: FlightMovement[],
+  defaultBase: string | null | undefined,
+  tomorrowKey: string,
+) {
+  const forecasts = new Map<string, FlightForecast>();
+  const dayMarker = new Date(`${tomorrowKey}T12:00:00Z`);
+  const dates = { friday: dayMarker, saturday: dayMarker, sunday: dayMarker };
+  const cache = new Map<string, FlightForecast["day"] | null>();
+
+  for (const item of flights) {
+    const place = (item.flight?.takeoffPlace || defaultBase || "").trim();
+    if (!place) continue;
+
+    try {
+      const icao = place.toUpperCase();
+      const known = ITALIAN_AIRPORTS[icao];
+      const coords = known ?? (await getCoordinatesFromName(place));
+      if (!coords) continue;
+
+      const cacheKey = `${coords.lat},${coords.lon}`;
+      if (!cache.has(cacheKey)) {
+        const weather = await fetchWeekendWeather(coords.lat, coords.lon, dates);
+        cache.set(cacheKey, weather?.friday ?? null);
+      }
+      const day = cache.get(cacheKey);
+      if (day) forecasts.set(item.id, { placeLabel: known ? icao : place, day });
+    } catch (error) {
+      console.error(`[daily-jobs] Errore nel recupero previsioni per il volo ${item.id}`, error);
+    }
+  }
+
+  return forecasts;
 }
 
 async function runDailyJobs(now = new Date()) {
@@ -635,10 +706,17 @@ export async function runDailyChecksAndActions(now = new Date()) {
       continue;
     }
 
+    let forecasts: Map<string, FlightForecast> | undefined;
+    if (userTomorrowFlights.length > 0) {
+      const settings = await prisma.settings.findUnique({ where: { userId } }).catch(() => null);
+      forecasts = await getTomorrowFlightForecasts(userTomorrowFlights, settings?.defaultBase, tomorrowRange.key);
+    }
+
     const email = buildDailyDigestEmail({
       tomorrowFlights: userTomorrowFlights,
       duePayments: userDuePayments,
       todayReminders: userTodayReminders,
+      forecasts,
     });
 
     try {
