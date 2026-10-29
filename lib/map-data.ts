@@ -189,6 +189,9 @@ export async function buildMapData(userId: string, options: MapDataOptions) {
   >();
 
   const gpxTracks: MapGpxTrack[] = [];
+  // Tratte (coppie di luoghi) coperte da almeno un GPX: su queste non si disegna
+  // la linea retta, nemmeno per i voli senza GPX sulla stessa tratta.
+  const gpxCoveredLegs = new Set<string>();
 
   movements.forEach((m) => {
     if (!m.flight) return;
@@ -214,13 +217,27 @@ export async function buildMapData(userId: string, options: MapDataOptions) {
         return aTime - bTime;
       });
 
-      const allPoints = filesWithPoints.flat();
-      if (allPoints.length > 1) {
+      // Ogni file è una traccia a sé: unirli in un'unica linea collegherebbe con un
+      // segmento dritto la fine di un file all'inizio del successivo.
+      let drawn = false;
+      for (const pts of filesWithPoints) {
+        if (pts.length < 2) continue;
         const path = downsamplePoints(
-          allPoints.map((p) => [p.lat, p.lon] as [number, number]),
+          pts.map((p) => [p.lat, p.lon] as [number, number]),
           400
         );
         gpxTracks.push({ path, isDraft: m.isDraft });
+        drawn = true;
+      }
+
+      if (drawn) {
+        for (let i = 0; i < pathPlaces.length - 1; i++) {
+          const fromPlace = pathPlaces[i];
+          const toPlace = pathPlaces[i + 1];
+          if (fromPlace && toPlace && fromPlace !== toPlace) {
+            gpxCoveredLegs.add([fromPlace, toPlace].sort().join("-"));
+          }
+        }
       }
 
       return;
@@ -259,6 +276,8 @@ export async function buildMapData(userId: string, options: MapDataOptions) {
       }
     }
   });
+
+  gpxCoveredLegs.forEach((key) => routesMap.delete(key));
 
   const routes = Array.from(routesMap.values()) as MapRoute[];
 
