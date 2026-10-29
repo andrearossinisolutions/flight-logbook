@@ -7,6 +7,10 @@ export interface GpxTrackPoint {
   lat: number;
   lon: number;
   time: Date | null;
+  /** Quota in metri (da <ele>), null se assente */
+  ele: number | null;
+  /** Velocità al suolo in m/s (da <speed>), null se assente */
+  speed: number | null;
 }
 
 export function parseGpxTrackPoints(gpxText: string): GpxTrackPoint[] {
@@ -29,10 +33,18 @@ export function parseGpxTrackPoints(gpxText: string): GpxTrackPoint[] {
     const timeMatch = /<time>([^<]+)<\/time>/.exec(inner);
     const time = timeMatch ? new Date(timeMatch[1].trim()) : null;
 
+    const eleMatch = /<ele>([^<]+)<\/ele>/.exec(inner);
+    const eleValue = eleMatch ? Number(eleMatch[1].trim()) : NaN;
+
+    const speedMatch = /<speed>([^<]+)<\/speed>/.exec(inner);
+    const speedValue = speedMatch ? Number(speedMatch[1].trim()) : NaN;
+
     points.push({
       lat,
       lon,
       time: time && !Number.isNaN(time.getTime()) ? time : null,
+      ele: Number.isFinite(eleValue) ? eleValue : null,
+      speed: Number.isFinite(speedValue) ? speedValue : null,
     });
   }
 

@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.35.0",
+    "date": "2026-10-29",
+    "commits": [
+      {
+        "hash": "9b3e0b6",
+        "date": "2026-10-29",
+        "subject": "Added time, altitude and speed tooltip on GPX tracks"
+      }
+    ]
+  },
+  {
     "version": "1.34.3",
     "date": "2026-10-29",
     "commits": [
       {
-        "hash": "8c0d0f0",
+        "hash": "7545200",
         "date": "2026-10-29",
         "subject": "Hide straight route lines on legs covered by GPX tracks"
       }

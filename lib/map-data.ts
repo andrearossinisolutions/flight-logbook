@@ -6,6 +6,8 @@ import type { MapPoint, MapRoute, MapGpxTrack } from "@/components/flight-map-in
 export interface MapDataOptions {
   includeFuturePlans: boolean;
   passengerFilter?: string[] | null;
+  /** Se true, ogni traccia GPX include `details` (orario e quota per vertice). Default false. */
+  includeGpxDetails?: boolean;
 }
 
 async function resolveCoords(
@@ -39,7 +41,7 @@ async function resolveCoords(
 }
 
 export async function buildMapData(userId: string, options: MapDataOptions) {
-  const { includeFuturePlans, passengerFilter } = options;
+  const { includeFuturePlans, passengerFilter, includeGpxDetails = false } = options;
   const normalizedPassengerFilter = (passengerFilter || [])
     .map((p) => p.trim().toLowerCase())
     .filter(Boolean);
@@ -222,11 +224,24 @@ export async function buildMapData(userId: string, options: MapDataOptions) {
       let drawn = false;
       for (const pts of filesWithPoints) {
         if (pts.length < 2) continue;
-        const path = downsamplePoints(
-          pts.map((p) => [p.lat, p.lon] as [number, number]),
-          400
-        );
-        gpxTracks.push({ path, isDraft: m.isDraft });
+        if (includeGpxDetails) {
+          const sampled = downsamplePoints(pts, 400);
+          gpxTracks.push({
+            path: sampled.map((p) => [p.lat, p.lon] as [number, number]),
+            details: sampled.map((p) => ({
+              t: p.time ? p.time.getTime() : null,
+              ele: p.ele,
+              gs: p.speed,
+            })),
+            isDraft: m.isDraft,
+          });
+        } else {
+          const path = downsamplePoints(
+            pts.map((p) => [p.lat, p.lon] as [number, number]),
+            400
+          );
+          gpxTracks.push({ path, isDraft: m.isDraft });
+        }
         drawn = true;
       }
 

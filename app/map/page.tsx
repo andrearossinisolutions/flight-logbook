@@ -25,7 +25,7 @@ export default async function MapPage({ searchParams }: MapPageProps) {
     redirect("/onboarding");
   }
 
-  const { points, routes, gpxTracks, hasBase } = await buildMapData(user.id, { includeFuturePlans: true });
+  const { points, routes, gpxTracks, hasBase } = await buildMapData(user.id, { includeFuturePlans: true, includeGpxDetails: true });
   const knownPassengers = await getDistinctPassengers(user.id);
 
   return (

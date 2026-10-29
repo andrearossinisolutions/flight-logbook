@@ -28,8 +28,19 @@ export interface MapRoute {
   isDraft?: boolean;
 }
 
+export interface MapGpxPointInfo {
+  /** Istante in ms epoch UTC, null se assente */
+  t: number | null;
+  /** Quota in metri, null se assente */
+  ele: number | null;
+  /** Ground speed in m/s, null se assente */
+  gs: number | null;
+}
+
 export interface MapGpxTrack {
   path: [number, number][];
+  /** Dettagli per vertice, stesso indice di `path` (solo mappa interattiva) */
+  details?: MapGpxPointInfo[];
   isDraft?: boolean;
 }
 
@@ -106,6 +117,75 @@ export default function FlightMapInner({
     });
 
     const latLngs: L.LatLngTuple[] = [];
+
+    // Tooltip sui punti delle tracce GPX: un solo marker e un solo tooltip riusati
+    const SNAP_PX = 40;
+    const timeFormatter = new Intl.DateTimeFormat("it-IT", {
+      timeZone: "Europe/Rome",
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    let hoverMarker: L.CircleMarker | null = null;
+    let hoverTooltip: L.Tooltip | null = null;
+    const hideHover = () => {
+      if (hoverMarker) {
+        hoverMarker.remove();
+        hoverMarker = null;
+      }
+      if (hoverTooltip) {
+        hoverTooltip.remove();
+        hoverTooltip = null;
+      }
+    };
+    const showHover = (
+      latlng: L.LatLngExpression,
+      info: MapGpxPointInfo,
+      color: string
+    ) => {
+      const lines: string[] = [];
+      if (info.t !== null) {
+        const parts = timeFormatter.formatToParts(new Date(info.t));
+        const get = (type: string) => parts.find((x) => x.type === type)?.value ?? "";
+        lines.push(`${get("day")}/${get("month")} ${get("hour")}:${get("minute")}`);
+      }
+      if (info.ele !== null) {
+        lines.push(`${Math.round(info.ele * 3.28084).toLocaleString("it-IT")} ft`);
+      }
+      if (info.gs !== null) {
+        lines.push(`GS ${Math.round(info.gs * 3.6).toLocaleString("it-IT")} km/h`);
+      }
+      if (lines.length === 0) {
+        hideHover();
+        return;
+      }
+      if (!hoverMarker) {
+        hoverMarker = L.circleMarker(latlng, {
+          radius: 6,
+          color: "#ffffff",
+          weight: 2,
+          fillColor: color,
+          fillOpacity: 1,
+          interactive: false,
+        }).addTo(map);
+      } else {
+        hoverMarker.setLatLng(latlng);
+        hoverMarker.setStyle({ fillColor: color });
+      }
+      const html = `<div style="font-family: sans-serif; font-size: 0.85rem; color: #142033;">${lines.join("<br/>")}</div>`;
+      if (!hoverTooltip) {
+        hoverTooltip = L.tooltip({ sticky: false, opacity: 0.95, offset: [0, -8], direction: "top" })
+          .setLatLng(latlng)
+          .setContent(html)
+          .addTo(map);
+      } else {
+        hoverTooltip.setLatLng(latlng).setContent(html);
+        if (!map.hasLayer(hoverTooltip)) hoverTooltip.addTo(map);
+      }
+    };
+    const onMapClick = () => hideHover();
+    map.on("click", onMapClick);
 
     // Crea icone personalizzate per evitare problemi di caricamento delle immagini in Next.js
     const homeIcon = L.divIcon({
@@ -379,14 +459,51 @@ export default function FlightMapInner({
       t.path.forEach((p) => latLngs.push(p));
 
       const isDraftTrack = !!t.isDraft;
-      L.polyline(t.path, {
-        color: isDraftTrack ? "#38bdf8" : "#e6007e",
+      const trackColor = isDraftTrack ? "#38bdf8" : "#e6007e";
+      const trackLine = L.polyline(t.path, {
+        color: trackColor,
         weight: isDraftTrack ? 3.5 : 4.0,
         opacity: isDraftTrack ? 0.85 : 1.0,
         dashArray: isDraftTrack ? "6, 8" : undefined,
         lineCap: "round",
         lineJoin: "round",
+        bubblingMouseEvents: false,
       }).addTo(map);
+
+      const details = t.details;
+      if (interactive && details && details.length === t.path.length) {
+        // Vertice più vicino al cursore (in pixel); mouse e tap (click) usano la stessa logica
+        const onMove = (e: L.LeafletMouseEvent) => {
+          let best = -1;
+          let bestDist = Infinity;
+          for (let i = 0; i < t.path.length; i++) {
+            const pt = map.latLngToContainerPoint(t.path[i]);
+            const d = pt.distanceTo(e.containerPoint);
+            if (d < bestDist) {
+              bestDist = d;
+              best = i;
+            }
+          }
+          if (best < 0 || bestDist > SNAP_PX) {
+            hideHover();
+            return;
+          }
+          showHover(t.path[best], details[best], trackColor);
+        };
+        // Fascia di aggancio invisibile e larga sopra la traccia visibile
+        const hitLine = L.polyline(t.path, {
+          opacity: 0,
+          weight: 24,
+          interactive: true,
+          bubblingMouseEvents: false,
+        }).addTo(map);
+        hitLine.on("mousemove", onMove);
+        hitLine.on("mouseout", hideHover);
+        hitLine.on("click", (e) => {
+          L.DomEvent.stopPropagation(e.originalEvent);
+          onMove(e);
+        });
+      }
     });
 
     // Centra e adatta la mappa
@@ -405,6 +522,11 @@ export default function FlightMapInner({
       // Centro sull'Italia se non ci sono punti
       map.setView([42.0, 12.5], 6);
     }
+
+    return () => {
+      map.off("click", onMapClick);
+      hideHover();
+    };
   }, [points, routes, gpxTracks, interactive, showLabels]);
 
   return (
