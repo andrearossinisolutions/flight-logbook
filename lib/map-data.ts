@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCoordinatesFromName, ITALIAN_AIRPORTS, PLACE_TO_METAR } from "@/lib/weather";
-import { parseGpxTrackPoints, downsamplePoints } from "@/lib/gpx";
+import { parseGpxTrackPoints, downsamplePoints, cumulativeDistancesMeters } from "@/lib/gpx";
 import type { MapPoint, MapRoute, MapGpxTrack } from "@/components/flight-map-inner";
 
 export interface MapDataOptions {
@@ -221,19 +221,40 @@ export async function buildMapData(userId: string, options: MapDataOptions) {
 
       // Ogni file è una traccia a sé: unirli in un'unica linea collegherebbe con un
       // segmento dritto la fine di un file all'inizio del successivo.
+      let trackLabel: string | null = null;
+      if (includeGpxDetails && dep && arr) {
+        const dateStr = new Intl.DateTimeFormat("it-IT", {
+          timeZone: "Europe/Rome",
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }).format(m.date);
+        trackLabel = `${dateStr} · ${dep} → ${arr}`;
+      }
+      const trackDep = includeGpxDetails && dep && arr ? dep : null;
+      const trackArr = includeGpxDetails && dep && arr ? arr : null;
       let drawn = false;
       for (const pts of filesWithPoints) {
         if (pts.length < 2) continue;
         if (includeGpxDetails) {
-          const sampled = downsamplePoints(pts, 400);
+          // Distanza cumulata sui punti completi, poi campionamento degli indici
+          // (path e details restano allineati e la distanza totale non si accorcia).
+          const cum = cumulativeDistancesMeters(pts);
+          const idx = downsamplePoints(
+            pts.map((_, i) => i),
+            400
+          );
           gpxTracks.push({
-            path: sampled.map((p) => [p.lat, p.lon] as [number, number]),
-            details: sampled.map((p) => ({
-              t: p.time ? p.time.getTime() : null,
-              ele: p.ele,
-              gs: p.speed,
+            path: idx.map((i) => [pts[i].lat, pts[i].lon] as [number, number]),
+            details: idx.map((i) => ({
+              t: pts[i].time ? pts[i].time!.getTime() : null,
+              ele: pts[i].ele,
+              gs: pts[i].speed,
+              d: cum[i],
             })),
             isDraft: m.isDraft,
+            ...(trackLabel ? { label: trackLabel } : {}),
+            ...(trackDep && trackArr ? { dep: trackDep, arr: trackArr } : {}),
           });
         } else {
           const path = downsamplePoints(

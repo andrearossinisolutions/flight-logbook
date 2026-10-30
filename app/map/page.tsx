@@ -2,10 +2,14 @@ import { Navbar } from "@/components/navbar";
 import { getSessionFromCookie } from "@/lib/auth";
 import { requireUser } from "@/lib/require-user";
 import { redirect } from "next/navigation";
+import type { Viewport } from "next";
 import { buildMapData, getDistinctPassengers } from "@/lib/map-data";
 import FlightMap from "@/components/flight-map";
 
 export const dynamic = "force-dynamic";
+
+// Solo su /map: la mappa arriva fino ai bordi e il pannello usa env(safe-area-inset-bottom)
+export const viewport: Viewport = { viewportFit: "cover" };
 
 interface MapPageProps {
   searchParams: Promise<{ openShare?: string; pairingCode?: string }>;
@@ -29,7 +33,7 @@ export default async function MapPage({ searchParams }: MapPageProps) {
   const knownPassengers = await getDistinctPassengers(user.id);
 
   return (
-    <div style={{ position: "relative", width: "100vw", height: "100vh", overflow: "hidden" }}>
+    <div className="map-page-root" style={{ position: "relative", width: "100vw", overflow: "hidden" }}>
       {/* Barra di navigazione flottante sopra la mappa */}
       <div style={{ position: "relative", zIndex: 10 }}>
         <Navbar isLoggedIn={true} />

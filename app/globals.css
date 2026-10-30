@@ -2347,3 +2347,38 @@ textarea {
   .showcase-row { padding: 20px; margin-bottom: 32px; }
   .hero-section::before, .hero-section::after { display: none; }
 }
+
+/* Pagina /map: altezza con fallback per browser senza dvh */
+.map-page-root {
+  height: 100vh;
+  height: 100dvh;
+}
+/* Su mobile la pagina arriva fino sotto la barra del browser (lvh): lo spazio sotto lo dà solo il padding del pannello profilo */
+@supports (height: 100lvh) {
+  @media (max-width: 640px) {
+    .map-page-root {
+      height: 100lvh;
+    }
+  }
+}
+
+/* Pannello profilo GPX: altezza del grafico + testata (44px) + spazio sotto per la barra del browser */
+.gpx-profile-panel {
+  --gpx-chart-h: 176px;
+  --gpx-pad: 0px;
+  height: calc(var(--gpx-chart-h) + 44px + var(--gpx-pad));
+  padding-bottom: var(--gpx-pad);
+}
+@media (max-width: 640px) {
+  .gpx-profile-panel {
+    --gpx-chart-h: clamp(170px, 34vh, 300px);
+    --gpx-pad: calc(env(safe-area-inset-bottom, 0px) + 100px);
+  }
+}
+@supports (height: 1dvh) {
+  @media (max-width: 640px) {
+    .gpx-profile-panel {
+      --gpx-chart-h: clamp(170px, 34dvh, 300px);
+    }
+  }
+}

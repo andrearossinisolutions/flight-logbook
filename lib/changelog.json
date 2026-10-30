@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.35.1",
+    "date": "2026-10-30",
+    "commits": [
+      {
+        "hash": "42d5d2e",
+        "date": "2026-10-30",
+        "subject": "Added a vertical profile panel on GPX tracks"
+      }
+    ]
+  },
+  {
     "version": "1.35.0",
     "date": "2026-10-29",
     "commits": [
       {
-        "hash": "9b3e0b6",
+        "hash": "bd7cac1",
         "date": "2026-10-29",
         "subject": "Added time, altitude and speed tooltip on GPX tracks"
       }

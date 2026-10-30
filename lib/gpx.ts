@@ -97,3 +97,50 @@ export async function extractGpxTimeRange(
 
   return { start, durationMs };
 }
+
+const EARTH_RADIUS_M = 6371000;
+
+export function haversineMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
+/** Distanza cumulata in metri per ogni punto (il primo vale 0). */
+export function cumulativeDistancesMeters(points: Array<{ lat: number; lon: number }>): number[] {
+  const out: number[] = [];
+  let total = 0;
+  for (let i = 0; i < points.length; i++) {
+    if (i > 0) {
+      total += haversineMeters(points[i - 1].lat, points[i - 1].lon, points[i].lat, points[i].lon);
+    }
+    out.push(total);
+  }
+  return out;
+}
+
+const gpxTimeFormatter = new Intl.DateTimeFormat("it-IT", {
+  timeZone: "Europe/Rome",
+  day: "2-digit",
+  month: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+/** Data ("gg/mm") e ora ("hh:mm") separate, in ora di Roma. */
+export function formatGpxDateAndClock(t: number): { date: string; clock: string } {
+  const parts = gpxTimeFormatter.formatToParts(new Date(t));
+  const get = (type: string) => parts.find((x) => x.type === type)?.value ?? "";
+  return { date: `${get("day")}/${get("month")}`, clock: `${get("hour")}:${get("minute")}` };
+}
+
+/** Formatta un istante (ms epoch) come "gg/mm hh:mm" in ora di Roma. */
+export function formatGpxTime(t: number): string {
+  const parts = gpxTimeFormatter.formatToParts(new Date(t));
+  const get = (type: string) => parts.find((x) => x.type === type)?.value ?? "";
+  return `${get("day")}/${get("month")} ${get("hour")}:${get("minute")}`;
+}

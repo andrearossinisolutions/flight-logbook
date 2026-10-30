@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { formatGpxTime } from "@/lib/gpx";
+import GpxProfilePanel from "./gpx-profile-panel";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -35,6 +37,8 @@ export interface MapGpxPointInfo {
   ele: number | null;
   /** Ground speed in m/s, null se assente */
   gs: number | null;
+  /** Distanza cumulata dall'inizio della traccia in metri (solo mappa interattiva) */
+  d: number;
 }
 
 export interface MapGpxTrack {
@@ -42,6 +46,11 @@ export interface MapGpxTrack {
   /** Dettagli per vertice, stesso indice di `path` (solo mappa interattiva) */
   details?: MapGpxPointInfo[];
   isDraft?: boolean;
+  /** "data · PARTENZA → ARRIVO" del volo (solo mappa interattiva, opzionale) */
+  label?: string;
+  /** Luogo di partenza e di arrivo del volo (solo mappa interattiva, opzionali) */
+  dep?: string;
+  arr?: string;
 }
 
 interface FlightMapProps {
@@ -69,6 +78,104 @@ export default function FlightMapInner({
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const onEditPlaceRef = useRef(onEditPlace);
+
+  // Traccia selezionata per il profilo: tenuta fuori dalle dipendenze dell'effetto
+  // principale (ricostruisce tutta la mappa e farebbe perdere zoom e pannello).
+  const [selectedTrack, setSelectedTrack] = useState<number | null>(null);
+  const selectedTrackRef = useRef<number | null>(null);
+  const gpxTracksRef = useRef<MapGpxTrack[]>(gpxTracks);
+  const trackLinesRef = useRef<Array<{ line: L.Polyline; isDraft: boolean } | undefined>>([]);
+  const profileDotRef = useRef<L.CircleMarker | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    gpxTracksRef.current = gpxTracks;
+  }, [gpxTracks]);
+
+  const selectTrack = useCallback((index: number | null) => {
+    selectedTrackRef.current = index;
+    setSelectedTrack(index);
+  }, []);
+  const selectTrackRef = useRef(selectTrack);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  const applyHighlight = useCallback(() => {
+    trackLinesRef.current.forEach((entry, i) => {
+      if (!entry) return;
+      const base = entry.isDraft ? 3.5 : 4.0;
+      entry.line.setStyle({ weight: selectedTrackRef.current === i ? base + 3 : base });
+    });
+  }, []);
+
+  const removeProfileDot = useCallback(() => {
+    if (profileDotRef.current) {
+      profileDotRef.current.remove();
+      profileDotRef.current = null;
+    }
+  }, []);
+
+  // Pallino sulla mappa che segue il cursore sul profilo
+  const handleProfileHover = useCallback(
+    (index: number | null) => {
+      const map = mapRef.current;
+      const sel = selectedTrackRef.current;
+      const track = sel !== null ? gpxTracksRef.current[sel] : undefined;
+      if (!map || !track || index === null || !track.path[index]) {
+        removeProfileDot();
+        return;
+      }
+      const latlng = track.path[index];
+      if (!profileDotRef.current) {
+        profileDotRef.current = L.circleMarker(latlng, {
+          radius: 7,
+          color: "#ffffff",
+          weight: 2,
+          fillColor: "#1d4e89",
+          fillOpacity: 1,
+          interactive: false,
+        }).addTo(map);
+      } else {
+        profileDotRef.current.setLatLng(latlng);
+      }
+    },
+    [removeProfileDot]
+  );
+
+  const closeProfile = useCallback(() => {
+    removeProfileDot();
+    selectTrack(null);
+  }, [removeProfileDot, selectTrack]);
+
+  // Se i dati cambiano la mappa si ricostruisce: la selezione (indice) non è più valida
+  useEffect(() => {
+    removeProfileDot();
+    selectTrack(null);
+  }, [gpxTracks, removeProfileDot, selectTrack]);
+
+  // Evidenzia la traccia scelta e ridimensiona la mappa all'apertura/chiusura del pannello
+  useEffect(() => {
+    applyHighlight();
+    removeProfileDot();
+    const map = mapRef.current;
+    if (map) setTimeout(() => map.invalidateSize(), 0);
+  }, [selectedTrack, isMobile, applyHighlight, removeProfileDot]);
+
+  // ESC chiude il pannello
+  useEffect(() => {
+    if (selectedTrack === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeProfile();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedTrack, closeProfile]);
 
   // Aggiorna il ref per evitare chiusure stantie
   useEffect(() => {
@@ -117,16 +224,13 @@ export default function FlightMapInner({
     });
 
     const latLngs: L.LatLngTuple[] = [];
+    trackLinesRef.current = [];
+    const noHover = window.matchMedia("(hover: none)").matches;
+    // Traccia a cui appartiene il tooltip mostrato (su mobile il tap sul tooltip apre il profilo)
+    let tooltipTrack: number | null = null;
 
     // Tooltip sui punti delle tracce GPX: un solo marker e un solo tooltip riusati
     const SNAP_PX = 40;
-    const timeFormatter = new Intl.DateTimeFormat("it-IT", {
-      timeZone: "Europe/Rome",
-      day: "2-digit",
-      month: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
     let hoverMarker: L.CircleMarker | null = null;
     let hoverTooltip: L.Tooltip | null = null;
     const hideHover = () => {
@@ -142,13 +246,13 @@ export default function FlightMapInner({
     const showHover = (
       latlng: L.LatLngExpression,
       info: MapGpxPointInfo,
-      color: string
+      color: string,
+      withHint: boolean,
+      trackIndex: number
     ) => {
       const lines: string[] = [];
       if (info.t !== null) {
-        const parts = timeFormatter.formatToParts(new Date(info.t));
-        const get = (type: string) => parts.find((x) => x.type === type)?.value ?? "";
-        lines.push(`${get("day")}/${get("month")} ${get("hour")}:${get("minute")}`);
+        lines.push(formatGpxTime(info.t));
       }
       if (info.ele !== null) {
         lines.push(`${Math.round(info.ele * 3.28084).toLocaleString("it-IT")} ft`);
@@ -159,6 +263,13 @@ export default function FlightMapInner({
       if (lines.length === 0) {
         hideHover();
         return;
+      }
+      if (withHint) {
+        lines.push(
+          noHover
+            ? `<div style="margin-top: 6px; padding-top: 6px; border-top: 1px solid #d9e0ea; font-size: 0.85rem; font-weight: 600; font-style: italic; color: #1d4e89;">Tocca per la traccia completa</div>`
+            : `<div style="font-size: 0.72rem; font-style: italic; color: #60708a;">Clicca per la traccia completa</div>`
+        );
       }
       if (!hoverMarker) {
         hoverMarker = L.circleMarker(latlng, {
@@ -173,18 +284,45 @@ export default function FlightMapInner({
         hoverMarker.setLatLng(latlng);
         hoverMarker.setStyle({ fillColor: color });
       }
-      const html = `<div style="font-family: sans-serif; font-size: 0.85rem; color: #142033;">${lines.join("<br/>")}</div>`;
+      // Le righe di testo vanno a capo con <br/>, la riga finale (div) è già a blocco
+      const textLines = withHint ? lines.slice(0, -1) : lines;
+      const hint = withHint ? lines[lines.length - 1] : "";
+      const html = `<div style="font-family: sans-serif; font-size: 0.85rem; color: #142033;">${textLines.join("<br/>")}${hint}</div>`;
+      tooltipTrack = trackIndex;
       if (!hoverTooltip) {
-        hoverTooltip = L.tooltip({ sticky: false, opacity: 0.95, offset: [0, -8], direction: "top" })
+        hoverTooltip = L.tooltip({
+          sticky: false,
+          opacity: noHover ? 1 : 0.95,
+          offset: [0, -8],
+          direction: "top",
+          // Su mobile il tooltip è toccabile: il tap su di esso apre il profilo
+          interactive: noHover,
+          className: noHover ? "gpx-tooltip-touch" : undefined,
+        })
           .setLatLng(latlng)
           .setContent(html)
           .addTo(map);
+        const el = hoverTooltip.getElement();
+        if (noHover && el) {
+          // Il click non deve arrivare alla mappa (chiuderebbe tooltip e pannello)
+          L.DomEvent.disableClickPropagation(el);
+          L.DomEvent.on(el, "click", (ev) => {
+            L.DomEvent.stop(ev);
+            const target = tooltipTrack;
+            hideHover();
+            if (target !== null) selectTrackRef.current(target);
+          });
+        }
       } else {
         hoverTooltip.setLatLng(latlng).setContent(html);
         if (!map.hasLayer(hoverTooltip)) hoverTooltip.addTo(map);
       }
     };
-    const onMapClick = () => hideHover();
+    const onMapClick = () => {
+      hideHover();
+      // Click su mappa vuota: chiude il profilo (i drag non generano "click")
+      selectTrackRef.current(null);
+    };
     map.on("click", onMapClick);
 
     // Crea icone personalizzate per evitare problemi di caricamento delle immagini in Next.js
@@ -453,7 +591,7 @@ export default function FlightMapInner({
     });
 
     // Aggiungi i tragitti reali registrati via GPX, al posto delle linee rette
-    gpxTracks.forEach((t) => {
+    gpxTracks.forEach((t, trackIndex) => {
       if (t.path.length < 2) return;
 
       t.path.forEach((p) => latLngs.push(p));
@@ -470,10 +608,15 @@ export default function FlightMapInner({
         bubblingMouseEvents: false,
       }).addTo(map);
 
+      trackLinesRef.current[trackIndex] = { line: trackLine, isDraft: isDraftTrack };
+      if (selectedTrackRef.current === trackIndex) {
+        trackLine.setStyle({ weight: (isDraftTrack ? 3.5 : 4.0) + 3 });
+      }
+
       const details = t.details;
       if (interactive && details && details.length === t.path.length) {
         // Vertice più vicino al cursore (in pixel); mouse e tap (click) usano la stessa logica
-        const onMove = (e: L.LeafletMouseEvent) => {
+        const onMove = (e: L.LeafletMouseEvent): boolean => {
           let best = -1;
           let bestDist = Infinity;
           for (let i = 0; i < t.path.length; i++) {
@@ -486,9 +629,10 @@ export default function FlightMapInner({
           }
           if (best < 0 || bestDist > SNAP_PX) {
             hideHover();
-            return;
+            return false;
           }
-          showHover(t.path[best], details[best], trackColor);
+          showHover(t.path[best], details[best], trackColor, true, trackIndex);
+          return true;
         };
         // Fascia di aggancio invisibile e larga sopra la traccia visibile
         const hitLine = L.polyline(t.path, {
@@ -497,11 +641,19 @@ export default function FlightMapInner({
           interactive: true,
           bubblingMouseEvents: false,
         }).addTo(map);
-        hitLine.on("mousemove", onMove);
-        hitLine.on("mouseout", hideHover);
+        if (!noHover) {
+          // Solo con il mouse: su touch gli eventi mouse sintetici chiuderebbero il tooltip
+          hitLine.on("mousemove", onMove);
+          hitLine.on("mouseout", hideHover);
+        }
         hitLine.on("click", (e) => {
           L.DomEvent.stopPropagation(e.originalEvent);
-          onMove(e);
+          if (noHover) {
+            // Tap sulla traccia: mostra/sposta il tooltip; si apre toccando il tooltip
+            onMove(e);
+          } else {
+            selectTrackRef.current(trackIndex);
+          }
         });
       }
     });
@@ -529,12 +681,21 @@ export default function FlightMapInner({
     };
   }, [points, routes, gpxTracks, interactive, showLabels]);
 
+  const selectedData =
+    interactive && selectedTrack !== null ? gpxTracks[selectedTrack] : undefined;
+  const panelDetails = selectedData?.details;
+
   return (
     <div style={{ position: "relative", flex: 1, display: "flex", flexDirection: "column", height: "100%" }}>
       {/* Stile CSS per spostare i controlli di zoom di Leaflet al di sotto della navbar flottante e per le etichette dei pin */}
       <style dangerouslySetInnerHTML={{ __html: `
         .leaflet-top {
           top: ${interactive ? "92px" : "12px"} !important;
+        }
+        .gpx-tooltip-touch {
+          cursor: pointer;
+          padding: 10px 14px;
+          min-width: 150px;
         }
         .map-point-label {
           background: rgba(20, 32, 51, 0.82);
@@ -585,8 +746,21 @@ export default function FlightMapInner({
           width: "100%",
           height: "100%",
           overflow: "hidden",
+          minHeight: 0,
         }}
       />
+
+      {panelDetails && (
+        <GpxProfilePanel
+          key={selectedTrack}
+          details={panelDetails}
+          label={selectedData?.label}
+          dep={selectedData?.dep}
+          arr={selectedData?.arr}
+          onHoverIndex={handleProfileHover}
+          onClose={closeProfile}
+        />
+      )}
     </div>
   );
 }
