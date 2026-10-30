@@ -54,10 +54,14 @@ export default function GpxProfilePanel({ details, label, dep, arr, onHoverIndex
     if (valid.length < 2) return null;
     let minFt = Infinity;
     let maxFt = -Infinity;
+    let maxIdx = valid[0];
     for (const i of valid) {
       const ft = details[i].ele! * M_TO_FT;
       if (ft < minFt) minFt = ft;
-      if (ft > maxFt) maxFt = ft;
+      if (ft > maxFt) {
+        maxFt = ft;
+        maxIdx = i;
+      }
     }
     const step = niceStep(Math.max(maxFt - minFt, 500), 5);
     let yMin = Math.floor(minFt / step) * step;
@@ -67,7 +71,7 @@ export default function GpxProfilePanel({ details, label, dep, arr, onHoverIndex
     const dMax = Math.max(details[valid[valid.length - 1]].d, 1);
     const ticks: number[] = [];
     for (let v = yMin; v <= yMax; v += step) ticks.push(v);
-    return { valid, yMin, yMax, dMax, ticks };
+    return { valid, yMin, yMax, dMax, ticks, maxIdx };
   }, [details]);
 
   const w = width ?? 0;
@@ -208,6 +212,29 @@ export default function GpxProfilePanel({ details, label, dep, arr, onHoverIndex
               />
             </>
           )}
+          <g pointerEvents="none">
+            <circle
+              cx={xOf(details[chart.maxIdx].d)}
+              cy={yOf(details[chart.maxIdx].ele! * M_TO_FT)}
+              r={4}
+              fill="#1d4e89"
+              stroke="#fff"
+              strokeWidth={1.5}
+            />
+            <text
+              x={Math.min(Math.max(xOf(details[chart.maxIdx].d), MARGIN.left + 28), w - MARGIN.right - 28)}
+              y={Math.max(yOf(details[chart.maxIdx].ele! * M_TO_FT) - 8, 12)}
+              fontSize={12}
+              fontWeight={700}
+              textAnchor="middle"
+              fill="#142033"
+              stroke="#eaf4fb"
+              strokeWidth={3}
+              paintOrder="stroke"
+            >
+              {Math.round(details[chart.maxIdx].ele! * M_TO_FT).toLocaleString("it-IT")} ft
+            </text>
+          </g>
           {info && info.ele !== null && (
             <g pointerEvents="none">
               <line x1={xOf(info.d)} x2={xOf(info.d)} y1={MARGIN.top} y2={MARGIN.top + plotH} stroke="#e6007e" strokeWidth={1} />

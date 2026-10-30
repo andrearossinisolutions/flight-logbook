@@ -4,9 +4,14 @@
     "date": "2026-10-30",
     "commits": [
       {
-        "hash": "42d5d2e",
+        "hash": "db1c7ed",
         "date": "2026-10-30",
         "subject": "Added a vertical profile panel on GPX tracks"
+      },
+      {
+        "hash": "5fa401e",
+        "date": "2026-10-30",
+        "subject": "Added max altitude marker with label on the GPX vertical profile"
       }
     ]
   },
