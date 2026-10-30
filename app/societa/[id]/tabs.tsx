@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipSettings, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog, addRecommendedReminders, addBooking, deleteBooking, updateBooking, settleDirectPayment, uploadAircraftDocument, deleteAircraftDocument } from "./actions";
+import { NavDropdown } from "@/components/nav-dropdown";
 import { SubmitButton } from "@/components/submit-button";
 import { formatDateDisplay, daysFromDate, formatDateTimeInput, getRomeDateTimeParts, formatDateInput, formatHoursToHHMM } from "@/lib/utils";
 import {
@@ -670,73 +671,47 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                   </div>
                 );
   }
-  const tabBar = (
-        <div className="navbar-tabs" style={{ display: "flex", flexWrap: "wrap", width: "fit-content" }}>
-          <button
-            type="button"
-            className={`navbar-tab ${activeTab === "BACHECA" ? "active" : ""}`}
-            style={{ border: "none", cursor: "pointer", background: activeTab === "BACHECA" ? "white" : "transparent" }}
-            onClick={() => setActiveTab("BACHECA")}
-            title="Bacheca"
-          >
-            <DashboardIcon size={18} />
-            <span className="navbar-tab-text">Bacheca</span>
-          </button>
-          <button
-            type="button"
-            className={`navbar-tab ${activeTab === "BOOKINGS" ? "active" : ""}`}
-            style={{ border: "none", cursor: "pointer", background: activeTab === "BOOKINGS" ? "white" : "transparent" }}
-            onClick={() => setActiveTab("BOOKINGS")}
-            title="Prenotazioni"
-          >
-            <CalendarIcon size={18} />
-            <span className="navbar-tab-text">Prenotazioni</span>
-          </button>
-          <button
-            type="button"
-            className={`navbar-tab ${activeTab === "LOGBOOK" ? "active" : ""}`}
-            style={{ border: "none", cursor: "pointer", background: activeTab === "LOGBOOK" ? "white" : "transparent" }}
-            onClick={() => setActiveTab("LOGBOOK")}
-            title="Logbook"
-          >
-            <AirplaneIcon size={18} />
-            <span className="navbar-tab-text">Logbook</span>
-          </button>
+  const tabItems = [
+    { key: "BACHECA", label: "Bacheca", icon: DashboardIcon },
+    { key: "BOOKINGS", label: "Prenotazioni", icon: CalendarIcon },
+    { key: "LOGBOOK", label: "Logbook", icon: AirplaneIcon },
+    ...(!partnership.disableSharedFund ? [{ key: "REPORT", label: "Rendiconto Mensile", icon: FileTextIcon }] : []),
+    { key: "CASSA", label: partnership.disableSharedFund ? "Spese Soci" : "Cassa", icon: WalletIcon },
+    { key: "SETTINGS", label: "Impostazioni", icon: SettingsIcon },
+  ];
 
-          
-          {!partnership.disableSharedFund && (
-          <button
-            type="button"
-            className={`navbar-tab ${activeTab === "REPORT" ? "active" : ""}`}
-            style={{ border: "none", cursor: "pointer", background: activeTab === "REPORT" ? "white" : "transparent" }}
-            onClick={() => setActiveTab("REPORT")}
-            title="Rendiconto Mensile"
-          >
-            <FileTextIcon size={18} />
-            <span className="navbar-tab-text">Rendiconto Mensile</span>
-          </button>
-          )}
-          <button
-            type="button"
-            className={`navbar-tab ${activeTab === "CASSA" ? "active" : ""}`}
-            style={{ border: "none", cursor: "pointer", background: activeTab === "CASSA" ? "white" : "transparent" }}
-            onClick={() => setActiveTab("CASSA")}
-            title={partnership.disableSharedFund ? "Spese Soci" : "Cassa"}
-          >
-            <WalletIcon size={18} />
-            <span className="navbar-tab-text">{partnership.disableSharedFund ? "Spese Soci" : "Cassa"}</span>
-          </button>
-          <button
-            type="button"
-            className={`navbar-tab ${activeTab === "SETTINGS" ? "active" : ""}`}
-            style={{ border: "none", cursor: "pointer", background: activeTab === "SETTINGS" ? "white" : "transparent" }}
-            onClick={() => setActiveTab("SETTINGS")}
-            title="Impostazioni"
-          >
-            <SettingsIcon size={18} />
-            <span className="navbar-tab-text">Impostazioni</span>
-          </button>
-        </div>
+  const tabBar = (
+    <>
+      <div className="navbar-tabs partnership-tabs">
+        {tabItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.key}
+              type="button"
+              className={`navbar-tab ${activeTab === item.key ? "active" : ""}`}
+              style={{ border: "none", cursor: "pointer", background: activeTab === item.key ? "white" : "transparent" }}
+              onClick={() => setActiveTab(item.key)}
+              title={item.label}
+            >
+              <Icon size={18} />
+              <span className="navbar-tab-text">{item.label}</span>
+            </button>
+          );
+        })}
+      </div>
+      <NavDropdown
+        ariaLabel="Sezioni della società"
+        align="end"
+        items={tabItems.map((item) => ({
+          key: item.key,
+          label: item.label,
+          icon: item.icon,
+          active: activeTab === item.key,
+          onSelect: () => setActiveTab(item.key),
+        }))}
+      />
+    </>
   );
 
   return (

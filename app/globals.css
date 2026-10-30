@@ -514,18 +514,10 @@ textarea {
     height: 18px !important;
   }
 
-  .navbar-tabs {
-    gap: 4px;
-    padding: 4px;
-    border-radius: 14px;
-  }
-
-  .navbar-tab-text {
+  /* Su mobile le tab lasciano il posto al menu a tendina */
+  .navbar-tabs,
+  .navbar-tabs.partnership-tabs {
     display: none;
-  }
-
-  .navbar-tab {
-    padding: 8px 10px;
   }
 
   .navbar-logout-text {
@@ -536,6 +528,122 @@ textarea {
     padding: 8px;
     border-radius: 10px;
   }
+}
+
+/* Menu a tendina di navigazione (solo mobile) */
+.nav-dropdown {
+  display: none;
+  position: relative;
+  z-index: 200;
+}
+
+.partnership-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  width: fit-content;
+}
+
+.nav-dropdown-trigger,
+.nav-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 14px;
+  border: none;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--muted);
+  text-decoration: none;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.nav-dropdown-trigger {
+  background: white;
+  color: var(--primary-strong);
+  border: 1px solid rgba(217, 224, 234, 0.6);
+  box-shadow: 0 2px 12px rgba(20, 32, 51, 0.08);
+}
+
+.nav-dropdown-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-dropdown-chevron {
+  flex: 0 0 auto;
+  transition: transform 0.15s ease;
+}
+
+.nav-dropdown-chevron.open {
+  transform: rotate(180deg);
+}
+
+.nav-dropdown-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 100%;
+  max-width: calc(100vw - 32px);
+  width: max-content;
+  margin: 0;
+  padding: 5px;
+  list-style: none;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(217, 224, 234, 0.85);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px -12px rgba(20, 32, 51, 0.18), 0 1px 3px rgba(20, 32, 51, 0.05);
+  animation: navDropdownFade 0.13s ease-out;
+}
+
+.nav-dropdown-align-end .nav-dropdown-panel {
+  left: auto;
+  right: 0;
+}
+
+.nav-dropdown-item {
+  background: transparent;
+}
+
+.nav-dropdown-item:hover,
+.nav-dropdown-item:focus-visible {
+  color: var(--text);
+  background: rgba(246, 248, 251, 0.9);
+}
+
+@keyframes navDropdownFade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 768px) {
+  .nav-dropdown {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0 8px;
+  }
+
+  /* Società: lo slot cede spazio al selettore invece di mandarlo a capo */
+  #partnership-tabs-slot {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-dropdown-panel { animation: none; }
+  .nav-dropdown-chevron { transition: none; }
 }
 
 @media (max-width: 540px) {
@@ -747,6 +855,9 @@ textarea {
 
 /* Header animation for AppShell */
 .app-shell-header {
+  /* Sopra il contenuto che segue (anch'esso con stacking context per l'animazione): serve al pannello del menu a tendina; resta sotto la navbar (z-index 100) */
+  position: relative;
+  z-index: 5;
   animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
 }

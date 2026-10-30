@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { Route } from "next";
 import { useState } from "react";
 import { AirplaneIcon, BriefingIcon, LogOutIcon, MapIcon, MirrorBallIcon, SettingsIcon, UsersIcon } from "./icons";
+import { NavDropdown } from "./nav-dropdown";
 import { version } from "../package.json";
 
 export function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
@@ -29,7 +30,12 @@ export function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
     { name: "Eventi", href: "/eventi", icon: MirrorBallIcon },
     { name: "Mappa", href: "/map", icon: MapIcon },
     { name: "Impostazioni", href: "/settings", icon: SettingsIcon },
-  ];
+  ].map((item) => ({
+    ...item,
+    isActive:
+      pathname === item.href ||
+      (item.href !== "/logbook" && !!pathname?.startsWith(item.href)),
+  }));
 
 
   return (
@@ -53,9 +59,7 @@ export function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
 
         <div className="navbar-tabs">
           {isLoggedIn && navItems.map((item) => {
-            const isActive =
-              pathname === item.href ||
-              (item.href !== "/logbook" && pathname?.startsWith(item.href));
+            const isActive = item.isActive;
             const Icon = item.icon;
             return (
               <Link
@@ -70,6 +74,18 @@ export function Navbar({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
             );
           })}
         </div>
+
+        {isLoggedIn && (
+          <NavDropdown
+            items={navItems.map((item) => ({
+              key: item.href,
+              label: item.name,
+              icon: item.icon,
+              href: item.href,
+              active: item.isActive,
+            }))}
+          />
+        )}
 
         <div className="navbar-actions">
           {isLoggedIn ? (
