@@ -1,10 +1,21 @@
 [
   {
+    "version": "1.35.3",
+    "date": "2026-10-30",
+    "commits": [
+      {
+        "hash": "dea99b2",
+        "date": "2026-10-30",
+        "subject": "Fixed the partner expenses tab refreshing endlessly"
+      }
+    ]
+  },
+  {
     "version": "1.35.2",
     "date": "2026-10-30",
     "commits": [
       {
-        "hash": "809e4fa",
+        "hash": "d69d524",
         "date": "2026-10-30",
         "subject": "Replaced the mobile navigation icons with a dropdown menu"
       }

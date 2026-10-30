@@ -546,11 +546,18 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
     return `${String(parts.day).padStart(2, '0')} ${months[parts.month - 1]}`;
   };
 
+  // La dipendenza è una firma del contenuto e non l'array: dopo ogni server action
+  // il refresh del router rigenera `transactions` con una nuova identità e l'effetto
+  // ricaricherebbe il report all'infinito.
+  const txSignature = partnership.transactions
+    .map((t: any) => `${t.id}:${t.amount}:${t.type}:${t.date}:${t.userId ?? ""}:${t.recipientId ?? ""}:${t.description ?? ""}:${t.maintenanceLogId ?? ""}`)
+    .join("|");
+
   useEffect(() => {
     if (activeTab === "REPORT" || (activeTab === "CASSA" && partnership.disableSharedFund)) {
       loadReport();
     }
-  }, [activeTab, reportMonth, reportYear, partnership.transactions]);
+  }, [activeTab, reportMonth, reportYear, txSignature]);
 
   async function loadReport() {
     setIsLoadingReport(true);
