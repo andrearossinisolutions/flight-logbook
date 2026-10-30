@@ -3,8 +3,10 @@ import type { NextRequest } from "next/server";
 import {
   createSession,
   SESSION_COOKIE,
-  SESSION_MAX_AGE,
+  sessionCookieOptions,
+  shouldRenewSession,
   verifySessionToken,
+  type SessionPayload,
 } from "@/lib/auth";
 
 const PUBLIC_PATHS = new Set([
@@ -24,6 +26,26 @@ const PUBLIC_API_PREFIXES = [
   "/api/public-map",
   "/embed",
 ];
+
+// Rinnova il cookie solo in finestra di rinnovo, così non c'è un Set-Cookie a ogni richiesta
+// (Next lo tratterebbe come cookie modificato dalla server action e rileggerebbe la pagina).
+async function renewSessionCookie(
+  request: NextRequest,
+  response: NextResponse,
+  session: SessionPayload,
+) {
+  // Il logout cancella il cookie: il proxy non deve poterlo sovrascrivere
+  if (request.nextUrl.pathname.toLowerCase().replace(/\/$/, "") === "/api/auth/logout") return;
+  // L'header next-action è un dettaglio interno di Next: se cambiasse, resta valida la sola soglia
+  if (request.headers.has("next-action")) return;
+  if (!shouldRenewSession(session)) return;
+
+  const refreshedToken = await createSession({
+    userId: session.userId,
+    email: session.email,
+  });
+  response.cookies.set(SESSION_COOKIE, refreshedToken, sessionCookieOptions());
+}
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -55,18 +77,7 @@ export async function proxy(request: NextRequest) {
     const response = NextResponse.next();
 
     if (session) {
-      const refreshedToken = await createSession({
-        userId: session.userId,
-        email: session.email,
-      });
-
-      response.cookies.set(SESSION_COOKIE, refreshedToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        path: "/",
-        maxAge: SESSION_MAX_AGE,
-      });
+      await renewSessionCookie(request, response, session);
     }
 
     return response;
@@ -81,19 +92,8 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  const refreshedToken = await createSession({
-    userId: session.userId,
-    email: session.email,
-  });
-
   const response = NextResponse.next();
-  response.cookies.set(SESSION_COOKIE, refreshedToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: SESSION_MAX_AGE,
-  });
+  await renewSessionCookie(request, response, session);
 
   return response;
 }

@@ -4,9 +4,14 @@
     "date": "2026-10-30",
     "commits": [
       {
-        "hash": "dea99b2",
+        "hash": "b96ade7",
         "date": "2026-10-30",
         "subject": "Fixed the partner expenses tab refreshing endlessly"
+      },
+      {
+        "hash": "d1e203a",
+        "date": "2026-10-30",
+        "subject": "Stopped renewing the login session on every request"
       }
     ]
   },
