@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getCoordinatesFromName, ITALIAN_AIRPORTS, PLACE_TO_METAR } from "@/lib/weather";
-import { parseGpxTrackPoints, downsamplePoints, cumulativeDistancesMeters } from "@/lib/gpx";
+import { parseGpxTrackPoints, downsamplePoints, cumulativeDistancesMeters, haversineMeters } from "@/lib/gpx";
 import type { MapPoint, MapRoute, MapGpxTrack } from "@/components/flight-map-inner";
 
 export interface MapDataOptions {
@@ -221,18 +221,17 @@ export async function buildMapData(userId: string, options: MapDataOptions) {
 
       // Ogni file è una traccia a sé: unirli in un'unica linea collegherebbe con un
       // segmento dritto la fine di un file all'inizio del successivo.
-      let trackLabel: string | null = null;
-      if (includeGpxDetails && dep && arr) {
-        const dateStr = new Intl.DateTimeFormat("it-IT", {
-          timeZone: "Europe/Rome",
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }).format(m.date);
-        trackLabel = `${dateStr} · ${dep} → ${arr}`;
-      }
-      const trackDep = includeGpxDetails && dep && arr ? dep : null;
-      const trackArr = includeGpxDetails && dep && arr ? arr : null;
+      const showEndpoints = includeGpxDetails && !!dep && !!arr;
+      const dateStr = showEndpoints
+        ? new Intl.DateTimeFormat("it-IT", {
+            timeZone: "Europe/Rome",
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          }).format(m.date)
+        : "";
+      const depCoords = coordsMap.get(dep);
+      const arrCoords = coordsMap.get(arr);
       let drawn = false;
       for (const pts of filesWithPoints) {
         if (pts.length < 2) continue;
@@ -240,6 +239,22 @@ export async function buildMapData(userId: string, options: MapDataOptions) {
           // Distanza cumulata sui punti completi, poi campionamento degli indici
           // (path e details restano allineati e la distanza totale non si accorcia).
           const cum = cumulativeDistancesMeters(pts);
+          // Tracce di ritorno: se inizio e fine della traccia sono più vicini a
+          // arrivo e partenza che a partenza e arrivo, i nomi vanno invertiti.
+          let trackDep = showEndpoints ? dep : null;
+          let trackArr = showEndpoints ? arr : null;
+          if (trackDep && trackArr && depCoords && arrCoords) {
+            const first = pts[0];
+            const last = pts[pts.length - 1];
+            const straight =
+              haversineMeters(first.lat, first.lon, depCoords.lat, depCoords.lon) +
+              haversineMeters(last.lat, last.lon, arrCoords.lat, arrCoords.lon);
+            const reversed =
+              haversineMeters(first.lat, first.lon, arrCoords.lat, arrCoords.lon) +
+              haversineMeters(last.lat, last.lon, depCoords.lat, depCoords.lon);
+            if (reversed < straight) [trackDep, trackArr] = [trackArr, trackDep];
+          }
+          const trackLabel = trackDep && trackArr ? `${dateStr} · ${trackDep} → ${trackArr}` : null;
           const idx = downsamplePoints(
             pts.map((_, i) => i),
             400

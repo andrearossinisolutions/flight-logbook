@@ -2382,3 +2382,10 @@ textarea {
     }
   }
 }
+
+/* Leaflet: niente riquadro di focus del browser attorno alle linee cliccate */
+.leaflet-container path.leaflet-interactive:focus,
+.leaflet-container path.leaflet-interactive:focus-visible,
+.leaflet-container .leaflet-interactive:focus {
+  outline: none;
+}

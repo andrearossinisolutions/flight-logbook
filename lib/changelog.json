@@ -9,9 +9,14 @@
         "subject": "Added a vertical profile panel on GPX tracks"
       },
       {
-        "hash": "5fa401e",
+        "hash": "6bf227d",
         "date": "2026-10-30",
         "subject": "Added max altitude marker with label on the GPX vertical profile"
+      },
+      {
+        "hash": "66750ba",
+        "date": "2026-10-30",
+        "subject": "Swapped departure and arrival labels on return GPX tracks and removed focus outline on map lines"
       }
     ]
   },
