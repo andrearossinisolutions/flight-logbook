@@ -11,6 +11,14 @@ import {
 import { useMemo, useState, useEffect, useRef, type ChangeEvent } from "react";
 import type { FlightFormValues } from "@/lib/flight-form";
 import { extractGpxTimeRange } from "@/lib/gpx";
+import {
+  MAX_TECHNICAL_LITERS,
+  companyFlightCost,
+  formatLiters,
+  hasInconsistentFuel,
+  realBurnLiters,
+  suggestedFuelExpense,
+} from "@/lib/fuel";
 
 type FlightFormProps = {
   mode: "create" | "edit";
@@ -30,7 +38,14 @@ type FlightFormProps = {
     hourlyFuelCost: number;
     hourlyMaintCost: number;
     hourlyEngineFund: number;
+    tankCapacityLiters: number;
+    fuelPricePerLiter: number;
+    disableSharedFund: boolean;
   }>;
+  /** Prezzo carburante salvato nel volo in modifica (snapshot €/L), se presente. */
+  existingFuelPrice?: number | null;
+  /** Importo della transazione di rifornimento collegata al volo in modifica, se esiste. */
+  existingFuelExpense?: number | null;
   rentalAircrafts?: Array<{
     id: string;
     registration: string;
@@ -75,7 +90,18 @@ function buildInitialValues(
     rentalRateApplied: initialValues?.rentalRateApplied ?? "150",
     instructorRateApplied: initialValues?.instructorRateApplied ?? "80",
     notes: initialValues?.notes ?? "",
+    fuelStartLiters: initialValues?.fuelStartLiters ?? "",
+    fuelEnRouteLiters: initialValues?.fuelEnRouteLiters ?? "",
+    fuelEndLiters: initialValues?.fuelEndLiters ?? "",
   };
+}
+
+/** Numero dal campo litri: vuoto/non valido/negativo = null (mai 0). */
+function parseLitersField(value: string): number | null {
+  const text = value.trim().replace(",", ".");
+  if (text === "") return null;
+  const n = Number(text);
+  return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
 export default function FlightForm({
@@ -89,6 +115,8 @@ export default function FlightForm({
   bookingId,
   bookingWindow,
   partnershipAircrafts = [],
+  existingFuelPrice = null,
+  existingFuelExpense = null,
   rentalAircrafts = [],
   visitedPlaces = [],
   backTo,
@@ -141,6 +169,17 @@ export default function FlightForm({
 
   const [warmupMinutes, setWarmupMinutes] = useState(initial.warmupMinutes);
   const [notes, setNotes] = useState(initial.notes);
+
+  const [fuelStart, setFuelStart] = useState(initial.fuelStartLiters);
+  const [fuelEnRoute, setFuelEnRoute] = useState(initial.fuelEnRouteLiters);
+  const [fuelEnd, setFuelEnd] = useState(initial.fuelEndLiters);
+  const [addFuelExpense, setAddFuelExpense] = useState(
+    mode === "edit" ? existingFuelExpense !== null : true
+  );
+  const [fuelExpenseAmount, setFuelExpenseAmount] = useState(
+    existingFuelExpense !== null ? existingFuelExpense.toFixed(2) : ""
+  );
+  const [fuelExpenseTouched, setFuelExpenseTouched] = useState(existingFuelExpense !== null);
 
   const [gpxFileNames, setGpxFileNames] = useState<string[]>([]);
   const [gpxError, setGpxError] = useState<string | null>(null);
@@ -500,10 +539,70 @@ export default function FlightForm({
     return parsedDate <= new Date();
   }, [date]);
 
+  const fuelLiters = useMemo(
+    () => ({
+      fuelStartLiters: parseLitersField(fuelStart),
+      fuelEnRouteLiters: parseLitersField(fuelEnRoute),
+      fuelEndLiters: parseLitersField(fuelEnd),
+    }),
+    [fuelStart, fuelEnRoute, fuelEnd]
+  );
+  const fuelBurn = insertMode === "PAST" ? realBurnLiters(fuelLiters) : null;
+  const fuelInconsistent = insertMode === "PAST" && hasInconsistentFuel(fuelLiters);
+  const fuelMax =
+    isPartnershipAircraft && isPartnershipAircraft.tankCapacityLiters > 0
+      ? isPartnershipAircraft.tankCapacityLiters
+      : MAX_TECHNICAL_LITERS;
+  const fuelArrivalTooHigh =
+    fuelLiters.fuelStartLiters !== null &&
+    fuelLiters.fuelEndLiters !== null &&
+    fuelLiters.fuelEndLiters > fuelLiters.fuelStartLiters + (fuelLiters.fuelEnRouteLiters ?? 0);
+
+  const showFuelExpense =
+    insertMode === "PAST" &&
+    !!isPartnershipAircraft &&
+    isPartnershipAircraft.disableSharedFund &&
+    (fuelLiters.fuelEnRouteLiters ?? 0) > 0;
+  const suggestedExpense = suggestedFuelExpense(
+    fuelLiters.fuelEnRouteLiters,
+    isPartnershipAircraft?.fuelPricePerLiter
+  );
+  useEffect(() => {
+    if (!fuelExpenseTouched && suggestedExpense !== null) {
+      setFuelExpenseAmount(suggestedExpense.toFixed(2));
+    }
+  }, [suggestedExpense, fuelExpenseTouched]);
+  const fuelExpenseInvalid =
+    showFuelExpense && addFuelExpense && !(Number(fuelExpenseAmount.replace(",", ".")) > 0);
+
+  // Prezzo per l'anteprima: snapshot del volo se già salvato sullo stesso aereo, altrimenti prezzo attuale dell'aereo.
+  const fuelPriceForPreview = (() => {
+    if (!isPartnershipAircraft) return 0;
+    if (
+      existingFuelPrice && existingFuelPrice > 0 &&
+      aircraftRegistration === initial.aircraftRegistration
+    ) {
+      return existingFuelPrice;
+    }
+    return isPartnershipAircraft.fuelPricePerLiter;
+  })();
+
   const totalCost = useMemo(() => {
-    const base =
+    const hourlyBase =
       (durationMinutes / 60) *
       (Number.isFinite(effectiveRentalRate) ? effectiveRentalRate : 0);
+    const base =
+      isPartnershipAircraft && fuelBurn !== null
+        ? companyFlightCost({
+            durationMinutes,
+            hourlyFuelCost: isPartnershipAircraft.hourlyFuelCost,
+            hourlyMaintCost: isPartnershipAircraft.hourlyMaintCost,
+            hourlyEngineFund: isPartnershipAircraft.hourlyEngineFund,
+            fuel: fuelLiters,
+            fuelPrice: fuelPriceForPreview,
+            excludeFuel: isPartnershipAircraft.disableSharedFund,
+          })
+        : hourlyBase;
 
     const instructor = instructorMinutesNumber > 0 ?
       (instructorMinutesNumber / 60) *
@@ -515,6 +614,10 @@ export default function FlightForm({
     instructorMinutesNumber,
     instructorRateNumber,
     effectiveRentalRate,
+    isPartnershipAircraft,
+    fuelBurn,
+    fuelLiters,
+    fuelPriceForPreview,
   ]);
 
   const deductedAmount = useMemo(() => {
@@ -961,6 +1064,123 @@ export default function FlightForm({
           </>}
         </div>
 
+        {insertMode === "PAST" && (
+          <div className="card">
+            <h3 style={{ marginTop: 0 }}>Carburante</h3>
+
+            <div className="grid grid-2">
+              <div className="field">
+                <label htmlFor="fuelStartLiters">Carburante alla partenza (L)</label>
+                <input
+                  className="input"
+                  id="fuelStartLiters"
+                  name="fuelStartLiters"
+                  type="number"
+                  step="1"
+                  min="0"
+                  max={fuelMax}
+                  inputMode="numeric"
+                  value={fuelStart}
+                  onChange={(e) => setFuelStart(e.target.value)}
+                />
+              </div>
+
+              <div className="field">
+                <label htmlFor="fuelEnRouteLiters">Rifornimento in rotta (L)</label>
+                <input
+                  className="input"
+                  id="fuelEnRouteLiters"
+                  name="fuelEnRouteLiters"
+                  type="number"
+                  step="1"
+                  min="0"
+                  max={fuelMax}
+                  inputMode="numeric"
+                  value={fuelEnRoute}
+                  onChange={(e) => {
+                    const next = e.target.value;
+                    // Transizione da vuoto/0 a > 0: la spunta ricompare già selezionata
+                    if (!((parseLitersField(fuelEnRoute) ?? 0) > 0) && (parseLitersField(next) ?? 0) > 0) {
+                      setAddFuelExpense(true);
+                    }
+                    setFuelEnRoute(next);
+                  }}
+                />
+                <span className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                  Litri aggiunti durante il volo o in una tappa, senza usare la benzina dell&apos;hangar.
+                </span>
+              </div>
+
+              {showFuelExpense && (
+                <div className="field">
+                  <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                    <input
+                      type="checkbox"
+                      name="addFuelExpense"
+                      checked={addFuelExpense}
+                      onChange={(e) => setAddFuelExpense(e.target.checked)}
+                    />
+                    Aggiungi il rifornimento alle transazioni della società
+                  </label>
+                  {addFuelExpense && (
+                    <>
+                      <label htmlFor="fuelExpenseAmount" style={{ marginTop: 8 }}>Prezzo pagato (€)</label>
+                      <input
+                        className="input"
+                        id="fuelExpenseAmount"
+                        name="fuelExpenseAmount"
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        inputMode="decimal"
+                        required
+                        value={fuelExpenseAmount}
+                        onChange={(e) => {
+                          setFuelExpenseTouched(true);
+                          setFuelExpenseAmount(e.target.value);
+                        }}
+                      />
+                      <span className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                        Registrato come anticipo spesa per ore di volo, a tuo credito. Controlla di non aver già inserito questo rifornimento a mano tra le transazioni.
+                      </span>
+                    </>
+                  )}
+                </div>
+              )}
+
+              <div className="field">
+                <label htmlFor="fuelEndLiters">Carburante all&apos;arrivo (L)</label>
+                <input
+                  className="input"
+                  id="fuelEndLiters"
+                  name="fuelEndLiters"
+                  type="number"
+                  step="1"
+                  min="0"
+                  max={fuelMax}
+                  inputMode="numeric"
+                  value={fuelEnd}
+                  onChange={(e) => setFuelEnd(e.target.value)}
+                />
+              </div>
+            </div>
+
+            {fuelBurn !== null && (
+              <p style={{ margin: "12px 0 0", fontWeight: 600 }}>Consumo registrato: {formatLiters(fuelBurn)}</p>
+            )}
+            {fuelInconsistent && (
+              <div className="error" style={{ marginTop: 12 }}>
+                <span>I litri non tornano (all&apos;arrivo risulta più carburante di quello a bordo): il costo del carburante verrà calcolato sulle ore di volo.</span>
+              </div>
+            )}
+            {!fuelInconsistent && fuelArrivalTooHigh && (
+              <div className="error" style={{ marginTop: 12 }}>
+                <span>Il carburante all&apos;arrivo è maggiore di partenza più rifornimento in rotta: controlla i valori.</span>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="card">
           <div className="grid grid-2">
             {dateBipoExam && <div className="field">
@@ -1175,7 +1395,8 @@ export default function FlightForm({
               durationMinutes === 0 ||
               durationMinutes === Number(warmupMinutes || 0) ||
               (instructorMinutesNumber > 0 && instructorMinutesNumber > durationMinutes) ||
-              (bookingSectionChecked && !!bookingOverlap)
+              (bookingSectionChecked && !!bookingOverlap) ||
+              fuelExpenseInvalid
             }>
               {effectiveSubmitLabel}
             </SubmitButton>

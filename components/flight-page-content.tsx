@@ -12,6 +12,14 @@ import {
 } from "@/lib/flight-form";
 import { defaultWarmupMinutesForDate, formatDateTimeInput, parseRomeDateTime } from "@/lib/utils";
 import { MovementType, Prisma } from "@prisma/client";
+import {
+  aircraftLimit,
+  companyFlightCost,
+  fuelExpenseDescription,
+  parseNonNegative,
+  realBurnLiters,
+  resolveFuelPriceSnapshot,
+} from "@/lib/fuel";
 
 type FlightPageContentProps =
   | {
@@ -137,6 +145,9 @@ export default async function FlightPageContent(
       hourlyFuelCost: Number(a.hourlyFuelCost),
       hourlyMaintCost: Number(a.hourlyMaintCost),
       hourlyEngineFund: Number(a.hourlyEngineFund),
+      tankCapacityLiters: a.tankCapacityLiters,
+      fuelPricePerLiter: a.fuelPricePerLiter,
+      disableSharedFund: pm.partnership.disableSharedFund,
       partnershipId: pm.partnership.id,
     }))
   );
@@ -193,6 +204,87 @@ export default async function FlightPageContent(
       .filter((f): f is File => f instanceof File && f.size > 0);
 
     const partnershipAircraft = partnershipAircrafts.find(a => a.registration === parsed.aircraftRegistration);
+
+    // Carburante: massimo specifico dell'aereo di società (serbatoio), calcolo costo e snapshot del prezzo.
+    const fuelInput = {
+      fuelStartLiters: parsed.fuelStartLiters,
+      fuelEnRouteLiters: parsed.fuelEnRouteLiters,
+      fuelEndLiters: parsed.fuelEndLiters,
+    };
+    if (partnershipAircraft) {
+      const limit = aircraftLimit(partnershipAircraft.tankCapacityLiters);
+      const labels: Array<[number | null, string]> = [
+        [fuelInput.fuelStartLiters, "Carburante alla partenza"],
+        [fuelInput.fuelEnRouteLiters, "Rifornimento in rotta"],
+        [fuelInput.fuelEndLiters, "Carburante all'arrivo"],
+      ];
+      for (const [value, label] of labels) {
+        if (value !== null && value > limit) {
+          throw new Error(`${label}: il valore massimo è ${limit}.`);
+        }
+      }
+    }
+    const hasRealFuel = !!partnershipAircraft && realBurnLiters(fuelInput) !== null;
+
+    // Rifornimento in rotta come transazione della società: solo cassa comune disattivata, volo passato, litri > 0.
+    const fuelExpenseEligible =
+      !!partnershipAircraft &&
+      partnershipAircraft.disableSharedFund &&
+      !parsed.isDraft &&
+      (fuelInput.fuelEnRouteLiters ?? 0) > 0;
+    let fuelExpenseAmount: number | null = null;
+    if (fuelExpenseEligible && formData.get("addFuelExpense") === "on") {
+      fuelExpenseAmount = parseNonNegative(formData.get("fuelExpenseAmount"), "Prezzo pagato", {
+        max: 100000,
+        decimals: 2,
+      });
+      if (fuelExpenseAmount === null || !(fuelExpenseAmount > 0)) {
+        throw new Error("Prezzo pagato: inserisci un importo maggiore di zero.");
+      }
+    }
+
+    async function syncFuelExpense(tx: Prisma.TransactionClient, flightId: string, ownerUserId: string) {
+      if (fuelExpenseAmount !== null && partnershipAircraft) {
+        const data = {
+          partnershipId: partnershipAircraft.partnershipId,
+          userId: ownerUserId,
+          recipientId: null,
+          amount: fuelExpenseAmount,
+          type: "MEMBER_EXPENSE_HOURS",
+          description: fuelExpenseDescription({
+            date: parsed.date,
+            liters: fuelInput.fuelEnRouteLiters ?? 0,
+            registration: parsed.aircraftRegistration,
+          }),
+          date: parsed.date,
+        };
+        await tx.partnershipTransaction.upsert({
+          where: { flightId },
+          create: { ...data, flightId },
+          update: data,
+        });
+      } else {
+        await tx.partnershipTransaction.deleteMany({ where: { flightId } });
+      }
+    }
+
+    function companyCosts(fuelPriceApplied: number | null) {
+      // Con dati reali validi e prezzo salvato il costo del volo si ricalcola con la funzione condivisa;
+      // altrimenti resta il calcolo a ore di sempre.
+      if (!partnershipAircraft || !hasRealFuel || !(fuelPriceApplied && fuelPriceApplied > 0)) {
+        return { rentalCost: parsed.rentalCost, totalCost: parsed.totalCost };
+      }
+      const rentalCost = companyFlightCost({
+        durationMinutes: parsed.durationMinutes,
+        hourlyFuelCost: partnershipAircraft.hourlyFuelCost,
+        hourlyMaintCost: partnershipAircraft.hourlyMaintCost,
+        hourlyEngineFund: partnershipAircraft.hourlyEngineFund,
+        fuel: fuelInput,
+        fuelPrice: fuelPriceApplied,
+        excludeFuel: partnershipAircraft.disableSharedFund,
+      });
+      return { rentalCost, totalCost: rentalCost + parsed.instructorCost };
+    }
 
     async function upsertBooking(
       tx: Prisma.TransactionClient,
@@ -258,6 +350,11 @@ export default async function FlightPageContent(
         partnershipId = partnershipAircraft.partnershipId;
       }
 
+      const createFuelPrice = partnershipAircraft
+        ? resolveFuelPriceSnapshot({ fuel: fuelInput, currentPrice: partnershipAircraft.fuelPricePerLiter })
+        : null;
+      const createCosts = companyCosts(createFuelPrice);
+
       await prisma.$transaction(async (tx) => {
         // If it's a partnership flight, the movement amount only subtracts the instructor cost (if any)
         const movementAmount = partnershipAircraft ? -(parsed.instructorCost || 0) : parsed.movementAmount;
@@ -299,13 +396,17 @@ export default async function FlightPageContent(
             instructorMinutes: parsed.instructorMinutes,
             rentalRateApplied: parsed.rentalRateApplied,
             instructorRateApplied: parsed.instructorRateApplied,
-            rentalCost: parsed.rentalCost,
+            rentalCost: createCosts.rentalCost,
             instructorCost: parsed.instructorCost,
-            totalCost: parsed.totalCost,
+            totalCost: createCosts.totalCost,
+            ...fuelInput,
+            fuelPriceApplied: createFuelPrice,
             partnershipAircraftId: partnershipAircraft ? partnershipAircraft.id : null,
             bookingId: resolvedBookingId,
           },
         });
+
+        await syncFuelExpense(tx, flight.id, user.id);
 
         for (const file of gpxFiles) {
           const content = Buffer.from(await file.arrayBuffer());
@@ -371,6 +472,17 @@ export default async function FlightPageContent(
         }
       }
 
+      // Snapshot del prezzo: mantenuto se i dati reali restano (stesso aereo), azzerato se spariscono.
+      const editFuelPrice = partnershipAircraft
+        ? resolveFuelPriceSnapshot({
+            fuel: fuelInput,
+            currentPrice: partnershipAircraft.fuelPricePerLiter,
+            existingSnapshot: dbMovement.flight.fuelPriceApplied,
+            sameAircraftAsBefore: dbMovement.flight.partnershipAircraftId === partnershipAircraft.id,
+          })
+        : null;
+      const editCosts = companyCosts(editFuelPrice);
+
       await prisma.$transaction(async (tx) => {
         const movementAmount = partnershipAircraft ? -(parsed.instructorCost || 0) : parsed.movementAmount;
 
@@ -379,6 +491,8 @@ export default async function FlightPageContent(
           const booking = await upsertBooking(tx, partnershipAircraft, dbMovement.userId);
           resolvedBookingId = booking.id;
         }
+
+        await syncFuelExpense(tx, dbMovement.flight!.id, dbMovement.userId);
 
         await tx.flight.update({
           where: {
@@ -402,9 +516,11 @@ export default async function FlightPageContent(
             instructorMinutes: parsed.instructorMinutes,
             rentalRateApplied: parsed.rentalRateApplied,
             instructorRateApplied: parsed.instructorRateApplied,
-            rentalCost: parsed.rentalCost,
+            rentalCost: editCosts.rentalCost,
             instructorCost: parsed.instructorCost,
-            totalCost: parsed.totalCost,
+            totalCost: editCosts.totalCost,
+            ...fuelInput,
+            fuelPriceApplied: editFuelPrice,
             partnershipAircraftId: partnershipAircraft ? partnershipAircraft.id : null,
             bookingId: resolvedBookingId,
           },
@@ -528,11 +644,22 @@ export default async function FlightPageContent(
         hobbsEndMinutes: movementToEdit.flight.hobbsEndMinutes,
         rentalRateApplied: Number(movementToEdit.flight.rentalRateApplied),
         instructorRateApplied: Number(movementToEdit.flight.instructorRateApplied),
+        fuelStartLiters: movementToEdit.flight.fuelStartLiters,
+        fuelEnRouteLiters: movementToEdit.flight.fuelEnRouteLiters,
+        fuelEndLiters: movementToEdit.flight.fuelEndLiters,
       },
     });
   }
 
   const activeBooking = booking ?? linkedBooking;
+
+  const existingFuelTransaction =
+    props.mode === "edit" && movementToEdit?.flight
+      ? await prisma.partnershipTransaction.findUnique({
+          where: { flightId: movementToEdit.flight.id },
+          select: { amount: true },
+        })
+      : null;
 
   return (
     <AppShell title={title} subtitle={subtitle}>
@@ -554,6 +681,8 @@ export default async function FlightPageContent(
         dateBipoExam={settings?.dateBipoExam ?? null}
         initialValues={initialValues}
         partnershipAircrafts={partnershipAircrafts}
+        existingFuelExpense={existingFuelTransaction ? Number(existingFuelTransaction.amount) : null}
+        existingFuelPrice={movementToEdit?.flight?.fuelPriceApplied ?? null}
         rentalAircrafts={rentalAircrafts}
         visitedPlaces={visitedPlaces}
         backTo={props.backTo}

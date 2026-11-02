@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getRomeDateTimeParts } from "@/lib/utils";
 import { getMonthlyMaintenanceShares } from "@/lib/maintenance";
+import { companyFlightCost } from "@/lib/fuel";
 
 export interface AircraftDetail {
   registration: string;
@@ -83,8 +84,16 @@ export function computeSingleMonthReport({
       if (!f || !pa) continue;
       durationMinutes += f.durationMinutes;
 
-      const hourlyCost = Number(pa.hourlyFuelCost) + Number(pa.hourlyMaintCost) + Number(pa.hourlyEngineFund);
-      const cost = (f.durationMinutes / 60) * hourlyCost;
+      // Litri reali + prezzo salvato nel volo se presenti; altrimenti ore x costo orario come sempre
+      const cost = companyFlightCost({
+        durationMinutes: f.durationMinutes,
+        hourlyFuelCost: Number(pa.hourlyFuelCost),
+        hourlyMaintCost: Number(pa.hourlyMaintCost),
+        hourlyEngineFund: Number(pa.hourlyEngineFund),
+        fuel: f,
+        fuelPrice: f.fuelPriceApplied,
+        excludeFuel: !!partnership.disableSharedFund,
+      });
       flightCost += cost;
 
       const current = aircraftDetailsMap.get(pa.registration) || { duration: 0, cost: 0 };

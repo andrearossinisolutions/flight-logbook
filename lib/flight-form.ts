@@ -1,4 +1,5 @@
 import { FlightInputMode } from "@prisma/client";
+import { MAX_TECHNICAL_LITERS, parseNonNegative } from "@/lib/fuel";
 import { formatDateTimeInput, parseRomeDateTime } from "@/lib/utils";
 
 export type FlightFormValues = {
@@ -27,6 +28,9 @@ export type FlightFormValues = {
   rentalRateApplied: string;
   instructorRateApplied: string;
   notes: string;
+  fuelStartLiters: string;
+  fuelEnRouteLiters: string;
+  fuelEndLiters: string;
 };
 
 function toInt(value: FormDataEntryValue | null, fallback = 0) {
@@ -172,6 +176,13 @@ export function parseFlightFormData(formData: FormData) {
   const totalCost = rentalCost + instructorCost;
   const movementAmount = -totalCost;
 
+  // Litri di carburante: solo per voli passati (bozza = null), interi, vuoto = null.
+  // Il massimo specifico dell'aereo di società si applica in saveFlight.
+  const fuelOpts = { max: MAX_TECHNICAL_LITERS, decimals: 0 };
+  const fuelStartLiters = isDraft ? null : parseNonNegative(formData.get("fuelStartLiters"), "Carburante alla partenza", fuelOpts);
+  const fuelEnRouteLiters = isDraft ? null : parseNonNegative(formData.get("fuelEnRouteLiters"), "Rifornimento in rotta", fuelOpts);
+  const fuelEndLiters = isDraft ? null : parseNonNegative(formData.get("fuelEndLiters"), "Carburante all'arrivo", fuelOpts);
+
   const parsedDate = parseRomeDateTime(dateRaw);
   if (!parsedDate) {
     throw new Error("Data volo non valida.");
@@ -202,6 +213,9 @@ export function parseFlightFormData(formData: FormData) {
     instructorCost,
     totalCost,
     movementAmount,
+    fuelStartLiters,
+    fuelEnRouteLiters,
+    fuelEndLiters,
   };
 }
 
@@ -228,6 +242,9 @@ export function buildFlightInitialValues(args: {
     hobbsEndMinutes: number | null;
     rentalRateApplied: number | string;
     instructorRateApplied: number | string;
+    fuelStartLiters?: number | null;
+    fuelEnRouteLiters?: number | null;
+    fuelEndLiters?: number | null;
   };
 }): Partial<FlightFormValues> {
   const { movementDate, notes, isDraft, flight } = args;
@@ -262,5 +279,8 @@ export function buildFlightInitialValues(args: {
     rentalRateApplied: String(Number(flight.rentalRateApplied)),
     instructorRateApplied: String(Number(flight.instructorRateApplied)),
     notes: notes ?? "",
+    fuelStartLiters: flight.fuelStartLiters != null ? String(flight.fuelStartLiters) : "",
+    fuelEnRouteLiters: flight.fuelEnRouteLiters != null ? String(flight.fuelEnRouteLiters) : "",
+    fuelEndLiters: flight.fuelEndLiters != null ? String(flight.fuelEndLiters) : "",
   };
 }

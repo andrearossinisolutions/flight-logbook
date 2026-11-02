@@ -87,48 +87,26 @@ export default function RefuelForm({ action, aircrafts, defaultDateTime }: Refue
           />
         </div>
 
-        <h3 style={{ margin: "8px 0 0" }}>Taniche in hangar (L)</h3>
+        <h3 style={{ margin: "8px 0 0" }}>Prima del rifornimento (L)</h3>
         <div className="grid grid-2">
           <div className="field">
-            <label htmlFor="tanksBeforeLiters">Prima (facoltativo)</label>
+            <label htmlFor="tanksBeforeLiters">Disponibilità taniche (facoltativo)</label>
             <input
               id="tanksBeforeLiters"
               name="tanksBeforeLiters"
               type="number"
               inputMode="decimal"
-              step="0.1"
+              step="1"
               min="0"
               max={selected?.tanksMax}
               className="input"
               value={tanksBefore}
               onChange={(e) => setTanksBefore(e.target.value)}
+              placeholder={selected ? `Max ${selected.tanksMax}` : undefined}
             />
           </div>
           <div className="field">
-            <label htmlFor="tanksAfterLiters">Dopo</label>
-            <input
-              id="tanksAfterLiters"
-              name="tanksAfterLiters"
-              type="number"
-              inputMode="decimal"
-              step="0.1"
-              min="0"
-              max={selected?.tanksMax}
-              className="input"
-              value={tanksAfter}
-              onChange={(e) => setTanksAfter(e.target.value)}
-              required
-            />
-          </div>
-        </div>
-        {selected && (
-          <div className="muted" style={{ fontSize: "0.8rem" }}>Massimo taniche: {selected.tanksMax} L.</div>
-        )}
-
-        <h3 style={{ margin: "8px 0 0" }}>Aereo (L)</h3>
-        <div className="grid grid-2">
-          <div className="field">
-            <label htmlFor="aircraftBeforeLiters">Prima (facoltativo)</label>
+            <label htmlFor="aircraftBeforeLiters">Residuo serbatoi aereo (facoltativo)</label>
             <input
               id="aircraftBeforeLiters"
               name="aircraftBeforeLiters"
@@ -140,10 +118,32 @@ export default function RefuelForm({ action, aircrafts, defaultDateTime }: Refue
               className="input"
               value={aircraftBefore}
               onChange={(e) => setAircraftBefore(e.target.value)}
+              placeholder={selected ? `Max ${selected.aircraftMax}` : undefined}
+            />
+          </div>
+        </div>
+
+        <h3 style={{ margin: "8px 0 0" }}>Dopo il rifornimento</h3>
+        <div className="grid grid-2">
+          <div className="field">
+            <label htmlFor="tanksAfterLiters">Residuo taniche</label>
+            <input
+              id="tanksAfterLiters"
+              name="tanksAfterLiters"
+              type="number"
+              inputMode="decimal"
+              step="0.1"
+              min="0"
+              max={selected?.tanksMax}
+              className="input"
+              value={tanksAfter}
+              onChange={(e) => setTanksAfter(e.target.value)}
+              placeholder={selected ? `Max ${selected.tanksMax}` : undefined}
+              required
             />
           </div>
           <div className="field">
-            <label htmlFor="aircraftAfterLiters">Dopo</label>
+            <label htmlFor="aircraftAfterLiters">Serbatori aereo</label>
             <input
               id="aircraftAfterLiters"
               name="aircraftAfterLiters"
@@ -155,13 +155,11 @@ export default function RefuelForm({ action, aircrafts, defaultDateTime }: Refue
               className="input"
               value={aircraftAfter}
               onChange={(e) => setAircraftAfter(e.target.value)}
+              placeholder={selected ? `Max ${selected.aircraftMax}` : undefined}
               required
             />
           </div>
         </div>
-        {selected && (
-          <div className="muted" style={{ fontSize: "0.8rem" }}>Massimo aereo: {selected.aircraftMax} L.</div>
-        )}
 
         {warnings.length > 0 && (
           <div

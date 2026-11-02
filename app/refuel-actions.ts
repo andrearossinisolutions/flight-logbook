@@ -46,6 +46,13 @@ export async function createRefuel(formData: FormData) {
   const tanksAfter = parseRequiredNonNegative(formData.get("tanksAfterLiters"), "Taniche dopo", { max: tanksMax });
   const aircraftAfter = parseRequiredNonNegative(formData.get("aircraftAfterLiters"), "Aereo dopo", { max: aircraftMax });
 
+  if (tanksBefore !== null && tanksAfter > tanksBefore) {
+    throw new Error("I litri nelle taniche dopo il rifornimento non possono essere più di quelli di prima.");
+  }
+  if (aircraftBefore !== null && aircraftAfter < aircraftBefore) {
+    throw new Error("I litri dell'aereo dopo il rifornimento non possono essere meno di quelli di prima.");
+  }
+
   const dateRaw = String(formData.get("refueledAt") ?? "").trim();
   let refueledAt = new Date();
   if (dateRaw) {

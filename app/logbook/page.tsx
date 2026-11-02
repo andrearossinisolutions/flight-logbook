@@ -24,7 +24,7 @@ import {
 import { requireUser } from "@/lib/require-user";
 import { eur, formatDateDisplay, formatTimeDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate, daysToDate, hasTime, getRomeDateTimeParts, romeLocalDateTimeToUtcDate, formatHoursToHHMM, formatDateTimeInput } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
-import { formatLiters } from "@/lib/fuel";
+import { companyFlightCost, formatLiters, realBurnLiters } from "@/lib/fuel";
 import { deleteRefuel } from "@/app/refuel-actions";
 import { getNextEvent, getEventIcao, cleanEventTitle, parseEventDateLabel, type EventItem } from "@/lib/events";
 
@@ -486,6 +486,8 @@ export default async function DashboardPage({
 
     await prisma.$transaction(async (tx) => {
       if (movement.flight) {
+        // Rifornimento in rotta collegato al volo: va rimosso con il volo (anche a cascata nel database)
+        await tx.partnershipTransaction.deleteMany({ where: { flightId: movement.flight.id } });
         await tx.flight.delete({
           where: { movementId: movement.id },
         });
@@ -1233,9 +1235,20 @@ export default async function DashboardPage({
                           const hourlyMaintCost = pa ? Number(pa.hourlyMaintCost) : 0;
                           const hourlyEngineFund = pa ? Number(pa.hourlyEngineFund) : 0;
                           const hourlyCost = hourlyFuelCost + hourlyMaintCost + hourlyEngineFund;
+                          // Litri reali + prezzo salvato nel volo (mai il prezzo attuale dell'aereo)
+                          const hasRealFuelCost =
+                            !!pa && realBurnLiters(f) !== null && !!f.fuelPriceApplied && f.fuelPriceApplied > 0;
 
-                          if (hourlyCost > 0) {
-                            const flightCost = (durationMinutes / 60) * hourlyCost;
+                          if (hasRealFuelCost || hourlyCost > 0) {
+                            const flightCost = companyFlightCost({
+                              durationMinutes,
+                              hourlyFuelCost,
+                              hourlyMaintCost,
+                              hourlyEngineFund,
+                              fuel: f,
+                              fuelPrice: f.fuelPriceApplied,
+                              excludeFuel: !!partnerships.find((p) => p.id === pa?.partnershipId)?.disableSharedFund,
+                            });
                             return (
                               <span style={{ display: "inline-flex", alignItems: "center", gap: "6px" }} title="Costo orario societario">
                                 <UsersIcon size={16} style={{ color: "var(--primary)" }} />
@@ -1318,7 +1331,14 @@ export default async function DashboardPage({
 
                         <form action={deleteMovement}>
                           <input type="hidden" name="movementId" value={m.id} />
-                          <DeleteMovementButton iconOnly />
+                          <DeleteMovementButton
+                            iconOnly
+                            confirmMessage={
+                              m.type === "FLIGHT" && m.flight?.partnershipAircraftId
+                                ? "Sei sicuro di voler eliminare questo movimento? Se il volo ha un rifornimento in rotta registrato tra le transazioni della società, verrà rimosso anche quello."
+                                : undefined
+                            }
+                          />
                         </form>
                       </div>
 
@@ -1499,6 +1519,20 @@ function dashboardItem(item: any, movements: any[] = [], isFutureMovement = fals
           </div>
 
           <div>
+            {(() => {
+              const fl = item.flight;
+              if (!fl || item.isDraft) return null;
+              if (fl.fuelStartLiters == null && fl.fuelEnRouteLiters == null && fl.fuelEndLiters == null) return null;
+              const burn = realBurnLiters(fl);
+              return (
+                <div className="muted">
+                  ⛽ Carburante: partenza {formatLiters(fl.fuelStartLiters)}
+                  {fl.fuelEnRouteLiters != null ? <> → rotta {formatLiters(fl.fuelEnRouteLiters)}</> : null}
+                  {" → arrivo "}{formatLiters(fl.fuelEndLiters)}
+                  {burn !== null ? <> · consumo {formatLiters(burn)}</> : null}
+                </div>
+              );
+            })()}
             <span className={isFutureMovement ? "future-movement" : undefined}>
               {item.isDraft ? "Bozza progressivo: " : "Progressivo: "}
               ⏱️ {minutesToHoursMinutes(progressiveFlightMinutes) + " · "}

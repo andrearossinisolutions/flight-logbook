@@ -115,7 +115,14 @@ model Flight {
   instructorCost        Decimal
   totalCost             Decimal
 
+  // Carburante (litri, valori reali opzionali; null = non registrato)
+  fuelStartLiters       Float?          // litri a bordo alla partenza
+  fuelEnRouteLiters     Float?          // litri aggiunti in volo/tappa (senza usare la benzina dell'hangar)
+  fuelEndLiters         Float?          // litri a bordo all'arrivo
+  fuelPriceApplied      Float?          // €/L al momento della registrazione (snapshot)
+
   gpxFiles              FlightGpxFile[]
+  fuelTransaction       PartnershipTransaction?
 
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
@@ -304,6 +311,9 @@ model PartnershipTransaction {
   maintenanceLog   PartnershipAircraftMaintenanceLog? @relation(fields: [maintenanceLogId], references: [id], onDelete: Cascade)
   recipientId    String?
   recipient      User?       @relation("TransactionRecipient", fields: [recipientId], references: [id], onDelete: SetNull)
+  // Rifornimento in rotta registrato dal volo (una sola transazione per volo)
+  flightId       String?     @unique
+  flight         Flight?     @relation(fields: [flightId], references: [id], onDelete: Cascade)
   
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
