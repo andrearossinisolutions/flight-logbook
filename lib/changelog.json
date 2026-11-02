@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.36.0",
+    "date": "2026-11-02",
+    "commits": [
+      {
+        "hash": "5599f45",
+        "date": "2026-11-02",
+        "subject": "Added action cards above the logbook, with a new Society refueling entry"
+      }
+    ]
+  },
+  {
     "version": "1.35.3",
     "date": "2026-10-30",
     "commits": [
@@ -9,7 +20,7 @@
         "subject": "Fixed the partner expenses tab refreshing endlessly"
       },
       {
-        "hash": "d1e203a",
+        "hash": "8540cef",
         "date": "2026-10-30",
         "subject": "Stopped renewing the login session on every request"
       }

@@ -1042,127 +1042,160 @@ textarea {
 }
 
 /* =======================================================
-   DASHBOARD REGISTRY DROPDOWN ACTIONS STYLING
+   DASHBOARD QUICK ACTIONS (card compatte sopra il registro)
    ======================================================= */
-.dropdown-container {
-  position: relative;
-  display: inline-block;
+.quick-actions-wrap {
+  margin-bottom: 16px;
 }
 
-.dropdown-menu {
-  position: absolute;
-  top: calc(100% + 8px);
-  right: 0;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  box-shadow: 0 12px 36px rgba(20, 32, 51, 0.12), 0 2px 8px rgba(20, 32, 51, 0.04);
-  padding: 6px;
-  min-width: 195px;
-  z-index: 100;
+.quick-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+  align-items: stretch;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: 5px;
+}
+
+.quick-action-card {
+  flex: 1 1 0;
+  min-width: 40px;
+  min-height: 44px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  animation: dropdownFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  opacity: 0;
-  transform: translateY(6px);
-}
-
-@keyframes dropdownFadeIn {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-weight: 600;
-  color: var(--text);
-  font-size: 0.92rem;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.dropdown-item:hover {
-  background: #f0f5f3;
-  color: var(--primary-strong);
-  transform: translateY(-0.5px);
-}
-
-.dropdown-item-icon {
-  font-size: 1.1rem;
-  display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 4px;
+  padding: 6px 2px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.72rem;
+  line-height: 1.15;
+  text-align: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
 }
 
-.dropdown-item-text {
-  white-space: nowrap;
+.quick-action-card:hover {
+  background: #f0f5f3;
+  border-color: var(--primary);
+  transform: translateY(-1px);
 }
 
-.add-btn {
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease;
+.quick-action-card:focus-visible,
+.quick-filter-panel a:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
-.add-btn:hover {
-  transform: scale(1.06);
-}
-
-.add-btn:active {
-  transform: scale(0.95);
-}
-
-.print-btn {
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease, border-color 0.2s ease;
-}
-
-.print-btn:hover {
-  transform: scale(1.06);
-  background-color: #f8fafc;
-}
-
-.print-btn:active {
-  transform: scale(0.95);
-}
-
-/* Adjust row alignment on mobile */
-@media (max-width: 768px) {
-  .dashboard-actions-row {
-    margin-left: auto;
-  }
-  .dropdown-menu {
-    right: 0;
-    left: auto;
-  }
-}
-
-.filter-btn {
-  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background-color 0.2s ease, border-color 0.2s ease;
-}
-
-.filter-btn:hover {
-  transform: scale(1.06);
-  background-color: #f8fafc;
-}
-
-.filter-btn:active {
-  transform: scale(0.95);
-}
-
-.filter-btn.active-filter {
-  background-color: rgba(2, 132, 199, 0.1);
+.quick-action-card.active {
+  background: rgba(2, 132, 199, 0.1);
   border-color: #0284c7;
   color: #0284c7;
 }
 
-.dropdown-item.active {
+.quick-action-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.quick-action-label {
+  display: block;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  hyphens: auto;
+}
+
+/* Schermi stretti: griglia a 4 colonne, icona + etichetta corta, su più righe */
+@media (max-width: 519px) {
+  .quick-actions {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    gap: 6px;
+  }
+  .quick-action-card {
+    flex: 1 1 calc(25% - 6px);
+    min-width: 0;
+    min-height: 56px;
+    font-size: 0.7rem;
+  }
+  .quick-action-card.quick-action-flight {
+    flex: 1 1 calc(33.333% - 6px);
+  }
+  .quick-actions-break {
+    display: block;
+    flex-basis: 100%;
+    width: 0;
+    height: 0;
+    margin-top: -6px;
+  }
+}
+
+.quick-action-label-full {
+  display: none;
+}
+
+.quick-actions-break {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .quick-action-card {
+    padding: 10px 6px;
+    font-size: 0.74rem;
+    min-width: 0;
+  }
+  .quick-action-label-short {
+    display: none;
+  }
+  .quick-action-label-full {
+    display: block;
+  }
+}
+
+.quick-filter-panel {
+  margin-top: 8px;
+  padding: 6px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.quick-filter-panel a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.quick-filter-panel a:hover {
+  background: #f0f5f3;
+  color: var(--primary-strong);
+}
+
+.quick-filter-panel a.active {
   background: #e6f0ed;
   color: var(--primary-strong);
+}
+
+@media print {
+  .quick-actions-wrap {
+    display: none !important;
+  }
 }
 
 /* Bacheca Split Layout */
@@ -2499,4 +2532,10 @@ textarea {
 .leaflet-container path.leaflet-interactive:focus-visible,
 .leaflet-container .leaflet-interactive:focus {
   outline: none;
+}
+
+.dashboard-container .quick-actions-wrap {
+  animation: fadeInUp 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  opacity: 0;
+  animation-delay: 380ms;
 }

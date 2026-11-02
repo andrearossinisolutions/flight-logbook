@@ -8,7 +8,7 @@ import { BaseSetupPrompt } from "@/components/base-setup-prompt";
 import { DashboardWidgets } from "@/components/dashboard-widgets";
 import { DeleteMovementButton } from "@/components/delete-movement-button";
 import { DeleteBookingButton } from "@/components/delete-booking-button";
-import { DashboardRegistryActions } from "@/components/dashboard-registry-actions";
+import { DashboardQuickActions } from "@/components/dashboard-quick-actions";
 import { BookPlannedFlightButton } from "@/components/book-planned-flight-button";
 
 import {
@@ -778,12 +778,13 @@ export default async function DashboardPage({
         </div>
       </DashboardWidgets>
 
-      <div className="between dashboard-registry-header" style={{ marginBottom: 16 }}>
+      <div className="between dashboard-registry-header" style={{ marginBottom: 12 }}>
         <h2 style={{ margin: 0 }}>Registro movimenti</h2>
-        <Suspense fallback={<div style={{ display: "inline-block", width: 150, height: 40 }} />}>
-          <DashboardRegistryActions />
-        </Suspense>
       </div>
+
+      <Suspense fallback={<div className="quick-actions-wrap" style={{ height: 52 }} />}>
+        <DashboardQuickActions hasPartnership={partnerships.length > 0} />
+      </Suspense>
 
       <div className="card dashboard-registry-table" style={{ overflowX: "auto" }}>
         <table className="table">
