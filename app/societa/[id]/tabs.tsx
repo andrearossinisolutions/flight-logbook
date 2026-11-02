@@ -6,7 +6,12 @@ import { useRouter } from "next/navigation";
 import { addAircraft, addFixedCost, addMember, getMonthlyReport, deleteAircraft, deleteFixedCost, removeMember, updateAircraft, updateFixedCost, addTransaction, deleteTransaction, updatePartnershipSettings, deletePartnership, cancelInvitation, addMessage, deleteMessage, addAircraftReminder, updateAircraftReminder, deleteAircraftReminder, logAircraftMaintenance, deleteMaintenanceLog, addRecommendedReminders, addBooking, deleteBooking, updateBooking, settleDirectPayment, uploadAircraftDocument, deleteAircraftDocument } from "./actions";
 import { NavDropdown } from "@/components/nav-dropdown";
 import { SubmitButton } from "@/components/submit-button";
-import { formatDateDisplay, daysFromDate, formatDateTimeInput, getRomeDateTimeParts, formatDateInput, formatHoursToHHMM } from "@/lib/utils";
+import { AircraftFuelFields } from "@/components/aircraft-fuel-fields";
+import { DeleteMovementButton } from "@/components/delete-movement-button";
+import { deleteRefuel } from "@/app/refuel-actions";
+import { formatLiters } from "@/lib/fuel";
+import Link from "next/link";
+import { formatDateDisplay, formatTimeDisplay, daysFromDate, formatDateTimeInput, getRomeDateTimeParts, formatDateInput, formatHoursToHHMM } from "@/lib/utils";
 import {
   DashboardIcon,
   FileTextIcon,
@@ -187,7 +192,7 @@ function getMaintenanceSplit(log: any, aircraft: any, partnershipFlights: any[],
   };
 }
 
-export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFlights = [], partnershipFlights = [], editBookingId, tab, prefillAircraftId, prefillStartTime, prefillEndTime, prefillNotes }: any) {
+export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFlights = [], partnershipFlights = [], fuelStatus = [], fuelLogs = [], editBookingId, tab, prefillAircraftId, prefillStartTime, prefillEndTime, prefillNotes }: any) {
   const [activeTab, setActiveTab] = useState(() => {
     if (tab === "bookings" || editBookingId || prefillAircraftId || prefillStartTime || prefillEndTime) {
       return "BOOKINGS";
@@ -1083,6 +1088,54 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
             </div>
           </div>
 
+            {/* Widget carburante: a destra, dopo la bacheca messaggi e prima delle scadenze */}
+                {fuelStatus.length > 0 && (
+                <div className="card">
+                  <div className="between" style={{ marginBottom: 12, gap: 12, flexWrap: "wrap" }}>
+                    <h3 style={{ margin: 0 }}>⛽ Carburante</h3>
+                    <Link href={"/new-refuel" as any} className="btn secondary" style={{ padding: "4px 10px", fontSize: 13 }}>
+                      Registra rifornimento
+                    </Link>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {fuelStatus.map((f: any) => (
+                      <div key={f.aircraftId} style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+                        <div style={{ fontWeight: 700 }}>{f.registration} <span className="muted" style={{ fontWeight: 400 }}>({f.type})</span></div>
+                        {!f.last ? (
+                          <div className="muted" style={{ marginTop: 4 }}>
+                            Nessun rifornimento registrato.{" "}
+                            <Link href={"/new-refuel" as any}>Registra il primo rifornimento</Link>
+                          </div>
+                        ) : (
+                          <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 2, fontSize: "0.9rem" }}>
+                            <div>
+                              In hangar: <strong>{formatLiters(f.last.tanksAfterLiters)}</strong>
+                              {f.hangarCapacityLiters > 0 && <span className="muted"> su max {formatLiters(f.hangarCapacityLiters)}</span>}
+                            </div>
+                            <div>A bordo all&apos;ultimo rifornimento: <strong>{formatLiters(f.last.aircraftAfterLiters)}</strong></div>
+                            {f.burnLitersPerHour > 0 ? (
+                              <>
+                                <div>A bordo adesso (stima): <strong>{formatLiters(f.estimatedLiters)}</strong></div>
+                                <div>Autonomia (stima): <strong>{formatHoursToHHMM(f.rangeHours)}</strong> <span className="muted">ore:minuti</span></div>
+                              </>
+                            ) : (
+                              <div className="muted">
+                                A bordo adesso e autonomia (stima): n.d. — consumo non impostato
+                                {isAdmin && <> (<a href="#" onClick={(e) => { e.preventDefault(); setActiveTab("SETTINGS"); }}>imposta nelle impostazioni</a>)</>}
+                              </div>
+                            )}
+                            <div className="muted" style={{ fontSize: "0.8rem" }}>
+                              Aggiornato il {formatDateDisplay(f.last.refueledAt)} alle {formatTimeDisplay(f.last.refueledAt)}
+                              {f.last.author ? ` da ${f.last.author}` : ""}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
           {/* Card: Percentuale ore volate per scadenza manutenzione */}
           <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
@@ -1753,7 +1806,10 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
           return true;
         });
 
+        const filteredFuelLogs = fuelLogs.filter((l: any) => !logbookAircraft || l.aircraftRegistration === logbookAircraft);
+
         return (
+          <>
           <div className="card">
             <div style={{ marginBottom: 24 }}>
               <h2 style={{ marginTop: 0, marginBottom: 8 }}>Logbook Voli</h2>
@@ -1963,6 +2019,58 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
               </table>
             </div>
           </div>
+
+          <div className="card" style={{ marginTop: 24 }}>
+            <div style={{ marginBottom: 16 }}>
+              <h2 style={{ marginTop: 0, marginBottom: 8 }}>⛽ Rifornimenti</h2>
+              <div className="muted">Registro dei rifornimenti (rispetta il filtro per velivolo qui sopra).</div>
+            </div>
+            {filteredFuelLogs.length === 0 ? (
+              <div className="muted">Nessun rifornimento registrato.</div>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table className="table">
+                  <thead>
+                    <tr>
+                      <th>Data</th>
+                      <th>Velivolo</th>
+                      <th>Taniche (L)</th>
+                      <th>Aereo (L)</th>
+                      <th>Registrato da</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredFuelLogs.map((l: any) => {
+                      const canDelete = l.userId === currentUserId || isAdmin;
+                      return (
+                        <tr key={l.id}>
+                          <td>{formatDateDisplay(l.refueledAt)} {formatTimeDisplay(l.refueledAt)}</td>
+                          <td>{l.aircraftRegistration} ({l.aircraftType})</td>
+                          <td>{l.tanksBeforeLiters !== null ? `${formatLiters(l.tanksBeforeLiters)} → ` : ""}{formatLiters(l.tanksAfterLiters)}</td>
+                          <td>{l.aircraftBeforeLiters !== null ? `${formatLiters(l.aircraftBeforeLiters)} → ` : ""}{formatLiters(l.aircraftAfterLiters)}</td>
+                          <td>{l.author || "Utente rimosso"}</td>
+                          <td>
+                            {canDelete && (
+                              <form action={deleteRefuel}>
+                                <input type="hidden" name="logId" value={l.id} />
+                                <DeleteMovementButton
+                                  iconOnly
+                                  label="Elimina rifornimento"
+                                  confirmMessage="Sei sicuro di voler eliminare questo rifornimento? L'operazione non si può annullare."
+                                />
+                              </form>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+          </>
         );
       })()}
 
@@ -2429,9 +2537,17 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                   </div>
                                 </div>
 
+                                <AircraftFuelFields
+                                  defaultBurn={a.fuelBurnLitersPerHour}
+                                  defaultPrice={a.fuelPricePerLiter}
+                                  defaultTank={a.tankCapacityLiters}
+                                  defaultHangar={a.hangarCapacityLiters}
+                                  storedHourlyFuelCost={a.hourlyFuelCost}
+                                  showHourlyCost={!partnership.disableSharedFund}
+                                />
+
                                 {partnership.disableSharedFund ? (
                                   <>
-                                    <input type="hidden" name="hourlyFuelCost" value="0" />
                                     <input type="hidden" name="hourlyMaintCost" value="0" />
                                     <input type="hidden" name="hourlyEngineFund" value="0" />
                                   </>
@@ -2441,10 +2557,6 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                       Costi per ora di volo dovuti alla società (€/h)
                                     </label>
                                     <div className="grid grid-3" style={{ gap: 16 }}>
-                                      <div className="field">
-                                        <label style={{ fontSize: "0.8rem", marginBottom: "4px", display: "block" }}>Benzina</label>
-                                        <input className="input" name="hourlyFuelCost" type="number" step="0.01" min="0" defaultValue={a.hourlyFuelCost} required />
-                                      </div>
                                       <div className="field">
                                         <label style={{ fontSize: "0.8rem", marginBottom: "4px", display: "block" }}>Manutenzione</label>
                                         <input className="input" name="hourlyMaintCost" type="number" step="0.01" min="0" defaultValue={a.hourlyMaintCost} required />
@@ -3100,9 +3212,9 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                       <input className="input" name="initialHours" type="number" step="0.1" min="0" defaultValue="0" required />
                     </div>
                   </div>
+                  <AircraftFuelFields showHourlyCost={!partnership.disableSharedFund} />
                   {partnership.disableSharedFund ? (
                     <>
-                      <input type="hidden" name="hourlyFuelCost" value="0" />
                       <input type="hidden" name="hourlyMaintCost" value="0" />
                       <input type="hidden" name="hourlyEngineFund" value="0" />
                     </>
@@ -3111,10 +3223,6 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                       <label style={{ fontWeight: 600, color: "var(--muted)", display: "block", marginTop: "12px" }}>
                         Costi per ora di volo dovuti alla società (€/h)
                       </label>
-                      <div className="field">
-                        <label>Benzina (€/h)</label>
-                        <input className="input" name="hourlyFuelCost" type="number" step="0.01" min="0" required />
-                      </div>
                       <div className="field">
                         <label>Manutenzione (€/h)</label>
                         <input className="input" name="hourlyMaintCost" type="number" step="0.01" min="0" required />

@@ -10,6 +10,7 @@ const FILTERS: { href: string; value: string; icon: string; label: string }[] = 
   { href: "/logbook?filter=pianificazioni", value: "pianificazioni", icon: "📅", label: "Pianificazioni" },
   { href: "/logbook?filter=voli-passati", value: "voli-passati", icon: "✈️", label: "Voli passati" },
   { href: "/logbook?filter=pagamenti", value: "pagamenti", icon: "💶", label: "Pagamenti" },
+  { href: "/logbook?filter=rifornimenti", value: "rifornimenti", icon: "⛽", label: "Rifornimenti" },
   { href: "/logbook?filter=promemoria-futuri", value: "promemoria-futuri", icon: "🔔", label: "Promemoria futuri" },
 ];
 
@@ -36,17 +37,14 @@ export function DashboardQuickActions({ hasPartnership }: { hasPartnership: bool
           <CardContent icon="✈️" full="Aggiungi volo passato" short="Volo passato" />
         </Link>
         {hasPartnership && (
-          <button
-            type="button"
+          <Link
+            href={"/new-refuel" as Route}
             className="quick-action-card quick-action-flight"
             title="Registra rifornimento Società"
             aria-label="Registra rifornimento Società"
-            onClick={() => {
-              // TODO: azione da definire
-            }}
           >
             <CardContent icon="⛽" full="Registra rifornimento Società" short="Rifornimento" />
-          </button>
+          </Link>
         )}
         <Link
           href={"/new-flight?prefillIsDraft=true" as Route}

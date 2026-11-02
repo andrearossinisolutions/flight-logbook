@@ -37,6 +37,7 @@ model User {
   paidMaintenances      PartnershipAircraftMaintenanceLog[] @relation("MaintenancePayer")
   partnershipReceivedTransactns PartnershipTransaction[] @relation("TransactionRecipient")
   customLocations       CustomLocation[]
+  fuelLogs              PartnershipFuelLog[]
   mapShareLinks         MapShareLink[]
   createdAt             DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
@@ -163,6 +164,7 @@ model Partnership {
 
   members      PartnershipMember[]
   aircrafts    PartnershipAircraft[]
+  fuelLogs     PartnershipFuelLog[]
   fixedCosts   PartnershipFixedCost[]
   transactions PartnershipTransaction[]
   invitations  PartnershipInvitation[]
@@ -196,7 +198,14 @@ model PartnershipAircraft {
   hourlyEngineFund Decimal     @default(0)
   initialHours     Decimal     @default(0)
 
+  // Carburante: 0 = non configurato (capacità serbatoio, consumo, prezzo)
+  tankCapacityLiters    Float @default(0)
+  fuelBurnLitersPerHour Float @default(0)
+  hangarCapacityLiters  Float @default(100)
+  fuelPricePerLiter     Float @default(0)
+
   flights          Flight[]
+  fuelLogs         PartnershipFuelLog[]
   reminders        PartnershipAircraftReminder[]
   maintenanceLogs  PartnershipAircraftMaintenanceLog[]
   bookings         PartnershipBooking[]
@@ -204,6 +213,27 @@ model PartnershipAircraft {
 
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
+}
+
+model PartnershipFuelLog {
+  id                   String              @id @default(cuid())
+  aircraftId           String
+  aircraft             PartnershipAircraft @relation(fields: [aircraftId], references: [id], onDelete: Cascade)
+  partnershipId        String
+  partnership          Partnership         @relation(fields: [partnershipId], references: [id], onDelete: Cascade)
+  userId               String?
+  user                 User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  tanksBeforeLiters    Float?
+  aircraftBeforeLiters Float?
+  tanksAfterLiters     Float
+  aircraftAfterLiters  Float
+  refueledAt           DateTime            @default(now())
+
+  createdAt            DateTime            @default(now())
+
+  @@index([aircraftId, refueledAt])
+  @@index([partnershipId, refueledAt])
 }
 
 model PartnershipAircraftReminder {

@@ -11,6 +11,16 @@ import { parseRomeDateTime } from "@/lib/utils";
 import { getRomeDateTimeParts } from "@/lib/utils";
 import { getMonthlyMaintenanceShares } from "@/lib/maintenance";
 import { calculateHistoricalReports } from "@/lib/reports";
+import { MAX_TECHNICAL_LITERS, deriveHourlyFuelCost, parseRequiredNonNegative } from "@/lib/fuel";
+
+function parseAircraftFuelSettings(formData: FormData) {
+  return {
+    fuelBurnLitersPerHour: parseRequiredNonNegative(formData.get("fuelBurnLitersPerHour"), "Consumo (L/h)", { max: 200, decimals: 1 }),
+    fuelPricePerLiter: parseRequiredNonNegative(formData.get("fuelPricePerLiter"), "Prezzo carburante (€/L)", { max: 100, decimals: 3 }),
+    tankCapacityLiters: parseRequiredNonNegative(formData.get("tankCapacityLiters"), "Capacità serbatoio (L)", { max: MAX_TECHNICAL_LITERS, decimals: 1 }),
+    hangarCapacityLiters: parseRequiredNonNegative(formData.get("hangarCapacityLiters"), "Capacità hangar (L)", { max: 10000, decimals: 1 }),
+  };
+}
 
 
 async function createRecommendedRemindersDb(tx: any, aircraftId: string) {
@@ -125,7 +135,6 @@ export async function addAircraft(partnershipId: string, formData: FormData) {
   const user = await requireUser();
   const registration = String(formData.get("registration") || "").trim();
   const type = String(formData.get("type") || "").trim();
-  const hourlyFuelCost = Number(formData.get("hourlyFuelCost") || 0);
   const hourlyMaintCost = Number(formData.get("hourlyMaintCost") || 0);
   const hourlyEngineFund = Number(formData.get("hourlyEngineFund") || 0);
   const initialHours = Number(formData.get("initialHours") || 0);
@@ -140,12 +149,24 @@ export async function addAircraft(partnershipId: string, formData: FormData) {
 
   if (membership?.role !== "ADMIN") return;
 
+  const fuelSettings = parseAircraftFuelSettings(formData);
+  const partnershipForFund = await prisma.partnership.findUnique({
+    where: { id: partnershipId },
+    select: { disableSharedFund: true },
+  });
+  // Costo carburante orario dedotto da consumo x prezzo (se la cassa comune è attiva);
+  // altrimenti 0, come prima.
+  const hourlyFuelCost = partnershipForFund?.disableSharedFund
+    ? 0
+    : (deriveHourlyFuelCost(fuelSettings.fuelBurnLitersPerHour, fuelSettings.fuelPricePerLiter) ?? 0);
+
   await prisma.$transaction(async (tx) => {
     const aircraft = await tx.partnershipAircraft.create({
       data: {
         partnershipId,
         registration,
         type,
+        ...fuelSettings,
         hourlyFuelCost,
         hourlyMaintCost,
         hourlyEngineFund,
@@ -345,18 +366,38 @@ export async function updateAircraft(partnershipId: string, aircraftId: string, 
 
   const registration = String(formData.get("registration") || "").trim();
   const type = String(formData.get("type") || "").trim();
-  const hourlyFuelCost = Number(formData.get("hourlyFuelCost") || 0);
   const hourlyMaintCost = Number(formData.get("hourlyMaintCost") || 0);
   const hourlyEngineFund = Number(formData.get("hourlyEngineFund") || 0);
   const initialHours = Number(formData.get("initialHours") || 0);
 
   if (!registration || !type) return;
 
+  const fuelSettings = parseAircraftFuelSettings(formData);
+  const [existingAircraft, partnershipForFund] = await Promise.all([
+    prisma.partnershipAircraft.findFirst({
+      where: { id: aircraftId, partnershipId },
+      select: { hourlyFuelCost: true },
+    }),
+    prisma.partnership.findUnique({
+      where: { id: partnershipId },
+      select: { disableSharedFund: true },
+    }),
+  ]);
+  if (!existingAircraft) return;
+
+  // Costo carburante orario: dedotto da consumo x prezzo quando entrambi > 0;
+  // altrimenti si mantiene il valore storico. Con cassa comune disattivata resta 0, come prima.
+  const derivedFuelCost = deriveHourlyFuelCost(fuelSettings.fuelBurnLitersPerHour, fuelSettings.fuelPricePerLiter);
+  const hourlyFuelCost = partnershipForFund?.disableSharedFund
+    ? 0
+    : (derivedFuelCost ?? Number(existingAircraft.hourlyFuelCost));
+
   await prisma.partnershipAircraft.updateMany({
     where: { id: aircraftId, partnershipId },
     data: {
       registration,
       type,
+      ...fuelSettings,
       hourlyFuelCost,
       hourlyMaintCost,
       hourlyEngineFund,

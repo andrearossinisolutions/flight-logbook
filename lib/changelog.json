@@ -4,9 +4,14 @@
     "date": "2026-11-02",
     "commits": [
       {
-        "hash": "5599f45",
+        "hash": "f094fb2",
         "date": "2026-11-02",
         "subject": "Added action cards above the logbook, with a new Society refueling entry"
+      },
+      {
+        "hash": "a07a2ae",
+        "date": "2026-11-02",
+        "subject": "Added Society refueling: new page, fuel settings per aircraft and a fuel widget on the Society dashboard"
       }
     ]
   },

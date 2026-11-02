@@ -5,11 +5,13 @@ import { TrashIcon } from "@/components/icons";
 type DeleteMovementButtonProps = {
   label?: string;
   iconOnly?: boolean;
+  confirmMessage?: string;
 };
 
 export function DeleteMovementButton({
   label = "Elimina",
   iconOnly = false,
+  confirmMessage = "Sei sicuro di voler eliminare questo movimento?",
 }: DeleteMovementButtonProps) {
   return (
     <button
@@ -19,9 +21,7 @@ export function DeleteMovementButton({
       aria-label={label}
       title={label}
       onClick={(e) => {
-        const confirmed = window.confirm(
-          "Sei sicuro di voler eliminare questo movimento?"
-        );
+        const confirmed = window.confirm(confirmMessage);
 
         if (!confirmed) {
           e.preventDefault();

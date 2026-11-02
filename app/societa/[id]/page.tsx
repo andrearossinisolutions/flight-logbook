@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { PartnershipTabs } from "./tabs";
 import { PartnershipSelector } from "@/components/partnership-selector";
+import { estimateOnboardLiters } from "@/lib/fuel";
 
 export default async function SocietaDetailsPage({
   params,
@@ -243,6 +244,76 @@ export default async function SocietaDetailsPage({
     }))
   };
 
+  // Stato carburante per aereo: ultimo rifornimento (refueledAt massimo) e stime da voli successivi.
+  const fuelStatus = await Promise.all(
+    partnership.aircrafts.map(async (a) => {
+      const last = await prisma.partnershipFuelLog.findFirst({
+        where: { aircraftId: a.id, partnershipId: id },
+        orderBy: { refueledAt: "desc" },
+        include: { user: { select: { fullName: true, email: true } } },
+      });
+
+      let estimatedLiters: number | null = null;
+      let rangeHours: number | null = null;
+      if (last) {
+        const flownAgg = await prisma.flight.aggregate({
+          _sum: { durationMinutes: true },
+          where: {
+            partnershipAircraftId: a.id,
+            movement: { isDraft: false, date: { gt: last.refueledAt } },
+          },
+        });
+        const flownHours = (flownAgg._sum.durationMinutes ?? 0) / 60;
+        estimatedLiters = estimateOnboardLiters(last.aircraftAfterLiters, flownHours, a.fuelBurnLitersPerHour);
+        if (estimatedLiters !== null && a.fuelBurnLitersPerHour > 0) {
+          rangeHours = estimatedLiters / a.fuelBurnLitersPerHour;
+        }
+      }
+
+      return {
+        aircraftId: a.id,
+        registration: a.registration,
+        type: a.type,
+        burnLitersPerHour: a.fuelBurnLitersPerHour,
+        hangarCapacityLiters: a.hangarCapacityLiters,
+        last: last
+          ? {
+              refueledAt: last.refueledAt.toISOString(),
+              tanksAfterLiters: last.tanksAfterLiters,
+              aircraftAfterLiters: last.aircraftAfterLiters,
+              author: last.user ? (last.user.fullName || last.user.email) : null,
+            }
+          : null,
+        estimatedLiters,
+        rangeHours,
+      };
+    })
+  );
+
+  const fuelLogs = await prisma.partnershipFuelLog.findMany({
+    where: { partnershipId: id },
+    orderBy: { refueledAt: "desc" },
+    take: 500,
+    include: {
+      aircraft: { select: { registration: true, type: true } },
+      user: { select: { fullName: true, email: true } },
+    },
+  });
+
+  const serializedFuelLogs = fuelLogs.map((l) => ({
+    id: l.id,
+    userId: l.userId,
+    aircraftId: l.aircraftId,
+    aircraftRegistration: l.aircraft.registration,
+    aircraftType: l.aircraft.type,
+    tanksBeforeLiters: l.tanksBeforeLiters,
+    aircraftBeforeLiters: l.aircraftBeforeLiters,
+    tanksAfterLiters: l.tanksAfterLiters,
+    aircraftAfterLiters: l.aircraftAfterLiters,
+    refueledAt: l.refueledAt.toISOString(),
+    author: l.user ? (l.user.fullName || l.user.email) : null,
+  }));
+
   const serializedLastFlights = lastFlights.map(f => ({
     id: f.id,
     aircraftRegistration: f.aircraftRegistration,
@@ -316,6 +387,8 @@ export default async function SocietaDetailsPage({
         currentUserId={user.id} 
         lastFlights={serializedLastFlights} 
         partnershipFlights={serializedPartnershipFlights}
+        fuelStatus={fuelStatus}
+        fuelLogs={serializedFuelLogs}
         editBookingId={typeof editBookingId === "string" ? editBookingId : undefined}
         tab={typeof tab === "string" ? tab : undefined}
         prefillAircraftId={typeof prefillAircraftId === "string" ? prefillAircraftId : undefined}

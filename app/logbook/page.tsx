@@ -24,6 +24,8 @@ import {
 import { requireUser } from "@/lib/require-user";
 import { eur, formatDateDisplay, formatTimeDisplay, minutesToHoursMinutes, medicalExamExpirationDate, medicalExamRemaining, daysFromDate, daysToDate, hasTime, getRomeDateTimeParts, romeLocalDateTimeToUtcDate, formatHoursToHHMM, formatDateTimeInput } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
+import { formatLiters } from "@/lib/fuel";
+import { deleteRefuel } from "@/app/refuel-actions";
 import { getNextEvent, getEventIcao, cleanEventTitle, parseEventDateLabel, type EventItem } from "@/lib/events";
 
 function isToday(date: Date) {
@@ -65,6 +67,22 @@ export default async function DashboardPage({
       partnership: true,
     },
     orderBy: { startTime: "asc" },
+  });
+
+  const fuelLogs = await prisma.partnershipFuelLog.findMany({
+    where: { partnership: { members: { some: { userId: user.id } } } },
+    include: {
+      aircraft: { select: { registration: true, type: true } },
+      partnership: {
+        select: {
+          name: true,
+          members: { where: { userId: user.id }, select: { role: true } },
+        },
+      },
+      user: { select: { fullName: true, email: true } },
+    },
+    orderBy: { refueledAt: "desc" },
+    take: 300,
   });
 
   type MovementItem = (typeof allMovements)[number];
@@ -336,6 +354,8 @@ export default async function DashboardPage({
         return item.type === "TOPUP" || item.type === "SERVICE";
       case "promemoria-futuri":
         return item.type === "REMINDER" && item.date >= today;
+      case "rifornimenti":
+        return false;
       default:
         return true;
     }
@@ -355,10 +375,14 @@ export default async function DashboardPage({
         return false;
       case "promemoria-futuri":
         return false;
+      case "rifornimenti":
+        return false;
       default:
         return true;
     }
   });
+
+  const filteredFuelLogs = !filterVal || filterVal === "rifornimenti" ? fuelLogs : [];
 
   const bookingsWithoutPlannedFlights = filteredBookings.filter((b) => {
     const hasMatchingFlight = allMovements.some((m) => {
@@ -396,6 +420,13 @@ export default async function DashboardPage({
         id: string;
         date: Date;
         event: EventItem;
+      }
+    | {
+        isBooking: false;
+        isEventProposal?: false;
+        id: string;
+        date: Date;
+        fuelLog: (typeof fuelLogs)[number];
       };
 
   const combinedItems: CombinedItem[] = [
@@ -412,6 +443,13 @@ export default async function DashboardPage({
       id: b.id,
       date: b.startTime,
       booking: b,
+    })),
+    ...filteredFuelLogs.map((l) => ({
+      isBooking: false as const,
+      isEventProposal: false as const,
+      id: `fuel-${l.id}`,
+      date: l.refueledAt,
+      fuelLog: l,
     })),
     ...(nextEvent ? [{
       isBooking: false as const,
@@ -955,6 +993,68 @@ export default async function DashboardPage({
                           </Link>
                         )}
                       </div>
+                    </td>
+                  </tr>
+                );
+              }
+
+              if ("fuelLog" in item) {
+                const log = item.fuelLog;
+                const canDeleteLog =
+                  log.userId === user.id || log.partnership.members[0]?.role === "ADMIN";
+                const authorName = log.user ? (log.user.fullName || log.user.email) : "Utente rimosso";
+                return (
+                  <tr key={item.id}>
+                    <td>
+                      <div className={"inline-meta" + (isFutureMovement ? " future-movement" : "")}>
+                        <CalendarIcon />
+                        <span>{formatDateDisplay(item.date)}</span>
+                      </div><br />
+                      <div className={"inline-meta" + (isFutureMovement ? " future-movement" : "")}>
+                        🕒 <span>{formatTimeDisplay(item.date)}</span>
+                      </div>
+                    </td>
+
+                    <td>
+                      <div className="inline-meta">
+                        <span style={{ fontSize: "16px", display: "inline-block", lineHeight: 1 }}>⛽</span>
+                        <span>Rifornimento Società</span>
+                      </div>
+                    </td>
+
+                    <td>
+                      <div className="grid grid-2">
+                        <div>
+                          <div className="muted">
+                            ✈️ {log.aircraft.registration} ({log.aircraft.type})
+                          </div>
+                          <div style={{ fontSize: "0.8rem", marginTop: 2 }}>
+                            Società: <span className="pill" style={{ fontSize: "0.72rem", backgroundColor: "var(--border)", padding: "2px 6px", borderRadius: 6 }}>{log.partnership.name}</span>
+                          </div>
+                        </div>
+                        <div style={{ fontSize: "0.85rem" }}>
+                          <div>Taniche: {log.tanksBeforeLiters !== null ? `${formatLiters(log.tanksBeforeLiters)} → ` : ""}{formatLiters(log.tanksAfterLiters)}</div>
+                          <div>Aereo: {log.aircraftBeforeLiters !== null ? `${formatLiters(log.aircraftBeforeLiters)} → ` : ""}{formatLiters(log.aircraftAfterLiters)}</div>
+                          <div className="muted">Registrato da {authorName}</div>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td style={{ fontWeight: 700 }} className="muted">
+                      —
+                    </td>
+
+                    <td>
+                      {canDeleteLog && (
+                        <form action={deleteRefuel}>
+                          <input type="hidden" name="logId" value={log.id} />
+                          <DeleteMovementButton
+                            iconOnly
+                            label="Elimina rifornimento"
+                            confirmMessage="Sei sicuro di voler eliminare questo rifornimento? L'operazione non si può annullare."
+                          />
+                        </form>
+                      )}
                     </td>
                   </tr>
                 );
