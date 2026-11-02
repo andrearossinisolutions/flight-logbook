@@ -80,6 +80,7 @@ export default async function DashboardPage({
         },
       },
       user: { select: { fullName: true, email: true } },
+      transaction: { select: { amount: true } },
     },
     orderBy: { refueledAt: "desc" },
     take: 300,
@@ -1020,7 +1021,7 @@ export default async function DashboardPage({
                     <td>
                       <div className="inline-meta">
                         <span style={{ fontSize: "16px", display: "inline-block", lineHeight: 1 }}>⛽</span>
-                        <span>Rifornimento Società</span>
+                        <span>{log.kind === "TANKS" ? "Rifornimento taniche" : "Rifornimento aereo"}</span>
                       </div>
                     </td>
 
@@ -1035,15 +1036,21 @@ export default async function DashboardPage({
                           </div>
                         </div>
                         <div style={{ fontSize: "0.85rem" }}>
-                          <div>Taniche: {log.tanksBeforeLiters !== null ? `${formatLiters(log.tanksBeforeLiters)} → ` : ""}{formatLiters(log.tanksAfterLiters)}</div>
-                          <div>Aereo: {log.aircraftBeforeLiters !== null ? `${formatLiters(log.aircraftBeforeLiters)} → ` : ""}{formatLiters(log.aircraftAfterLiters)}</div>
+                          <div>
+                            Taniche: {log.tanksBeforeLiters !== null ? `${formatLiters(log.tanksBeforeLiters)} → ` : ""}{formatLiters(log.tanksAfterLiters)}
+                            {log.kind === "TANKS" && log.filledLiters !== null ? ` (+${formatLiters(log.filledLiters)})` : ""}
+                          </div>
+                          {log.kind !== "TANKS" && (
+                            <div>Aereo: {log.aircraftBeforeLiters !== null ? `${formatLiters(log.aircraftBeforeLiters)} → ` : ""}{formatLiters(log.aircraftAfterLiters)}</div>
+                          )}
+                          {log.pricePaid !== null && <div>Prezzo pagato: € {log.pricePaid.toFixed(2)}</div>}
                           <div className="muted">Registrato da {authorName}</div>
                         </div>
                       </div>
                     </td>
 
-                    <td style={{ fontWeight: 700 }} className="muted">
-                      —
+                    <td style={{ fontWeight: 700 }} className={log.transaction ? undefined : "muted"}>
+                      {log.transaction ? `€ ${Number(log.transaction.amount).toFixed(2)}` : "—"}
                     </td>
 
                     <td>
@@ -1053,7 +1060,7 @@ export default async function DashboardPage({
                           <DeleteMovementButton
                             iconOnly
                             label="Elimina rifornimento"
-                            confirmMessage="Sei sicuro di voler eliminare questo rifornimento? L'operazione non si può annullare."
+                            confirmMessage={"Sei sicuro di voler eliminare questo rifornimento?" + (log.transaction ? " Verrà eliminata anche la spesa collegata." : "") + " L'operazione non si può annullare."}
                           />
                         </form>
                       )}

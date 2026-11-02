@@ -253,18 +253,25 @@ export default async function SocietaDetailsPage({
         include: { user: { select: { fullName: true, email: true } } },
       });
 
+      // La stima a bordo parte dall'ultimo rifornimento che ha riempito l'aereo (non quelli delle sole taniche).
+      const lastAircraftLog = await prisma.partnershipFuelLog.findFirst({
+        where: { aircraftId: a.id, partnershipId: id, aircraftAfterLiters: { not: null } },
+        orderBy: { refueledAt: "desc" },
+        select: { refueledAt: true, aircraftAfterLiters: true },
+      });
+
       let estimatedLiters: number | null = null;
       let rangeHours: number | null = null;
-      if (last) {
+      if (lastAircraftLog && lastAircraftLog.aircraftAfterLiters !== null) {
         const flownAgg = await prisma.flight.aggregate({
           _sum: { durationMinutes: true },
           where: {
             partnershipAircraftId: a.id,
-            movement: { isDraft: false, date: { gt: last.refueledAt } },
+            movement: { isDraft: false, date: { gt: lastAircraftLog.refueledAt } },
           },
         });
         const flownHours = (flownAgg._sum.durationMinutes ?? 0) / 60;
-        estimatedLiters = estimateOnboardLiters(last.aircraftAfterLiters, flownHours, a.fuelBurnLitersPerHour);
+        estimatedLiters = estimateOnboardLiters(lastAircraftLog.aircraftAfterLiters, flownHours, a.fuelBurnLitersPerHour);
         if (estimatedLiters !== null && a.fuelBurnLitersPerHour > 0) {
           rangeHours = estimatedLiters / a.fuelBurnLitersPerHour;
         }
@@ -284,6 +291,7 @@ export default async function SocietaDetailsPage({
               author: last.user ? (last.user.fullName || last.user.email) : null,
             }
           : null,
+        lastAircraftAfterLiters: lastAircraftLog ? lastAircraftLog.aircraftAfterLiters : null,
         estimatedLiters,
         rangeHours,
       };
@@ -297,6 +305,7 @@ export default async function SocietaDetailsPage({
     include: {
       aircraft: { select: { registration: true, type: true } },
       user: { select: { fullName: true, email: true } },
+      transaction: { select: { id: true } },
     },
   });
 
@@ -310,6 +319,10 @@ export default async function SocietaDetailsPage({
     aircraftBeforeLiters: l.aircraftBeforeLiters,
     tanksAfterLiters: l.tanksAfterLiters,
     aircraftAfterLiters: l.aircraftAfterLiters,
+    kind: l.kind,
+    filledLiters: l.filledLiters,
+    pricePaid: l.pricePaid,
+    hasExpense: !!l.transaction,
     refueledAt: l.refueledAt.toISOString(),
     author: l.user ? (l.user.fullName || l.user.email) : null,
   }));

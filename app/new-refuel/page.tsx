@@ -14,28 +14,42 @@ export default async function NewRefuelPage() {
   const aircrafts = await prisma.partnershipAircraft.findMany({
     where: { partnership: { members: { some: { userId: user.id } } } },
     include: {
-      partnership: { select: { name: true } },
+      partnership: { select: { name: true, disableSharedFund: true } },
       fuelLogs: { orderBy: { refueledAt: "desc" }, take: 1 },
     },
     orderBy: [{ partnershipId: "asc" }, { registration: "asc" }],
   });
 
+  // Ultimo stato dell'aereo: solo dai rifornimenti che lo riguardano (non quelli delle sole taniche).
+  const lastAircraftLogs = await prisma.partnershipFuelLog.findMany({
+    where: { aircraftId: { in: aircrafts.map((a) => a.id) }, aircraftAfterLiters: { not: null } },
+    orderBy: { refueledAt: "desc" },
+    select: { aircraftId: true, aircraftAfterLiters: true },
+  });
+  const aircraftLastMap = new Map<string, number | null>();
+  for (const l of lastAircraftLogs) {
+    if (!aircraftLastMap.has(l.aircraftId)) aircraftLastMap.set(l.aircraftId, l.aircraftAfterLiters);
+  }
+
   const options = aircrafts.map((a) => {
     const last = a.fuelLogs[0];
+    const lastWithAircraft = aircraftLastMap.get(a.id) ?? null;
     return {
       id: a.id,
       label: `${a.registration} (${a.type}) · ${a.partnership.name}`,
       tanksMax: tanksLimit(a.hangarCapacityLiters),
       aircraftMax: aircraftLimit(a.tankCapacityLiters),
       lastTanksAfter: last ? last.tanksAfterLiters : null,
-      lastAircraftAfter: last ? last.aircraftAfterLiters : null,
+      lastAircraftAfter: lastWithAircraft,
+      fuelPricePerLiter: a.fuelPricePerLiter,
+      disableSharedFund: a.partnership.disableSharedFund,
     };
   });
 
   return (
     <AppShell
       title="Rifornimento Società"
-      subtitle="Registra i litri nelle taniche dell'hangar e nell'aereo prima e dopo il rifornimento."
+      subtitle="Registra un rifornimento delle taniche dell'hangar o dell'aereo."
     >
       {options.length === 0 ? (
         <div className="card">

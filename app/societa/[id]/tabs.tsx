@@ -1112,7 +1112,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                               In hangar: <strong>{formatLiters(f.last.tanksAfterLiters)}</strong>
                               {f.hangarCapacityLiters > 0 && <span className="muted"> su max {formatLiters(f.hangarCapacityLiters)}</span>}
                             </div>
-                            <div>A bordo all&apos;ultimo rifornimento: <strong>{formatLiters(f.last.aircraftAfterLiters)}</strong></div>
+                            <div>A bordo all&apos;ultimo rifornimento: <strong>{formatLiters(f.lastAircraftAfterLiters)}</strong></div>
                             {f.burnLitersPerHour > 0 ? (
                               <>
                                 <div>A bordo adesso (stima): <strong>{formatLiters(f.estimatedLiters)}</strong></div>
@@ -2036,6 +2036,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                       <th>Velivolo</th>
                       <th>Taniche (L)</th>
                       <th>Aereo (L)</th>
+                      <th>Prezzo</th>
                       <th>Registrato da</th>
                       <th></th>
                     </tr>
@@ -2047,8 +2048,12 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                         <tr key={l.id}>
                           <td>{formatDateDisplay(l.refueledAt)} {formatTimeDisplay(l.refueledAt)}</td>
                           <td>{l.aircraftRegistration} ({l.aircraftType})</td>
-                          <td>{l.tanksBeforeLiters !== null ? `${formatLiters(l.tanksBeforeLiters)} → ` : ""}{formatLiters(l.tanksAfterLiters)}</td>
-                          <td>{l.aircraftBeforeLiters !== null ? `${formatLiters(l.aircraftBeforeLiters)} → ` : ""}{formatLiters(l.aircraftAfterLiters)}</td>
+                          <td>
+                            {l.tanksBeforeLiters !== null ? `${formatLiters(l.tanksBeforeLiters)} → ` : ""}{formatLiters(l.tanksAfterLiters)}
+                            {l.kind === "TANKS" && l.filledLiters !== null && l.filledLiters !== undefined ? ` (+${formatLiters(l.filledLiters)})` : ""}
+                          </td>
+                          <td>{l.kind === "TANKS" ? "—" : <>{l.aircraftBeforeLiters !== null ? `${formatLiters(l.aircraftBeforeLiters)} → ` : ""}{formatLiters(l.aircraftAfterLiters)}</>}</td>
+                          <td>{l.pricePaid !== null && l.pricePaid !== undefined ? `€ ${l.pricePaid.toFixed(2)}` : "—"}</td>
                           <td>{l.author || "Utente rimosso"}</td>
                           <td>
                             {canDelete && (
@@ -2057,7 +2062,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                 <DeleteMovementButton
                                   iconOnly
                                   label="Elimina rifornimento"
-                                  confirmMessage="Sei sicuro di voler eliminare questo rifornimento? L'operazione non si può annullare."
+                                  confirmMessage={"Sei sicuro di voler eliminare questo rifornimento?" + (l.hasExpense ? " Verrà eliminata anche la spesa collegata." : "") + " L'operazione non si può annullare."}
                                 />
                               </form>
                             )}

@@ -234,7 +234,12 @@ model PartnershipFuelLog {
   tanksBeforeLiters    Float?
   aircraftBeforeLiters Float?
   tanksAfterLiters     Float
-  aircraftAfterLiters  Float
+  aircraftAfterLiters  Float?
+  // "AIRCRAFT" (rifornimento dell'aereo) o "TANKS" (solo rifornimento delle taniche dell'hangar)
+  kind                 String              @default("AIRCRAFT")
+  filledLiters         Float?
+  pricePaid            Float?
+  transaction          PartnershipTransaction?
   refueledAt           DateTime            @default(now())
 
   createdAt            DateTime            @default(now())
@@ -314,6 +319,9 @@ model PartnershipTransaction {
   // Rifornimento in rotta registrato dal volo (una sola transazione per volo)
   flightId       String?     @unique
   flight         Flight?     @relation(fields: [flightId], references: [id], onDelete: Cascade)
+  // Rifornimento taniche registrato dal rifornimento (una sola transazione per rifornimento)
+  fuelLogId      String?     @unique
+  fuelLog        PartnershipFuelLog? @relation(fields: [fuelLogId], references: [id], onDelete: Cascade)
   
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt

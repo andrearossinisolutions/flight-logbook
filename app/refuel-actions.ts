@@ -7,10 +7,12 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/require-user";
 import { parseRomeDateTime } from "@/lib/utils";
 import {
+  MAX_TECHNICAL_LITERS,
   aircraftLimit,
   parseNonNegative,
   parseRequiredNonNegative,
   tanksLimit,
+  tanksRefuelExpenseDescription,
 } from "@/lib/fuel";
 
 export async function createRefuel(formData: FormData) {
@@ -24,6 +26,7 @@ export async function createRefuel(formData: FormData) {
     where: { id: aircraftId },
     select: {
       id: true,
+      registration: true,
       partnershipId: true,
       tankCapacityLiters: true,
       hangarCapacityLiters: true,
@@ -38,19 +41,39 @@ export async function createRefuel(formData: FormData) {
   });
   if (!membership) throw new Error("Non fai parte della società di questo aereo.");
 
+  const kind = String(formData.get("kind") ?? "AIRCRAFT") === "TANKS" ? "TANKS" : "AIRCRAFT";
   const tanksMax = tanksLimit(aircraft.hangarCapacityLiters);
   const aircraftMax = aircraftLimit(aircraft.tankCapacityLiters);
 
-  const tanksBefore = parseNonNegative(formData.get("tanksBeforeLiters"), "Taniche prima", { max: tanksMax });
-  const aircraftBefore = parseNonNegative(formData.get("aircraftBeforeLiters"), "Aereo prima", { max: aircraftMax });
-  const tanksAfter = parseRequiredNonNegative(formData.get("tanksAfterLiters"), "Taniche dopo", { max: tanksMax });
-  const aircraftAfter = parseRequiredNonNegative(formData.get("aircraftAfterLiters"), "Aereo dopo", { max: aircraftMax });
+  let tanksBefore: number | null;
+  let tanksAfter: number;
+  let aircraftBefore: number | null = null;
+  let aircraftAfter: number | null = null;
+  let filled: number | null = null;
 
-  if (tanksBefore !== null && tanksAfter > tanksBefore) {
-    throw new Error("I litri nelle taniche dopo il rifornimento non possono essere più di quelli di prima.");
-  }
-  if (aircraftBefore !== null && aircraftAfter < aircraftBefore) {
-    throw new Error("I litri dell'aereo dopo il rifornimento non possono essere meno di quelli di prima.");
+  if (kind === "TANKS") {
+    // Rifornimento delle sole taniche: i campi dell'aereo vengono ignorati.
+    const before = parseRequiredNonNegative(formData.get("tanksBeforeLiters"), "Litri nelle taniche prima", { max: tanksMax });
+    const added = parseRequiredNonNegative(formData.get("filledLiters"), "Litri aggiunti", { max: MAX_TECHNICAL_LITERS });
+    if (!(added > 0)) throw new Error("Litri aggiunti: inserisci un valore maggiore di zero.");
+    tanksBefore = before;
+    filled = added;
+    tanksAfter = Math.round((before + added) * 10) / 10;
+    if (tanksAfter > tanksMax) {
+      throw new Error(`Il totale in hangar (${tanksAfter} L) supera la capacità delle taniche (${tanksMax} L).`);
+    }
+  } else {
+    tanksBefore = parseNonNegative(formData.get("tanksBeforeLiters"), "Taniche prima", { max: tanksMax });
+    aircraftBefore = parseNonNegative(formData.get("aircraftBeforeLiters"), "Aereo prima", { max: aircraftMax });
+    tanksAfter = parseRequiredNonNegative(formData.get("tanksAfterLiters"), "Taniche dopo", { max: tanksMax });
+    aircraftAfter = parseRequiredNonNegative(formData.get("aircraftAfterLiters"), "Aereo dopo", { max: aircraftMax });
+
+    if (tanksBefore !== null && tanksAfter > tanksBefore) {
+      throw new Error("I litri nelle taniche dopo il rifornimento non possono essere più di quelli di prima.");
+    }
+    if (aircraftBefore !== null && aircraftAfter < aircraftBefore) {
+      throw new Error("I litri dell'aereo dopo il rifornimento non possono essere meno di quelli di prima.");
+    }
   }
 
   const dateRaw = String(formData.get("refueledAt") ?? "").trim();
@@ -65,17 +88,52 @@ export async function createRefuel(formData: FormData) {
     refueledAt = parsed;
   }
 
-  await prisma.partnershipFuelLog.create({
-    data: {
-      aircraftId: aircraft.id,
-      partnershipId: aircraft.partnershipId,
-      userId: user.id,
-      tanksBeforeLiters: tanksBefore,
-      aircraftBeforeLiters: aircraftBefore,
-      tanksAfterLiters: tanksAfter,
-      aircraftAfterLiters: aircraftAfter,
-      refueledAt,
-    },
+  let pricePaid: number | null = null;
+  let addExpense = false;
+  if (kind === "TANKS") {
+    const rawPrice = parseNonNegative(formData.get("pricePaid"), "Prezzo pagato", { max: 100000, decimals: 2 });
+    pricePaid = rawPrice !== null && rawPrice > 0 ? rawPrice : null;
+    // Eleggibilità ricalcolata dal server: società con spese dei soci (cassa comune disattivata).
+    const partnership = await prisma.partnership.findUnique({
+      where: { id: aircraft.partnershipId },
+      select: { disableSharedFund: true },
+    });
+    addExpense = !!partnership?.disableSharedFund && formData.get("addExpense") === "on";
+    if (addExpense && pricePaid === null) {
+      throw new Error("Prezzo pagato: inserisci un importo maggiore di zero per aggiungere la spesa.");
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const log = await tx.partnershipFuelLog.create({
+      data: {
+        aircraftId: aircraft.id,
+        partnershipId: aircraft.partnershipId,
+        userId: user.id,
+        kind,
+        tanksBeforeLiters: tanksBefore,
+        aircraftBeforeLiters: aircraftBefore,
+        tanksAfterLiters: tanksAfter,
+        aircraftAfterLiters: aircraftAfter,
+        filledLiters: filled,
+        pricePaid,
+        refueledAt,
+      },
+    });
+    if (addExpense && pricePaid !== null && filled !== null) {
+      await tx.partnershipTransaction.create({
+        data: {
+          partnershipId: aircraft.partnershipId,
+          userId: user.id,
+          recipientId: null,
+          amount: pricePaid,
+          type: "MEMBER_EXPENSE_HOURS",
+          description: tanksRefuelExpenseDescription({ date: refueledAt, liters: filled, registration: aircraft.registration }),
+          date: refueledAt,
+          fuelLogId: log.id,
+        },
+      });
+    }
   });
 
   revalidatePath("/logbook");

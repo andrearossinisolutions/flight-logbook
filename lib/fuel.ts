@@ -179,3 +179,13 @@ export function fuelExpenseDescription(args: { date: Date; liters: number; regis
   }).format(args.date);
   return `Rifornimento in rotta · volo del ${day} · ${args.liters} L · ${args.registration}`;
 }
+
+/** Descrizione automatica della transazione di rifornimento delle taniche. */
+export function tanksRefuelExpenseDescription(args: { date: Date; liters: number; registration: string }): string {
+  const day = new Intl.DateTimeFormat("it-IT", {
+    timeZone: "Europe/Rome",
+    day: "2-digit",
+    month: "2-digit",
+  }).format(args.date);
+  return `Rifornimento taniche · ${day} · ${args.liters} L · ${args.registration}`;
+}

@@ -14,9 +14,14 @@
         "subject": "Added Society refueling: new page, fuel settings per aircraft and a fuel widget on the Society dashboard"
       },
       {
-        "hash": "000edb3",
+        "hash": "ccb0459",
         "date": "2026-11-02",
         "subject": "Added fuel levels to past flights, with real fuel cost and an option to log in-flight refueling in the Society transactions"
+      },
+      {
+        "hash": "cd8b1fe",
+        "date": "2026-11-02",
+        "subject": "Added tank refuelling to company fuel logs, with litres added, price paid and an option to log the expense"
       }
     ]
   },
