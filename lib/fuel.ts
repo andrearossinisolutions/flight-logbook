@@ -255,3 +255,32 @@ export function resolveOnboard(args: {
   }
   return { liters, certain: false, reason: "OK", ...base };
 }
+
+// ---------------------------------------------------------------------------
+// Correzioni lato form dei litri stimati (il server resta la rete di sicurezza)
+// ---------------------------------------------------------------------------
+
+/** Arrotondamento a 1 decimale, come nel server. */
+export function roundLiters(value: number): number {
+  return Math.round(value * 10) / 10;
+}
+
+/** Tolleranza per la correzione automatica di un singolo valore: max(5 L, 10% della capacità). */
+export function litersTolerance(capacity: number): number {
+  return Math.max(5, capacity * 0.1);
+}
+
+/**
+ * Un solo valore oltre il suo limite fisico:
+ * - dentro il limite o vuoto -> "ok"
+ * - sforamento entro la tolleranza -> "capped" con il valore corretto (= limite)
+ * - oltre la tolleranza -> "error" (nessuna correzione, blocco come prima)
+ */
+export function capLiters(
+  value: number | null,
+  capacity: number
+): { kind: "ok" } | { kind: "capped"; value: number } | { kind: "error" } {
+  if (value === null || !(value > capacity)) return { kind: "ok" };
+  if (value - capacity <= litersTolerance(capacity)) return { kind: "capped", value: roundLiters(capacity) };
+  return { kind: "error" };
+}

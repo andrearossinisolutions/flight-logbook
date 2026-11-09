@@ -34,9 +34,14 @@
         "subject": "Added fuel bars to the Society fuel widget, turning amber and red when the range is low"
       },
       {
-        "hash": "ae8b90c",
+        "hash": "ab93e62",
         "date": "2026-11-09",
         "subject": "Added an optional hangar fuel field to flights, with colours for low hangar fuel"
+      },
+      {
+        "hash": "a6786b1",
+        "date": "2026-11-09",
+        "subject": "Rough fuel estimates no longer block refuel and flight forms"
       }
     ]
   },

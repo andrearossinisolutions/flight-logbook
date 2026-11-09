@@ -3,6 +3,7 @@
 import { CopyArrowIcon } from "@/components/icons";
 import Link from "next/link";
 import { SubmitButton } from "./submit-button";
+import { CapNotices, MismatchPanel, useCapFix } from "./liters-notices";
 import {
   defaultWarmupMinutesForDate,
   formatDateTimeInput,
@@ -177,6 +178,8 @@ export default function FlightForm({
   const [fuelEnRoute, setFuelEnRoute] = useState(initial.fuelEnRouteLiters);
   const [fuelEnd, setFuelEnd] = useState(initial.fuelEndLiters);
   const [fuelHangar, setFuelHangar] = useState(initial.fuelHangarLiters);
+  const capFix = useCapFix();
+  const [arrivalDismissed, setArrivalDismissed] = useState<string | null>(null);
   const [addFuelExpense, setAddFuelExpense] = useState(
     mode === "edit" ? existingFuelExpense !== null : true
   );
@@ -562,6 +565,17 @@ export default function FlightForm({
     fuelLiters.fuelEndLiters !== null &&
     fuelLiters.fuelEndLiters > fuelLiters.fuelStartLiters + (fuelLiters.fuelEnRouteLiters ?? 0);
 
+  // Scorciatoie opzionali (mai riscrive la rotta): partenza = arrivo - rotta, oppure arrivo = partenza + rotta
+  const arrivalKey = `${fuelStart}|${fuelEnRoute}|${fuelEnd}`;
+  const arrivalFixStart =
+    fuelArrivalTooHigh && fuelLiters.fuelEndLiters !== null
+      ? Math.round((fuelLiters.fuelEndLiters - (fuelLiters.fuelEnRouteLiters ?? 0)) * 10) / 10
+      : null;
+  const arrivalFixEnd =
+    fuelArrivalTooHigh && fuelLiters.fuelStartLiters !== null
+      ? Math.round((fuelLiters.fuelStartLiters + (fuelLiters.fuelEnRouteLiters ?? 0)) * 10) / 10
+      : null;
+
   const showFuelExpense =
     insertMode === "PAST" &&
     !!isPartnershipAircraft &&
@@ -678,7 +692,7 @@ export default function FlightForm({
               </select>
             </div>
 
-            <label htmlFor="date">Data e ora</label>
+            <label htmlFor="date">*Data e ora</label>
             <input
               className="input"
               id="date"
@@ -694,7 +708,7 @@ export default function FlightForm({
 
           <div className="grid grid-2">
             <div className="field" style={{ marginTop: "16px" }}>
-              <label htmlFor="aircraftRegistration">Marche</label>
+              <label htmlFor="aircraftRegistration">*Marche</label>
               <input
                 className="input"
                 id="aircraftRegistration"
@@ -728,7 +742,7 @@ export default function FlightForm({
             </div>
 
             <div className="field">
-              <label htmlFor="aircraftType">Tipo</label>
+              <label htmlFor="aircraftType">*Tipo</label>
               <input
                 className="input"
                 id="aircraftType"
@@ -906,7 +920,7 @@ export default function FlightForm({
             <>
               <div className="grid grid-2">
                 <div className="field">
-                  <label>Orametro partenza — ore</label>
+                  <label>*Orametro partenza — ore</label>
                   <input
                     className="input"
                     name="hobbsStartHours"
@@ -921,7 +935,7 @@ export default function FlightForm({
                 </div>
 
                 <div className="field">
-                  <label>Orametro partenza — minuti</label>
+                  <label>*Orametro partenza — minuti</label>
                   <input
                     className="input"
                     name="hobbsStartMinutes"
@@ -937,7 +951,7 @@ export default function FlightForm({
                 </div>
 
                 <div className="field">
-                  <label>Orametro arrivo — ore</label>
+                  <label>*Orametro arrivo — ore</label>
                   <input
                     className="input"
                     name="hobbsEndHours"
@@ -952,7 +966,7 @@ export default function FlightForm({
                 </div>
 
                 <div className="field">
-                  <label>Orametro arrivo — minuti</label>
+                  <label>*Orametro arrivo — minuti</label>
                   <input
                     className="input"
                     name="hobbsEndMinutes"
@@ -989,7 +1003,7 @@ export default function FlightForm({
                   </div>
 
                   <div className="field">
-                    <label>Riscaldamento motore</label>
+                    <label>*Riscaldamento motore</label>
                     <input
                       className="input"
                       name="warmupMinutes"
@@ -1005,7 +1019,7 @@ export default function FlightForm({
               )}
 
               <div className="field">
-                <label>Ore volo</label>
+                <label>*Ore volo</label>
                 <input
                   className="input"
                   name="manualHours"
@@ -1021,7 +1035,7 @@ export default function FlightForm({
               </div>
 
               <div className="field">
-                <label>Minuti volo</label>
+                <label>*Minuti volo</label>
                 <input
                   className="input"
                   name="manualMinutes"
@@ -1074,7 +1088,7 @@ export default function FlightForm({
 
             <div className="grid grid-2">
               <div className="field">
-                <label htmlFor="fuelStartLiters">Carburante alla partenza (L)</label>
+                <label htmlFor="fuelStartLiters">Carburante a bordo alla partenza (L)</label>
                 <input
                   className="input"
                   id="fuelStartLiters"
@@ -1085,7 +1099,11 @@ export default function FlightForm({
                   max={fuelMax}
                   inputMode="numeric"
                   value={fuelStart}
-                  onChange={(e) => setFuelStart(e.target.value)}
+                  onChange={(e) => {
+                    capFix.edited("fuelStart");
+                    setFuelStart(e.target.value);
+                  }}
+                  onBlur={() => capFix.onBlurCap("fuelStart", "Carburante alla partenza", fuelStart, fuelMax, setFuelStart)}
                 />
               </div>
 
@@ -1111,7 +1129,7 @@ export default function FlightForm({
                   }}
                 />
                 <span className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-                  Litri aggiunti durante il volo o in una tappa, senza usare la benzina dell&apos;hangar.
+                  Litri aggiunti durante una o più tappe del volo, senza usare la benzina dell&apos;hangar.
                 </span>
               </div>
 
@@ -1128,7 +1146,7 @@ export default function FlightForm({
                   </label>
                   {addFuelExpense && (
                     <>
-                      <label htmlFor="fuelExpenseAmount" style={{ marginTop: 8 }}>Prezzo pagato (€)</label>
+                      <label htmlFor="fuelExpenseAmount" style={{ marginTop: 8 }}>*Prezzo pagato (€)</label>
                       <input
                         className="input"
                         id="fuelExpenseAmount"
@@ -1153,7 +1171,7 @@ export default function FlightForm({
               )}
 
               <div className="field">
-                <label htmlFor="fuelEndLiters">Carburante all&apos;arrivo (L)</label>
+                <label htmlFor="fuelEndLiters">Carburante a bordo all&apos;arrivo (L)</label>
                 <input
                   className="input"
                   id="fuelEndLiters"
@@ -1164,8 +1182,15 @@ export default function FlightForm({
                   max={fuelMax}
                   inputMode="numeric"
                   value={fuelEnd}
-                  onChange={(e) => setFuelEnd(e.target.value)}
+                  onChange={(e) => {
+                    capFix.edited("fuelEnd");
+                    setFuelEnd(e.target.value);
+                  }}
+                  onBlur={() => capFix.onBlurCap("fuelEnd", "Carburante all'arrivo", fuelEnd, fuelMax, setFuelEnd)}
                 />
+                <span className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                  Litri nei serbatoi dell&apos;aereo a fine volo. Aggiorna la barra «A bordo» senza registrare un rifornimento.
+                </span>
               </div>
 
               <div className="field">
@@ -1180,10 +1205,16 @@ export default function FlightForm({
                   max={tanksLimit(isPartnershipAircraft?.hangarCapacityLiters ?? 0)}
                   inputMode="numeric"
                   value={fuelHangar}
-                  onChange={(e) => setFuelHangar(e.target.value)}
+                  onChange={(e) => {
+                    capFix.edited("fuelHangar");
+                    setFuelHangar(e.target.value);
+                  }}
+                  onBlur={() =>
+                    capFix.onBlurCap("fuelHangar", "Carburante in hangar", fuelHangar, tanksLimit(isPartnershipAircraft?.hangarCapacityLiters ?? 0), setFuelHangar)
+                  }
                 />
                 <span className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-                  Facoltativo: litri nelle taniche dell&apos;hangar a fine volo. Aggiorna la barra «In hangar» senza fare un rifornimento.
+                  Litri nelle taniche dell&apos;hangar a fine volo. Aggiorna la barra «In hangar» senza registrare un rifornimento.
                 </span>
               </div>
             </div>
@@ -1196,11 +1227,29 @@ export default function FlightForm({
                 <span>I litri non tornano (all&apos;arrivo risulta più carburante di quello a bordo): il costo del carburante verrà calcolato sulle ore di volo.</span>
               </div>
             )}
-            {!fuelInconsistent && fuelArrivalTooHigh && (
-              <div className="error" style={{ marginTop: 12 }}>
-                <span>Il carburante all&apos;arrivo è maggiore di partenza più rifornimento in rotta: controlla i valori.</span>
+            {!fuelInconsistent && fuelArrivalTooHigh && arrivalDismissed !== arrivalKey && (
+              <div style={{ marginTop: 12 }}>
+                <MismatchPanel
+                  message="Il carburante all'arrivo è maggiore di partenza più rifornimento in rotta."
+                  options={[
+                    ...(arrivalFixStart !== null
+                      ? [{ label: `Partenza = ${arrivalFixStart} L`, apply: () => setFuelStart(String(arrivalFixStart)) }]
+                      : []),
+                    ...(arrivalFixEnd !== null
+                      ? [{ label: `Arrivo = ${arrivalFixEnd} L`, apply: () => setFuelEnd(String(arrivalFixEnd)) }]
+                      : []),
+                  ]}
+                  onDismiss={() => setArrivalDismissed(arrivalKey)}
+                />
               </div>
             )}
+            <div style={{ marginTop: 12 }}>
+              <CapNotices
+                notices={capFix.notices}
+                undo={capFix.undo}
+                setters={{ fuelStart: setFuelStart, fuelEnd: setFuelEnd, fuelHangar: setFuelHangar }}
+              />
+            </div>
           </div>
         )}
 
@@ -1269,7 +1318,7 @@ export default function FlightForm({
           <div className="grid grid-2">
             <div className="field">
               <label htmlFor="rentalRateApplied">
-                {isPartnershipAircraft ? "Tariffa societaria (Costo orario totale)" : "Tariffa noleggio applicata (€/h)"}
+                *{isPartnershipAircraft ? "Tariffa societaria (Costo orario totale)" : "Tariffa noleggio applicata (€/h)"}
               </label>
               <input
                 className="input"
@@ -1293,7 +1342,7 @@ export default function FlightForm({
 
             <div className="field">
               <label htmlFor="instructorRateApplied">
-                Tariffa istruttore applicata (€/h)
+                *Tariffa istruttore applicata (€/h)
               </label>
               <input
                 className="input"
@@ -1358,7 +1407,7 @@ export default function FlightForm({
               {bookingSectionChecked && (
                 <div className="grid grid-2">
                   <div className="field">
-                    <label htmlFor="bookingStartTime">Inizio prenotazione</label>
+                    <label htmlFor="bookingStartTime">*Inizio prenotazione</label>
                     <input
                       className="input"
                       id="bookingStartTime"
@@ -1375,7 +1424,7 @@ export default function FlightForm({
                   </div>
 
                   <div className="field">
-                    <label htmlFor="bookingEndTime">Fine prenotazione</label>
+                    <label htmlFor="bookingEndTime">*Fine prenotazione</label>
                     <input
                       className="input"
                       id="bookingEndTime"

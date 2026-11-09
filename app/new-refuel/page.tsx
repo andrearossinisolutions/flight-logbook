@@ -33,13 +33,17 @@ export default async function NewRefuelPage() {
 
   const options = aircrafts.map((a) => {
     const onboard = onboardMap.get(a.id);
-    const onboardLiters = onboard && onboard.liters !== null ? Math.round(onboard.liters * 10) / 10 : null;
+    const tanksMax = tanksLimit(a.hangarCapacityLiters);
+    const aircraftMax = aircraftLimit(a.tankCapacityLiters);
+    // Stime limitate alle capacità fisiche
+    const onboardLiters = onboard && onboard.liters !== null ? Math.min(Math.round(onboard.liters * 10) / 10, aircraftMax) : null;
+    const hangarLiters = hangarMap.get(a.id);
     return {
       id: a.id,
       label: `${a.registration} (${a.type}) · ${a.partnership.name}`,
-      tanksMax: tanksLimit(a.hangarCapacityLiters),
-      aircraftMax: aircraftLimit(a.tankCapacityLiters),
-      lastTanksAfter: hangarMap.get(a.id) ?? null,
+      tanksMax,
+      aircraftMax,
+      lastTanksAfter: hangarLiters !== undefined ? Math.min(hangarLiters, tanksMax) : null,
       lastAircraftAfter: onboardLiters,
       lastAircraftAfterEstimated: onboardLiters !== null && !onboard?.certain,
       fuelPricePerLiter: a.fuelPricePerLiter,
