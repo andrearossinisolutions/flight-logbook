@@ -6,7 +6,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { PartnershipTabs } from "./tabs";
 import { PartnershipSelector } from "@/components/partnership-selector";
-import { getOnboardStatus } from "@/lib/fuel-onboard";
+import { getHangarStatus, getOnboardStatus } from "@/lib/fuel-onboard";
 
 export default async function SocietaDetailsPage({
   params,
@@ -253,6 +253,8 @@ export default async function SocietaDetailsPage({
         include: { user: { select: { fullName: true, email: true } } },
       });
 
+      const hangar = await getHangarStatus(a.id, id);
+
       // A bordo adesso: dato certo (ultimo volo o rifornimento) oppure stima dai voli successivi.
       const onboard = await getOnboardStatus(a, id);
       const rangeHours =
@@ -267,6 +269,14 @@ export default async function SocietaDetailsPage({
         burnLitersPerHour: a.fuelBurnLitersPerHour,
         hangarCapacityLiters: a.hangarCapacityLiters,
         tankCapacityLiters: a.tankCapacityLiters,
+        hangar: hangar
+          ? {
+              liters: hangar.liters,
+              at: hangar.at.toISOString(),
+              source: hangar.source,
+              author: hangar.author,
+            }
+          : null,
         last: last
           ? {
               refueledAt: last.refueledAt.toISOString(),

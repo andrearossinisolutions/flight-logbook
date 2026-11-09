@@ -19,6 +19,7 @@ import {
   parseNonNegative,
   realBurnLiters,
   resolveFuelPriceSnapshot,
+  tanksLimit,
 } from "@/lib/fuel";
 
 type FlightPageContentProps =
@@ -146,6 +147,7 @@ export default async function FlightPageContent(
       hourlyMaintCost: Number(a.hourlyMaintCost),
       hourlyEngineFund: Number(a.hourlyEngineFund),
       tankCapacityLiters: a.tankCapacityLiters,
+      hangarCapacityLiters: a.hangarCapacityLiters,
       fuelPricePerLiter: a.fuelPricePerLiter,
       disableSharedFund: pm.partnership.disableSharedFund,
       partnershipId: pm.partnership.id,
@@ -210,6 +212,8 @@ export default async function FlightPageContent(
       fuelStartLiters: parsed.fuelStartLiters,
       fuelEnRouteLiters: parsed.fuelEnRouteLiters,
       fuelEndLiters: parsed.fuelEndLiters,
+      // Litri nelle taniche dell'hangar: solo per aerei di società.
+      fuelHangarLiters: partnershipAircraft ? parsed.fuelHangarLiters : null,
     };
     if (partnershipAircraft) {
       const limit = aircraftLimit(partnershipAircraft.tankCapacityLiters);
@@ -222,6 +226,10 @@ export default async function FlightPageContent(
         if (value !== null && value > limit) {
           throw new Error(`${label}: il valore massimo è ${limit}.`);
         }
+      }
+      const hangarLimit = tanksLimit(partnershipAircraft.hangarCapacityLiters);
+      if (fuelInput.fuelHangarLiters !== null && fuelInput.fuelHangarLiters > hangarLimit) {
+        throw new Error(`Carburante in hangar: il valore massimo è ${hangarLimit}.`);
       }
     }
     const hasRealFuel = !!partnershipAircraft && realBurnLiters(fuelInput) !== null;
@@ -647,6 +655,7 @@ export default async function FlightPageContent(
         fuelStartLiters: movementToEdit.flight.fuelStartLiters,
         fuelEnRouteLiters: movementToEdit.flight.fuelEnRouteLiters,
         fuelEndLiters: movementToEdit.flight.fuelEndLiters,
+        fuelHangarLiters: movementToEdit.flight.fuelHangarLiters,
       },
     });
   }

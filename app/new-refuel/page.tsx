@@ -3,7 +3,7 @@ import type { Route } from "next";
 import { AppShell } from "@/components/app-shell";
 import RefuelForm from "@/components/refuel-form";
 import { prisma } from "@/lib/prisma";
-import { getOnboardStatus } from "@/lib/fuel-onboard";
+import { getHangarStatus, getOnboardStatus } from "@/lib/fuel-onboard";
 import { requireUser } from "@/lib/require-user";
 import { createRefuel } from "@/app/refuel-actions";
 import { aircraftLimit, tanksLimit } from "@/lib/fuel";
@@ -22,14 +22,16 @@ export default async function NewRefuelPage() {
   });
 
   // Litri a bordo: dato certo (ultimo volo o rifornimento) oppure stima dai voli successivi.
+  const hangarMap = new Map<string, number>();
   const onboardMap = new Map<string, { liters: number | null; certain: boolean }>();
   for (const a of aircrafts) {
     const status = await getOnboardStatus(a, a.partnershipId);
+    const hangar = await getHangarStatus(a.id, a.partnershipId);
+    if (hangar) hangarMap.set(a.id, hangar.liters);
     if (status) onboardMap.set(a.id, { liters: status.result.liters, certain: status.result.certain });
   }
 
   const options = aircrafts.map((a) => {
-    const last = a.fuelLogs[0];
     const onboard = onboardMap.get(a.id);
     const onboardLiters = onboard && onboard.liters !== null ? Math.round(onboard.liters * 10) / 10 : null;
     return {
@@ -37,7 +39,7 @@ export default async function NewRefuelPage() {
       label: `${a.registration} (${a.type}) · ${a.partnership.name}`,
       tanksMax: tanksLimit(a.hangarCapacityLiters),
       aircraftMax: aircraftLimit(a.tankCapacityLiters),
-      lastTanksAfter: last ? last.tanksAfterLiters : null,
+      lastTanksAfter: hangarMap.get(a.id) ?? null,
       lastAircraftAfter: onboardLiters,
       lastAircraftAfterEstimated: onboardLiters !== null && !onboard?.certain,
       fuelPricePerLiter: a.fuelPricePerLiter,

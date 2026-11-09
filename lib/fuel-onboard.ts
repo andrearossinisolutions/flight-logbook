@@ -78,3 +78,49 @@ export async function getOnboardStatus(
     }),
   };
 }
+
+export type HangarStatus = {
+  liters: number;
+  at: Date;
+  source: "FLIGHT" | "REFUEL";
+  author: string | null;
+};
+
+/**
+ * Litri nelle taniche dell'hangar: dato più recente tra ultimo rifornimento (tanksAfterLiters)
+ * e ultimo volo non bozza con fuelHangarLiters. A parità vince il volo.
+ */
+export async function getHangarStatus(aircraftId: string, partnershipId: string): Promise<HangarStatus | null> {
+  const [refuel, flight] = await Promise.all([
+    prisma.partnershipFuelLog.findFirst({
+      where: { aircraftId, partnershipId },
+      orderBy: { refueledAt: "desc" },
+      select: { refueledAt: true, tanksAfterLiters: true, user: { select: { fullName: true, email: true } } },
+    }),
+    prisma.flight.findFirst({
+      where: { partnershipAircraftId: aircraftId, fuelHangarLiters: { not: null }, movement: { isDraft: false } },
+      orderBy: [{ movement: { date: "desc" } }, { createdAt: "desc" }],
+      select: {
+        fuelHangarLiters: true,
+        movement: { select: { date: true, user: { select: { fullName: true, email: true } } } },
+      },
+    }),
+  ]);
+  if (refuel && (!flight || refuel.refueledAt > flight.movement.date)) {
+    return {
+      liters: refuel.tanksAfterLiters,
+      at: refuel.refueledAt,
+      source: "REFUEL",
+      author: refuel.user ? refuel.user.fullName || refuel.user.email : null,
+    };
+  }
+  if (flight && flight.fuelHangarLiters !== null) {
+    return {
+      liters: flight.fuelHangarLiters,
+      at: flight.movement.date,
+      source: "FLIGHT",
+      author: flight.movement.user ? flight.movement.user.fullName || flight.movement.user.email : null,
+    };
+  }
+  return null;
+}

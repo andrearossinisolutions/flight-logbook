@@ -31,6 +31,7 @@ export type FlightFormValues = {
   fuelStartLiters: string;
   fuelEnRouteLiters: string;
   fuelEndLiters: string;
+  fuelHangarLiters: string;
 };
 
 function toInt(value: FormDataEntryValue | null, fallback = 0) {
@@ -182,6 +183,7 @@ export function parseFlightFormData(formData: FormData) {
   const fuelStartLiters = isDraft ? null : parseNonNegative(formData.get("fuelStartLiters"), "Carburante alla partenza", fuelOpts);
   const fuelEnRouteLiters = isDraft ? null : parseNonNegative(formData.get("fuelEnRouteLiters"), "Rifornimento in rotta", fuelOpts);
   const fuelEndLiters = isDraft ? null : parseNonNegative(formData.get("fuelEndLiters"), "Carburante all'arrivo", fuelOpts);
+  const fuelHangarLiters = isDraft ? null : parseNonNegative(formData.get("fuelHangarLiters"), "Carburante in hangar", fuelOpts);
 
   const parsedDate = parseRomeDateTime(dateRaw);
   if (!parsedDate) {
@@ -216,6 +218,7 @@ export function parseFlightFormData(formData: FormData) {
     fuelStartLiters,
     fuelEnRouteLiters,
     fuelEndLiters,
+    fuelHangarLiters,
   };
 }
 
@@ -245,6 +248,7 @@ export function buildFlightInitialValues(args: {
     fuelStartLiters?: number | null;
     fuelEnRouteLiters?: number | null;
     fuelEndLiters?: number | null;
+    fuelHangarLiters?: number | null;
   };
 }): Partial<FlightFormValues> {
   const { movementDate, notes, isDraft, flight } = args;
@@ -282,5 +286,6 @@ export function buildFlightInitialValues(args: {
     fuelStartLiters: flight.fuelStartLiters != null ? String(flight.fuelStartLiters) : "",
     fuelEnRouteLiters: flight.fuelEnRouteLiters != null ? String(flight.fuelEnRouteLiters) : "",
     fuelEndLiters: flight.fuelEndLiters != null ? String(flight.fuelEndLiters) : "",
+    fuelHangarLiters: flight.fuelHangarLiters != null ? String(flight.fuelHangarLiters) : "",
   };
 }

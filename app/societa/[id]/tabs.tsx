@@ -196,6 +196,9 @@ function getMaintenanceSplit(log: any, aircraft: any, partnershipFlights: any[],
 // Soglie di colore della barra "A bordo" in base all'autonomia (ore).
 const FUEL_RANGE_RED_HOURS = 1;
 const FUEL_RANGE_AMBER_HOURS = 2;
+// Soglie di colore della barra "In hangar" in base ai litri assoluti (sotto la soglia).
+const HANGAR_RED_LITERS = 20;
+const HANGAR_AMBER_LITERS = 40;
 
 export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFlights = [], partnershipFlights = [], fuelStatus = [], fuelLogs = [], editBookingId, tab, prefillAircraftId, prefillStartTime, prefillEndTime, prefillNotes }: any) {
   const [activeTab, setActiveTab] = useState(() => {
@@ -1106,30 +1109,13 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                     {fuelStatus.map((f: any) => (
                       <div key={f.aircraftId} style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
                         <div style={{ fontWeight: 700 }}>{f.registration} <span className="muted" style={{ fontWeight: 400 }}>({f.type})</span></div>
-                        {!f.last && !f.onboardSource ? (
+                        {!f.last && !f.onboardSource && !f.hangar ? (
                           <div className="muted" style={{ marginTop: 4 }}>
                             Nessun rifornimento registrato.{" "}
                             <Link href={"/new-refuel" as any}>Registra il primo rifornimento</Link>
                           </div>
                         ) : (
                           <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 2, fontSize: "0.9rem" }}>
-                            {f.last && (f.hangarCapacityLiters > 0 ? (
-                              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 4 }}>
-                                <div className="between" style={{ gap: 8, flexWrap: "wrap" }}>
-                                  <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>In hangar</span>
-                                  <span className="muted" style={{ fontSize: "0.8rem", whiteSpace: "nowrap" }}>capacità max {formatLiters(f.hangarCapacityLiters)}</span>
-                                </div>
-                                <ProgressBar
-                                  percent={Math.min(100, Math.max(0, (f.last.tanksAfterLiters / f.hangarCapacityLiters) * 100))}
-                                  color="var(--primary)"
-                                  innerLabel={formatLiters(f.last.tanksAfterLiters)}
-                                  outerLabel={formatLiters(Math.max(0, f.hangarCapacityLiters - f.last.tanksAfterLiters))}
-                                  showInnerLabelWhenSmall
-                                />
-                              </div>
-                            ) : (
-                              <div>In hangar: <strong>{formatLiters(f.last.tanksAfterLiters)}</strong></div>
-                            ))}
                             {f.onboardSource && (() => {
                               const anchorLabel = `${f.onboardSource === "FLIGHT" ? "volo" : "rifornimento"} del ${formatDateDisplay(f.onboardAnchorAt).slice(0, 5)}`;
                               const rangeLine = f.burnLitersPerHour > 0 && f.estimatedLiters !== null && (
@@ -1206,6 +1192,33 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                 </>
                               );
                             })()}
+                            {f.hangar && (f.hangarCapacityLiters > 0 ? (
+                              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 8 }}>
+                                <div className="between" style={{ gap: 8, flexWrap: "wrap" }}>
+                                  <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>In hangar</span>
+                                  <span className="muted" style={{ fontSize: "0.8rem", whiteSpace: "nowrap" }}>capacità max {formatLiters(f.hangarCapacityLiters)}</span>
+                                </div>
+                                <ProgressBar
+                                  percent={Math.min(100, Math.max(0, (f.hangar.liters / f.hangarCapacityLiters) * 100))}
+                                  color={
+                                    f.hangar.liters < HANGAR_RED_LITERS
+                                      ? "var(--danger)"
+                                      : f.hangar.liters < HANGAR_AMBER_LITERS
+                                        ? "var(--warning)"
+                                        : "var(--primary)"
+                                  }
+                                  innerLabel={formatLiters(f.hangar.liters)}
+                                  outerLabel={formatLiters(Math.max(0, f.hangarCapacityLiters - f.hangar.liters))}
+                                  showInnerLabelWhenSmall
+                                />
+                                <div className="muted" style={{ fontSize: "0.8rem" }}>
+                                  Dall&apos;ultimo {f.hangar.source === "FLIGHT" ? "volo" : "rifornimento"} del {formatDateDisplay(f.hangar.at).slice(0, 5)}
+                                  {f.hangar.author ? ` · inserito da ${f.hangar.author}` : ""}
+                                </div>
+                              </div>
+                            ) : (
+                              <div style={{ marginTop: 4 }}>In hangar: <strong>{formatLiters(f.hangar.liters)}</strong></div>
+                            ))}
                           </div>
                         )}
                       </div>

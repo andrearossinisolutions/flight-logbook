@@ -1529,13 +1529,14 @@ function dashboardItem(item: any, movements: any[] = [], isFutureMovement = fals
             {(() => {
               const fl = item.flight;
               if (!fl || item.isDraft) return null;
-              if (fl.fuelStartLiters == null && fl.fuelEnRouteLiters == null && fl.fuelEndLiters == null) return null;
+              if (fl.fuelStartLiters == null && fl.fuelEnRouteLiters == null && fl.fuelEndLiters == null && fl.fuelHangarLiters == null) return null;
               const burn = realBurnLiters(fl);
               return (
                 <div className="muted">
                   ⛽ Carburante: partenza {formatLiters(fl.fuelStartLiters)}
                   {fl.fuelEnRouteLiters != null ? <> → rotta {formatLiters(fl.fuelEnRouteLiters)}</> : null}
                   {" → arrivo "}{formatLiters(fl.fuelEndLiters)}
+                  {fl.fuelHangarLiters != null ? <> · in hangar {formatLiters(fl.fuelHangarLiters)}</> : null}
                   {burn !== null ? <> · consumo {formatLiters(burn)}</> : null}
                 </div>
               );

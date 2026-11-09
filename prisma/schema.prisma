@@ -119,6 +119,7 @@ model Flight {
   fuelStartLiters       Float?          // litri a bordo alla partenza
   fuelEnRouteLiters     Float?          // litri aggiunti in volo/tappa (senza usare la benzina dell'hangar)
   fuelEndLiters         Float?          // litri a bordo all'arrivo
+  fuelHangarLiters      Float?          // litri nelle taniche dell'hangar a fine volo (null = non registrato)
   fuelPriceApplied      Float?          // €/L al momento della registrazione (snapshot)
 
   gpxFiles              FlightGpxFile[]

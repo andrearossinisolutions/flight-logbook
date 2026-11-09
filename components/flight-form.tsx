@@ -18,6 +18,7 @@ import {
   hasInconsistentFuel,
   realBurnLiters,
   suggestedFuelExpense,
+  tanksLimit,
 } from "@/lib/fuel";
 
 type FlightFormProps = {
@@ -39,6 +40,7 @@ type FlightFormProps = {
     hourlyMaintCost: number;
     hourlyEngineFund: number;
     tankCapacityLiters: number;
+    hangarCapacityLiters: number;
     fuelPricePerLiter: number;
     disableSharedFund: boolean;
   }>;
@@ -93,6 +95,7 @@ function buildInitialValues(
     fuelStartLiters: initialValues?.fuelStartLiters ?? "",
     fuelEnRouteLiters: initialValues?.fuelEnRouteLiters ?? "",
     fuelEndLiters: initialValues?.fuelEndLiters ?? "",
+    fuelHangarLiters: initialValues?.fuelHangarLiters ?? "",
   };
 }
 
@@ -173,6 +176,7 @@ export default function FlightForm({
   const [fuelStart, setFuelStart] = useState(initial.fuelStartLiters);
   const [fuelEnRoute, setFuelEnRoute] = useState(initial.fuelEnRouteLiters);
   const [fuelEnd, setFuelEnd] = useState(initial.fuelEndLiters);
+  const [fuelHangar, setFuelHangar] = useState(initial.fuelHangarLiters);
   const [addFuelExpense, setAddFuelExpense] = useState(
     mode === "edit" ? existingFuelExpense !== null : true
   );
@@ -1162,6 +1166,25 @@ export default function FlightForm({
                   value={fuelEnd}
                   onChange={(e) => setFuelEnd(e.target.value)}
                 />
+              </div>
+
+              <div className="field">
+                <label htmlFor="fuelHangarLiters">Carburante rimasto in hangar (L)</label>
+                <input
+                  className="input"
+                  id="fuelHangarLiters"
+                  name="fuelHangarLiters"
+                  type="number"
+                  step="1"
+                  min="0"
+                  max={tanksLimit(isPartnershipAircraft?.hangarCapacityLiters ?? 0)}
+                  inputMode="numeric"
+                  value={fuelHangar}
+                  onChange={(e) => setFuelHangar(e.target.value)}
+                />
+                <span className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+                  Facoltativo: litri nelle taniche dell&apos;hangar a fine volo. Aggiorna la barra «In hangar» senza fare un rifornimento.
+                </span>
               </div>
             </div>
 
