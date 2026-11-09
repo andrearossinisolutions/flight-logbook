@@ -24,9 +24,14 @@
         "subject": "Added tank refuelling to company fuel logs, with litres added, price paid and an option to log the expense"
       },
       {
-        "hash": "e5feaee",
+        "hash": "f3d2df8",
         "date": "2026-11-09",
         "subject": "Fixed the Society fuel widget to use the litres left after the last flight"
+      },
+      {
+        "hash": "1455058",
+        "date": "2026-11-09",
+        "subject": "Added fuel bars to the Society fuel widget, turning amber and red when the range is low"
       }
     ]
   },

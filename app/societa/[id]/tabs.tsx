@@ -11,6 +11,7 @@ import { DeleteMovementButton } from "@/components/delete-movement-button";
 import { deleteRefuel } from "@/app/refuel-actions";
 import { formatLiters } from "@/lib/fuel";
 import Link from "next/link";
+import { ProgressBar } from "@/components/progress-bar";
 import { formatDateDisplay, formatTimeDisplay, daysFromDate, formatDateTimeInput, getRomeDateTimeParts, formatDateInput, formatHoursToHHMM } from "@/lib/utils";
 import {
   DashboardIcon,
@@ -191,6 +192,10 @@ function getMaintenanceSplit(log: any, aircraft: any, partnershipFlights: any[],
     shares
   };
 }
+
+// Soglie di colore della barra "A bordo" in base all'autonomia (ore).
+const FUEL_RANGE_RED_HOURS = 1;
+const FUEL_RANGE_AMBER_HOURS = 2;
 
 export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFlights = [], partnershipFlights = [], fuelStatus = [], fuelLogs = [], editBookingId, tab, prefillAircraftId, prefillStartTime, prefillEndTime, prefillNotes }: any) {
   const [activeTab, setActiveTab] = useState(() => {
@@ -1108,12 +1113,23 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                           </div>
                         ) : (
                           <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 2, fontSize: "0.9rem" }}>
-                            {f.last && (
-                              <div>
-                                In hangar: <strong>{formatLiters(f.last.tanksAfterLiters)}</strong>
-                                {f.hangarCapacityLiters > 0 && <span className="muted"> su max {formatLiters(f.hangarCapacityLiters)}</span>}
+                            {f.last && (f.hangarCapacityLiters > 0 ? (
+                              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 4 }}>
+                                <div className="between" style={{ gap: 8, flexWrap: "wrap" }}>
+                                  <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>In hangar</span>
+                                  <span className="muted" style={{ fontSize: "0.8rem", whiteSpace: "nowrap" }}>capacità max {formatLiters(f.hangarCapacityLiters)}</span>
+                                </div>
+                                <ProgressBar
+                                  percent={Math.min(100, Math.max(0, (f.last.tanksAfterLiters / f.hangarCapacityLiters) * 100))}
+                                  color="var(--primary)"
+                                  innerLabel={formatLiters(f.last.tanksAfterLiters)}
+                                  outerLabel={formatLiters(Math.max(0, f.hangarCapacityLiters - f.last.tanksAfterLiters))}
+                                  showInnerLabelWhenSmall
+                                />
                               </div>
-                            )}
+                            ) : (
+                              <div>In hangar: <strong>{formatLiters(f.last.tanksAfterLiters)}</strong></div>
+                            ))}
                             {f.onboardSource && (() => {
                               const anchorLabel = `${f.onboardSource === "FLIGHT" ? "volo" : "rifornimento"} del ${formatDateDisplay(f.onboardAnchorAt).slice(0, 5)}`;
                               const rangeLine = f.burnLitersPerHour > 0 && f.estimatedLiters !== null && (
@@ -1135,22 +1151,53 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                   </>
                                 );
                               }
+                              const cap: number = f.tankCapacityLiters;
+                              const hasBar = cap > 0 && f.estimatedLiters !== null;
+                              const bar = hasBar ? (
+                                <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 4 }}>
+                                  <div className="between" style={{ gap: 8, flexWrap: "wrap" }}>
+                                    <span style={{ fontWeight: 600, whiteSpace: "nowrap" }}>{f.certain ? "A bordo" : "A bordo (stimata)"}</span>
+                                    <span className="muted" style={{ fontSize: "0.8rem", whiteSpace: "nowrap" }}>capacità max {formatLiters(cap)}</span>
+                                  </div>
+                                  <ProgressBar
+                                    percent={Math.min(100, Math.max(0, (f.estimatedLiters / cap) * 100))}
+                                    color={
+                                      f.burnLitersPerHour > 0 && typeof f.rangeHours === "number"
+                                        ? f.rangeHours < FUEL_RANGE_RED_HOURS
+                                          ? "var(--danger)"
+                                          : f.rangeHours < FUEL_RANGE_AMBER_HOURS
+                                            ? "var(--warning)"
+                                            : "var(--primary)"
+                                        : "var(--primary)"
+                                    }
+                                    striped={!f.certain}
+                                    innerLabel={formatLiters(f.estimatedLiters)}
+                                    outerLabel={formatLiters(Math.max(0, cap - f.estimatedLiters))}
+                                    showInnerLabelWhenSmall
+                                  />
+                                </div>
+                              ) : null;
+                              const valueLine = !hasBar ? (
+                                <div>
+                                  {f.certain ? "A bordo" : "A bordo adesso (stimata)"}: <strong>{formatLiters(f.estimatedLiters)}</strong>
+                                </div>
+                              ) : null;
                               if (f.certain) {
                                 return (
                                   <>
-                                    <div>
-                                      A bordo (dall&apos;ultimo {f.onboardSource === "FLIGHT" ? "volo" : "rifornimento"} del {formatDateDisplay(f.onboardAnchorAt).slice(0, 5)}): <strong>{formatLiters(f.estimatedLiters)}</strong>
-                                    </div>
+                                    {bar}
+                                    {valueLine}
                                     {rangeLine}
                                     <div className="muted" style={{ fontSize: "0.8rem" }}>
-                                      Dato inserito{f.onboardAnchorAuthor ? ` da ${f.onboardAnchorAuthor}` : ""} il {formatDateDisplay(f.onboardAnchorAt)} alle {formatTimeDisplay(f.onboardAnchorAt)}
+                                      Dall&apos;ultimo {anchorLabel} · inserito{f.onboardAnchorAuthor ? ` da ${f.onboardAnchorAuthor}` : ""} alle {formatTimeDisplay(f.onboardAnchorAt)}
                                     </div>
                                   </>
                                 );
                               }
                               return (
                                 <>
-                                  <div>A bordo adesso (stimata): <strong>{formatLiters(f.estimatedLiters)}</strong></div>
+                                  {bar}
+                                  {valueLine}
                                   <div className="muted" style={{ fontSize: "0.8rem" }}>
                                     Da {formatLiters(f.onboardAnchorLiters)} ({anchorLabel}) − consumo di {f.flightsSince} {f.flightsSince === 1 ? "volo" : "voli"} ({formatHoursToHHMM(f.hoursSince)})
                                     {f.enRouteSinceLiters > 0 && <> + {formatLiters(f.enRouteSinceLiters)} di rifornimento in rotta</>}
@@ -1200,49 +1247,12 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                         ogni {m.hoursIntervalLabel}
                       </span>
                     </div>
-                    <div style={{
-                      position: "relative",
-                      height: 32,
-                      borderRadius: 10,
-                      background: "var(--bg, #f6f8fb)",
-                      border: "1px solid var(--border)",
-                      overflow: "hidden"
-                    }}>
-                      <div style={{
-                        position: "absolute",
-                        left: 0,
-                        top: 0,
-                        bottom: 0,
-                        width: `${m.percent}%`,
-                        background: m.isOverdue ? "var(--danger)" : "var(--primary)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "flex-end",
-                        paddingRight: 8,
-                        transition: "width 0.3s"
-                      }}>
-                        {m.percent > 12 && (
-                          <span style={{ color: "white", fontSize: "0.78rem", fontWeight: 700, whiteSpace: "nowrap" }}>
-                            {formatHoursToHHMM(m.hoursUsed)}h
-                          </span>
-                        )}
-                      </div>
-                      <div style={{
-                        position: "absolute",
-                        left: `${m.percent}%`,
-                        top: 0,
-                        bottom: 0,
-                        right: 0,
-                        display: "flex",
-                        alignItems: "center",
-                        paddingLeft: 8,
-                        overflow: "hidden"
-                      }}>
-                        <span style={{ color: "var(--muted)", fontSize: "0.78rem", fontWeight: 600, whiteSpace: "nowrap" }}>
-                          {m.isOverdue ? "SCADUTO" : `${formatHoursToHHMM(m.hoursRemaining)}h`}
-                        </span>
-                      </div>
-                    </div>
+                    <ProgressBar
+                      percent={m.percent}
+                      color={m.isOverdue ? "var(--danger)" : "var(--primary)"}
+                      innerLabel={`${formatHoursToHHMM(m.hoursUsed)}h`}
+                      outerLabel={m.isOverdue ? "SCADUTO" : `${formatHoursToHHMM(m.hoursRemaining)}h`}
+                    />
                   </div>
                 ))
               )}

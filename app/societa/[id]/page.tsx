@@ -266,6 +266,7 @@ export default async function SocietaDetailsPage({
         type: a.type,
         burnLitersPerHour: a.fuelBurnLitersPerHour,
         hangarCapacityLiters: a.hangarCapacityLiters,
+        tankCapacityLiters: a.tankCapacityLiters,
         last: last
           ? {
               refueledAt: last.refueledAt.toISOString(),
