@@ -12,6 +12,7 @@ type AircraftOption = {
   aircraftMax: number;
   lastTanksAfter: number | null;
   lastAircraftAfter: number | null;
+  lastAircraftAfterEstimated: boolean;
   fuelPricePerLiter: number;
   disableSharedFund: boolean;
 };
@@ -33,7 +34,8 @@ export default function RefuelForm({ action, aircrafts, defaultDateTime }: Refue
   const [aircraftId, setAircraftId] = useState(aircrafts.length === 1 ? aircrafts[0].id : "");
   const [tanksBefore, setTanksBefore] = useState("");
   const [tanksAfter, setTanksAfter] = useState("");
-  const [aircraftBefore, setAircraftBefore] = useState("");
+  // "Aereo prima": valore toccato dall'utente (altrimenti precompilato con i litri a bordo del server)
+  const [aircraftBeforeEdit, setAircraftBeforeEdit] = useState<string | null>(null);
   const [aircraftAfter, setAircraftAfter] = useState("");
   const [kind, setKind] = useState<"TANKS" | "AIRCRAFT">("TANKS");
   // Rifornimento taniche: valori toccati dall'utente (altrimenti precompilati dal server/prezzo)
@@ -46,6 +48,7 @@ export default function RefuelForm({ action, aircrafts, defaultDateTime }: Refue
 
   const tb = toNum(tanksBefore);
   const ta = toNum(tanksAfter);
+  const aircraftBefore = aircraftBeforeEdit ?? (selected && selected.lastAircraftAfter !== null ? String(selected.lastAircraftAfter) : "");
   const ab = toNum(aircraftBefore);
   const aa = toNum(aircraftAfter);
 
@@ -111,7 +114,7 @@ export default function RefuelForm({ action, aircrafts, defaultDateTime }: Refue
           </select>
           {selected && !isTanks && selected.lastTanksAfter !== null && selected.lastAircraftAfter !== null && (
             <div className="muted" style={{ fontSize: "0.8rem", marginTop: 4 }}>
-              Ultimo stato registrato: taniche {selected.lastTanksAfter} L, aereo {selected.lastAircraftAfter} L.
+              Ultimo stato registrato: taniche {selected.lastTanksAfter} L, aereo {selected.lastAircraftAfter} L{selected.lastAircraftAfterEstimated ? " (stimato)" : ""}.
             </div>
           )}
         </div>
@@ -226,7 +229,10 @@ export default function RefuelForm({ action, aircrafts, defaultDateTime }: Refue
             />
           </div>
           <div className="field">
-            <label htmlFor="aircraftBeforeLiters">Residuo serbatoi aereo (facoltativo)</label>
+            <label htmlFor="aircraftBeforeLiters">
+              Residuo serbatoi aereo (facoltativo)
+              {aircraftBeforeEdit === null && selected?.lastAircraftAfterEstimated && selected.lastAircraftAfter !== null ? " (stimato)" : ""}
+            </label>
             <input
               id="aircraftBeforeLiters"
               name="aircraftBeforeLiters"
@@ -237,7 +243,7 @@ export default function RefuelForm({ action, aircrafts, defaultDateTime }: Refue
               max={selected?.aircraftMax}
               className="input"
               value={aircraftBefore}
-              onChange={(e) => setAircraftBefore(e.target.value)}
+              onChange={(e) => setAircraftBeforeEdit(e.target.value)}
               placeholder={selected ? `Max ${selected.aircraftMax}` : undefined}
             />
           </div>

@@ -189,3 +189,69 @@ export function tanksRefuelExpenseDescription(args: { date: Date; liters: number
   }).format(args.date);
   return `Rifornimento taniche · ${day} · ${args.liters} L · ${args.registration}`;
 }
+
+// ---------------------------------------------------------------------------
+// Litri a bordo adesso: dato certo (ultimo volo/rifornimento) o stima dai voli successivi
+// ---------------------------------------------------------------------------
+
+export type OnboardAnchor = {
+  source: "FLIGHT" | "REFUEL";
+  at: Date;
+  liters: number;
+  author: string | null;
+};
+
+export type OnboardFlight = {
+  durationMinutes: number;
+  fuelStartLiters: number | null;
+  fuelEnRouteLiters: number | null;
+  fuelEndLiters: number | null;
+};
+
+export type OnboardResult = {
+  liters: number | null;
+  certain: boolean;
+  reason: "OK" | "NO_BURN";
+  flightsSince: number;
+  hoursSince: number;
+  enRouteSinceLiters: number;
+};
+
+/**
+ * Litri a bordo adesso a partire dall'ancora (ultimo dato certo) e dai voli successivi, in ordine cronologico.
+ * Per ogni volo: arrivo registrato = dato certo; altrimenti partenza (o litri correnti) + rotta - consumo x ore.
+ * Il risultato è limitato a [0, capacità] a ogni passo.
+ */
+export function resolveOnboard(args: {
+  anchor: OnboardAnchor;
+  flightsAfter: OnboardFlight[];
+  burnLitersPerHour: number;
+  tankCapacityLiters: number;
+}): OnboardResult {
+  const { anchor, flightsAfter, burnLitersPerHour } = args;
+  const limit = aircraftLimit(args.tankCapacityLiters);
+  const clamp = (v: number) => Math.min(limit, Math.max(0, v));
+  const hoursSince = flightsAfter.reduce((s, f) => s + f.durationMinutes, 0) / 60;
+  const enRouteSinceLiters = flightsAfter.reduce((s, f) => s + (isNum(f.fuelEnRouteLiters) ? f.fuelEnRouteLiters : 0), 0);
+  const base = { flightsSince: flightsAfter.length, hoursSince, enRouteSinceLiters };
+
+  if (flightsAfter.length === 0) {
+    return { liters: anchor.liters, certain: true, reason: "OK", ...base };
+  }
+  if (!(burnLitersPerHour > 0)) {
+    return { liters: null, certain: false, reason: "NO_BURN", ...base };
+  }
+  let liters = anchor.liters;
+  for (const f of flightsAfter) {
+    const burned = burnLitersPerHour * (f.durationMinutes / 60);
+    const enRoute = isNum(f.fuelEnRouteLiters) ? f.fuelEnRouteLiters : 0;
+    if (isNum(f.fuelEndLiters)) {
+      liters = clamp(f.fuelEndLiters);
+    } else if (isNum(f.fuelStartLiters)) {
+      liters = clamp(f.fuelStartLiters + enRoute - burned);
+    } else {
+      liters = clamp(liters + enRoute - burned);
+    }
+  }
+  return { liters, certain: false, reason: "OK", ...base };
+}

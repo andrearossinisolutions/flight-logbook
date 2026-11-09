@@ -3,6 +3,7 @@ import type { Route } from "next";
 import { AppShell } from "@/components/app-shell";
 import RefuelForm from "@/components/refuel-form";
 import { prisma } from "@/lib/prisma";
+import { getOnboardStatus } from "@/lib/fuel-onboard";
 import { requireUser } from "@/lib/require-user";
 import { createRefuel } from "@/app/refuel-actions";
 import { aircraftLimit, tanksLimit } from "@/lib/fuel";
@@ -20,27 +21,25 @@ export default async function NewRefuelPage() {
     orderBy: [{ partnershipId: "asc" }, { registration: "asc" }],
   });
 
-  // Ultimo stato dell'aereo: solo dai rifornimenti che lo riguardano (non quelli delle sole taniche).
-  const lastAircraftLogs = await prisma.partnershipFuelLog.findMany({
-    where: { aircraftId: { in: aircrafts.map((a) => a.id) }, aircraftAfterLiters: { not: null } },
-    orderBy: { refueledAt: "desc" },
-    select: { aircraftId: true, aircraftAfterLiters: true },
-  });
-  const aircraftLastMap = new Map<string, number | null>();
-  for (const l of lastAircraftLogs) {
-    if (!aircraftLastMap.has(l.aircraftId)) aircraftLastMap.set(l.aircraftId, l.aircraftAfterLiters);
+  // Litri a bordo: dato certo (ultimo volo o rifornimento) oppure stima dai voli successivi.
+  const onboardMap = new Map<string, { liters: number | null; certain: boolean }>();
+  for (const a of aircrafts) {
+    const status = await getOnboardStatus(a, a.partnershipId);
+    if (status) onboardMap.set(a.id, { liters: status.result.liters, certain: status.result.certain });
   }
 
   const options = aircrafts.map((a) => {
     const last = a.fuelLogs[0];
-    const lastWithAircraft = aircraftLastMap.get(a.id) ?? null;
+    const onboard = onboardMap.get(a.id);
+    const onboardLiters = onboard && onboard.liters !== null ? Math.round(onboard.liters * 10) / 10 : null;
     return {
       id: a.id,
       label: `${a.registration} (${a.type}) · ${a.partnership.name}`,
       tanksMax: tanksLimit(a.hangarCapacityLiters),
       aircraftMax: aircraftLimit(a.tankCapacityLiters),
       lastTanksAfter: last ? last.tanksAfterLiters : null,
-      lastAircraftAfter: lastWithAircraft,
+      lastAircraftAfter: onboardLiters,
+      lastAircraftAfterEstimated: onboardLiters !== null && !onboard?.certain,
       fuelPricePerLiter: a.fuelPricePerLiter,
       disableSharedFund: a.partnership.disableSharedFund,
     };

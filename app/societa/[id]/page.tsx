@@ -6,7 +6,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { PartnershipTabs } from "./tabs";
 import { PartnershipSelector } from "@/components/partnership-selector";
-import { estimateOnboardLiters } from "@/lib/fuel";
+import { getOnboardStatus } from "@/lib/fuel-onboard";
 
 export default async function SocietaDetailsPage({
   params,
@@ -253,29 +253,12 @@ export default async function SocietaDetailsPage({
         include: { user: { select: { fullName: true, email: true } } },
       });
 
-      // La stima a bordo parte dall'ultimo rifornimento che ha riempito l'aereo (non quelli delle sole taniche).
-      const lastAircraftLog = await prisma.partnershipFuelLog.findFirst({
-        where: { aircraftId: a.id, partnershipId: id, aircraftAfterLiters: { not: null } },
-        orderBy: { refueledAt: "desc" },
-        select: { refueledAt: true, aircraftAfterLiters: true },
-      });
-
-      let estimatedLiters: number | null = null;
-      let rangeHours: number | null = null;
-      if (lastAircraftLog && lastAircraftLog.aircraftAfterLiters !== null) {
-        const flownAgg = await prisma.flight.aggregate({
-          _sum: { durationMinutes: true },
-          where: {
-            partnershipAircraftId: a.id,
-            movement: { isDraft: false, date: { gt: lastAircraftLog.refueledAt } },
-          },
-        });
-        const flownHours = (flownAgg._sum.durationMinutes ?? 0) / 60;
-        estimatedLiters = estimateOnboardLiters(lastAircraftLog.aircraftAfterLiters, flownHours, a.fuelBurnLitersPerHour);
-        if (estimatedLiters !== null && a.fuelBurnLitersPerHour > 0) {
-          rangeHours = estimatedLiters / a.fuelBurnLitersPerHour;
-        }
-      }
+      // A bordo adesso: dato certo (ultimo volo o rifornimento) oppure stima dai voli successivi.
+      const onboard = await getOnboardStatus(a, id);
+      const rangeHours =
+        onboard && onboard.result.liters !== null && a.fuelBurnLitersPerHour > 0
+          ? onboard.result.liters / a.fuelBurnLitersPerHour
+          : null;
 
       return {
         aircraftId: a.id,
@@ -291,8 +274,16 @@ export default async function SocietaDetailsPage({
               author: last.user ? (last.user.fullName || last.user.email) : null,
             }
           : null,
-        lastAircraftAfterLiters: lastAircraftLog ? lastAircraftLog.aircraftAfterLiters : null,
-        estimatedLiters,
+        onboardSource: onboard ? onboard.anchor.source : null,
+        onboardAnchorAt: onboard ? onboard.anchor.at.toISOString() : null,
+        onboardAnchorLiters: onboard ? onboard.anchor.liters : null,
+        onboardAnchorAuthor: onboard ? onboard.anchor.author : null,
+        estimatedLiters: onboard ? onboard.result.liters : null,
+        certain: onboard ? onboard.result.certain : false,
+        reason: onboard ? onboard.result.reason : null,
+        flightsSince: onboard ? onboard.result.flightsSince : 0,
+        hoursSince: onboard ? onboard.result.hoursSince : 0,
+        enRouteSinceLiters: onboard ? onboard.result.enRouteSinceLiters : 0,
         rangeHours,
       };
     })

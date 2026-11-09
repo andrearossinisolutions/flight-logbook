@@ -1101,33 +1101,64 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                     {fuelStatus.map((f: any) => (
                       <div key={f.aircraftId} style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
                         <div style={{ fontWeight: 700 }}>{f.registration} <span className="muted" style={{ fontWeight: 400 }}>({f.type})</span></div>
-                        {!f.last ? (
+                        {!f.last && !f.onboardSource ? (
                           <div className="muted" style={{ marginTop: 4 }}>
                             Nessun rifornimento registrato.{" "}
                             <Link href={"/new-refuel" as any}>Registra il primo rifornimento</Link>
                           </div>
                         ) : (
                           <div style={{ marginTop: 6, display: "flex", flexDirection: "column", gap: 2, fontSize: "0.9rem" }}>
-                            <div>
-                              In hangar: <strong>{formatLiters(f.last.tanksAfterLiters)}</strong>
-                              {f.hangarCapacityLiters > 0 && <span className="muted"> su max {formatLiters(f.hangarCapacityLiters)}</span>}
-                            </div>
-                            <div>A bordo all&apos;ultimo rifornimento: <strong>{formatLiters(f.lastAircraftAfterLiters)}</strong></div>
-                            {f.burnLitersPerHour > 0 ? (
-                              <>
-                                <div>A bordo adesso (stima): <strong>{formatLiters(f.estimatedLiters)}</strong></div>
-                                <div>Autonomia (stima): <strong>{formatHoursToHHMM(f.rangeHours)}</strong> <span className="muted">ore:minuti</span></div>
-                              </>
-                            ) : (
-                              <div className="muted">
-                                A bordo adesso e autonomia (stima): n.d. — consumo non impostato
-                                {isAdmin && <> (<a href="#" onClick={(e) => { e.preventDefault(); setActiveTab("SETTINGS"); }}>imposta nelle impostazioni</a>)</>}
+                            {f.last && (
+                              <div>
+                                In hangar: <strong>{formatLiters(f.last.tanksAfterLiters)}</strong>
+                                {f.hangarCapacityLiters > 0 && <span className="muted"> su max {formatLiters(f.hangarCapacityLiters)}</span>}
                               </div>
                             )}
-                            <div className="muted" style={{ fontSize: "0.8rem" }}>
-                              Aggiornato il {formatDateDisplay(f.last.refueledAt)} alle {formatTimeDisplay(f.last.refueledAt)}
-                              {f.last.author ? ` da ${f.last.author}` : ""}
-                            </div>
+                            {f.onboardSource && (() => {
+                              const anchorLabel = `${f.onboardSource === "FLIGHT" ? "volo" : "rifornimento"} del ${formatDateDisplay(f.onboardAnchorAt).slice(0, 5)}`;
+                              const rangeLine = f.burnLitersPerHour > 0 && f.estimatedLiters !== null && (
+                                <div>Autonomia (stima): <strong>{formatHoursToHHMM(f.rangeHours)}</strong> <span className="muted">ore:minuti</span></div>
+                              );
+                              if (f.reason === "NO_BURN") {
+                                return (
+                                  <>
+                                    <div className="muted">
+                                      A bordo adesso: n.d. — consumo non impostato
+                                      {isAdmin && <> (<a href="#" onClick={(e) => { e.preventDefault(); setActiveTab("SETTINGS"); }}>imposta nelle impostazioni</a>)</>}
+                                    </div>
+                                    <div className="muted" style={{ fontSize: "0.8rem" }}>
+                                      Ultimo dato certo: {formatLiters(f.onboardAnchorLiters)} ({anchorLabel}). Dopo: {f.flightsSince} {f.flightsSince === 1 ? "volo" : "voli"} ({formatHoursToHHMM(f.hoursSince)})
+                                    </div>
+                                    {f.enRouteSinceLiters > 0 && (
+                                      <div className="muted" style={{ fontSize: "0.8rem" }}>Rifornimento in rotta: {formatLiters(f.enRouteSinceLiters)}</div>
+                                    )}
+                                  </>
+                                );
+                              }
+                              if (f.certain) {
+                                return (
+                                  <>
+                                    <div>
+                                      A bordo (dall&apos;ultimo {f.onboardSource === "FLIGHT" ? "volo" : "rifornimento"} del {formatDateDisplay(f.onboardAnchorAt).slice(0, 5)}): <strong>{formatLiters(f.estimatedLiters)}</strong>
+                                    </div>
+                                    {rangeLine}
+                                    <div className="muted" style={{ fontSize: "0.8rem" }}>
+                                      Dato inserito{f.onboardAnchorAuthor ? ` da ${f.onboardAnchorAuthor}` : ""} il {formatDateDisplay(f.onboardAnchorAt)} alle {formatTimeDisplay(f.onboardAnchorAt)}
+                                    </div>
+                                  </>
+                                );
+                              }
+                              return (
+                                <>
+                                  <div>A bordo adesso (stimata): <strong>{formatLiters(f.estimatedLiters)}</strong></div>
+                                  <div className="muted" style={{ fontSize: "0.8rem" }}>
+                                    Da {formatLiters(f.onboardAnchorLiters)} ({anchorLabel}) − consumo di {f.flightsSince} {f.flightsSince === 1 ? "volo" : "voli"} ({formatHoursToHHMM(f.hoursSince)})
+                                    {f.enRouteSinceLiters > 0 && <> + {formatLiters(f.enRouteSinceLiters)} di rifornimento in rotta</>}
+                                  </div>
+                                  {rangeLine}
+                                </>
+                              );
+                            })()}
                           </div>
                         )}
                       </div>

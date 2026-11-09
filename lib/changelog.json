@@ -1,7 +1,7 @@
 [
   {
     "version": "1.36.0",
-    "date": "2026-11-02",
+    "date": "2026-11-09",
     "commits": [
       {
         "hash": "f094fb2",
@@ -19,9 +19,14 @@
         "subject": "Added fuel levels to past flights, with real fuel cost and an option to log in-flight refueling in the Society transactions"
       },
       {
-        "hash": "cd8b1fe",
+        "hash": "8153b1a",
         "date": "2026-11-02",
         "subject": "Added tank refuelling to company fuel logs, with litres added, price paid and an option to log the expense"
+      },
+      {
+        "hash": "e5feaee",
+        "date": "2026-11-09",
+        "subject": "Fixed the Society fuel widget to use the litres left after the last flight"
       }
     ]
   },
