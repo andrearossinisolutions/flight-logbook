@@ -1,5 +1,16 @@
 [
   {
+    "version": "1.37.0",
+    "date": "2026-11-23",
+    "commits": [
+      {
+        "hash": "3a4f992",
+        "date": "2026-11-23",
+        "subject": "Added the total estimated range after refuel to the Society fuel widget"
+      }
+    ]
+  },
+  {
     "version": "1.36.0",
     "date": "2026-11-09",
     "commits": [
@@ -39,7 +50,7 @@
         "subject": "Added an optional hangar fuel field to flights, with colours for low hangar fuel"
       },
       {
-        "hash": "a6786b1",
+        "hash": "cfcffe0",
         "date": "2026-11-09",
         "subject": "Rough fuel estimates no longer block refuel and flight forms"
       }

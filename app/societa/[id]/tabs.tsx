@@ -1211,13 +1211,27 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                   outerLabel={formatLiters(Math.max(0, f.hangarCapacityLiters - f.hangar.liters))}
                                   showInnerLabelWhenSmall
                                 />
+                                {f.totalRange && (
+                                  <div style={{ marginTop: 4 }}>
+                                    Autonomia totale stimata: <strong>{formatHoursToHHMM(f.totalRange.hours)}</strong> <span className="muted">ore:minuti</span>
+                                    {f.totalRange.capped && <span className="muted"> (limitata alla capacità del serbatoio: {formatLiters(f.totalRange.liters)})</span>}
+                                  </div>
+                                )}
                                 <div className="muted" style={{ fontSize: "0.8rem" }}>
                                   Dall&apos;ultimo {f.hangar.source === "FLIGHT" ? "volo" : "rifornimento"} del {formatDateDisplay(f.hangar.at).slice(0, 5)}
                                   {f.hangar.author ? ` · inserito da ${f.hangar.author}` : ""}
                                 </div>
                               </div>
                             ) : (
-                              <div style={{ marginTop: 4 }}>In hangar: <strong>{formatLiters(f.hangar.liters)}</strong></div>
+                              <>
+                                <div style={{ marginTop: 4 }}>In hangar: <strong>{formatLiters(f.hangar.liters)}</strong></div>
+                                {f.totalRange && (
+                                  <div style={{ marginTop: 4 }}>
+                                    Autonomia totale stimata: <strong>{formatHoursToHHMM(f.totalRange.hours)}</strong> <span className="muted">ore:minuti</span>
+                                    {f.totalRange.capped && <span className="muted"> (limitata alla capacità del serbatoio: {formatLiters(f.totalRange.liters)})</span>}
+                                  </div>
+                                )}
+                              </>
                             ))}
                           </div>
                         )}

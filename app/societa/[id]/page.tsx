@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { PartnershipTabs } from "./tabs";
 import { PartnershipSelector } from "@/components/partnership-selector";
+import { totalRangeAfterRefuel } from "@/lib/fuel";
 import { getHangarStatus, getOnboardStatus } from "@/lib/fuel-onboard";
 
 export default async function SocietaDetailsPage({
@@ -262,6 +263,15 @@ export default async function SocietaDetailsPage({
           ? onboard.result.liters / a.fuelBurnLitersPerHour
           : null;
 
+      const totalRange = hangar
+        ? totalRangeAfterRefuel({
+            onboardLiters: onboard ? onboard.result.liters : null,
+            hangarLiters: hangar.liters,
+            tankCapacityLiters: a.tankCapacityLiters,
+            burnLitersPerHour: a.fuelBurnLitersPerHour,
+          })
+        : null;
+
       return {
         aircraftId: a.id,
         registration: a.registration,
@@ -296,6 +306,7 @@ export default async function SocietaDetailsPage({
         hoursSince: onboard ? onboard.result.hoursSince : 0,
         enRouteSinceLiters: onboard ? onboard.result.enRouteSinceLiters : 0,
         rangeHours,
+        totalRange,
       };
     })
   );

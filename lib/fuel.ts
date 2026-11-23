@@ -69,6 +69,28 @@ export function estimateOnboardLiters(
   return Math.max(0, aircraftAfterLiters - flownHoursSince * burnLitersPerHour);
 }
 
+/**
+ * Autonomia totale stimata dopo il rifornimento: (litri a bordo + litri in hangar) / consumo orario.
+ * I litri sono limitati alla capacità del serbatoio se > 0 (`capped` = true se tagliati).
+ * Null se un dato manca o il consumo non è > 0.
+ */
+export function totalRangeAfterRefuel(args: {
+  onboardLiters: number | null | undefined;
+  hangarLiters: number | null | undefined;
+  tankCapacityLiters: number | null | undefined;
+  burnLitersPerHour: number | null | undefined;
+}): { hours: number; liters: number; capped: boolean } | null {
+  const { onboardLiters, hangarLiters, tankCapacityLiters, burnLitersPerHour } = args;
+  if (!isNum(onboardLiters) || !isNum(hangarLiters) || !isNum(burnLitersPerHour) || !(burnLitersPerHour > 0)) return null;
+  let liters = onboardLiters + hangarLiters;
+  let capped = false;
+  if (isNum(tankCapacityLiters) && tankCapacityLiters > 0 && liters > tankCapacityLiters) {
+    liters = tankCapacityLiters;
+    capped = true;
+  }
+  return { hours: liters / burnLitersPerHour, liters, capped };
+}
+
 export function formatLiters(value: number | null | undefined) {
   if (value === null || value === undefined || !Number.isFinite(value)) return "—";
   return `${new Intl.NumberFormat("it-IT", { maximumFractionDigits: 1 }).format(value)} L`;
