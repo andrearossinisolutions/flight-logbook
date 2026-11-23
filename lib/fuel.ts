@@ -91,6 +91,19 @@ export function totalRangeAfterRefuel(args: {
   return { hours: liters / burnLitersPerHour, liters, capped };
 }
 
+/** Riserva di carburante da non consumare, in minuti di volo. */
+export const RESERVE_MINUTES = 30;
+const RESERVE_HOURS = RESERVE_MINUTES / 60;
+
+/**
+ * Divide un'autonomia stimata (ore) in volo utilizzabile e riserva.
+ * usableHours = autonomia - riserva (mai negativo); belowReserve = autonomia strettamente
+ * inferiore alla riserva (a esattamente 30 min: 00:00 utilizzabili e riserva intera, non sotto).
+ */
+export function splitRangeReserve(hours: number): { usableHours: number; belowReserve: boolean } {
+  return { usableHours: Math.max(0, hours - RESERVE_HOURS), belowReserve: hours < RESERVE_HOURS };
+}
+
 export function formatLiters(value: number | null | undefined) {
   if (value === null || value === undefined || !Number.isFinite(value)) return "—";
   return `${new Intl.NumberFormat("it-IT", { maximumFractionDigits: 1 }).format(value)} L`;

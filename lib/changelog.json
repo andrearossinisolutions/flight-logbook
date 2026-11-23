@@ -4,9 +4,14 @@
     "date": "2026-11-23",
     "commits": [
       {
-        "hash": "3a4f992",
+        "hash": "0e4deee",
         "date": "2026-11-23",
         "subject": "Added the total estimated range after refuel to the Society fuel widget"
+      },
+      {
+        "hash": "facfa18",
+        "date": "2026-11-23",
+        "subject": "Showed the estimated fuel range as flight time plus a 30-minute reserve"
       }
     ]
   },

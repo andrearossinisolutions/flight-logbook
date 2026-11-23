@@ -9,7 +9,7 @@ import { SubmitButton } from "@/components/submit-button";
 import { AircraftFuelFields } from "@/components/aircraft-fuel-fields";
 import { DeleteMovementButton } from "@/components/delete-movement-button";
 import { deleteRefuel } from "@/app/refuel-actions";
-import { formatLiters } from "@/lib/fuel";
+import { formatLiters, splitRangeReserve, RESERVE_MINUTES } from "@/lib/fuel";
 import Link from "next/link";
 import { ProgressBar } from "@/components/progress-bar";
 import { formatDateDisplay, formatTimeDisplay, daysFromDate, formatDateTimeInput, getRomeDateTimeParts, formatDateInput, formatHoursToHHMM } from "@/lib/utils";
@@ -191,6 +191,17 @@ function getMaintenanceSplit(log: any, aircraft: any, partnershipFlights: any[],
     totalDurationMinutes,
     shares
   };
+}
+
+// Autonomia come "HH:MM + 30' riserva": il valore è l'autonomia meno la riserva.
+function RangeWithReserve({ hours }: { hours: number }) {
+  const { usableHours, belowReserve } = splitRangeReserve(hours);
+  return (
+    <>
+      <strong>{formatHoursToHHMM(usableHours)}</strong>
+      <span className="muted">{belowReserve ? `, sotto la riserva di ${RESERVE_MINUTES}'` : ` + ${RESERVE_MINUTES}' riserva`}</span>
+    </>
+  );
 }
 
 // Soglie di colore della barra "A bordo" in base all'autonomia (ore).
@@ -1119,7 +1130,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                             {f.onboardSource && (() => {
                               const anchorLabel = `${f.onboardSource === "FLIGHT" ? "volo" : "rifornimento"} del ${formatDateDisplay(f.onboardAnchorAt).slice(0, 5)}`;
                               const rangeLine = f.burnLitersPerHour > 0 && f.estimatedLiters !== null && (
-                                <div>Autonomia (stima): <strong>{formatHoursToHHMM(f.rangeHours)}</strong> <span className="muted">ore:minuti</span></div>
+                                <div>Autonomia stimata: <RangeWithReserve hours={f.rangeHours} /></div>
                               );
                               if (f.reason === "NO_BURN") {
                                 return (
@@ -1213,7 +1224,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                 />
                                 {f.totalRange && (
                                   <div style={{ marginTop: 4 }}>
-                                    Autonomia totale stimata: <strong>{formatHoursToHHMM(f.totalRange.hours)}</strong> <span className="muted">ore:minuti</span>
+                                    Autonomia totale stimata: <RangeWithReserve hours={f.totalRange.hours} />
                                     {f.totalRange.capped && <span className="muted"> (limitata alla capacità del serbatoio: {formatLiters(f.totalRange.liters)})</span>}
                                   </div>
                                 )}
@@ -1227,7 +1238,7 @@ export function PartnershipTabs({ partnership, isAdmin, currentUserId, lastFligh
                                 <div style={{ marginTop: 4 }}>In hangar: <strong>{formatLiters(f.hangar.liters)}</strong></div>
                                 {f.totalRange && (
                                   <div style={{ marginTop: 4 }}>
-                                    Autonomia totale stimata: <strong>{formatHoursToHHMM(f.totalRange.hours)}</strong> <span className="muted">ore:minuti</span>
+                                    Autonomia totale stimata: <RangeWithReserve hours={f.totalRange.hours} />
                                     {f.totalRange.capped && <span className="muted"> (limitata alla capacità del serbatoio: {formatLiters(f.totalRange.liters)})</span>}
                                   </div>
                                 )}
